@@ -66,6 +66,7 @@ public class GuiMixin {
         }
         return originalY;
     }
+    // TODO: Air shift by needed/alternative to forge guiLeftHeight/guiRightHeight?
     #endif
 
     #if UPTO_20_1 && FABRIC
