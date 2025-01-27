@@ -33,7 +33,7 @@ public class HUDPositioning {
         int screenHeight = Minecraft.getInstance().getWindow().getGuiScaledHeight();
         return new Position(
                 screenWidth / 2,        // Center X
-                screenHeight - 65       // Above other hotbar elements -- Shifts
+                screenHeight - 65    // Above other hotbar elements -- // TODO: reimplement shift
         );
     }
 }

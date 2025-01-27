@@ -2,6 +2,9 @@ package dev.muon.dynamic_resource_bars;
 
 import dev.muon.dynamic_resource_bars.foundation.config.AllConfigs;
 import net.minecraft.resources.ResourceLocation;
+import net.minecraftforge.client.event.RenderGuiOverlayEvent;
+import net.minecraftforge.client.gui.overlay.VanillaGuiOverlay;
+import net.minecraftforge.eventbus.api.SubscribeEvent;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -58,6 +61,19 @@ public class DynamicResourceBars #if FABRIC implements ModInitializer, ClientMod
             return new ResourceLocation(ID, path);
         #endif
     }
+
+    #if FORGELIKE
+    @SubscribeEvent
+    public static void onBeforeRenderOverlay(RenderGuiOverlayEvent.Pre event) {
+        if (!AllConfigs.client().enableVanillaResourceBars) return;
+
+        if (event.getOverlay() == VanillaGuiOverlay.PLAYER_HEALTH.type() ||
+                event.getOverlay() == VanillaGuiOverlay.FOOD_LEVEL.type() /*||
+                event.getOverlay() == VanillaGuiOverlay.ARMOR_LEVEL.type()*/) {
+            event.setCanceled(true);
+        }
+    }
+    #endif
 
     public DynamicResourceBars(#if NEO IEventBus modEventBus, ModContainer modContainer #endif) {
         #if FORGE

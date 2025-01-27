@@ -60,7 +60,7 @@ blahaj {
 
 // Dependencies
 repositories {
-	maven("https://www.cursemaven.com")
+	maven("https://cursemaven.com")
 	maven("https://api.modrinth.com/maven")
 	maven("https://thedarkcolour.github.io/KotlinForForge/")
 	maven("https://maven.kikugie.dev/releases")
@@ -74,4 +74,15 @@ repositories {
 	maven("https://maven.su5ed.dev/releases")
 	maven("https://maven.fabricmc.net")
 	maven("https://maven.shedaniel.me/")
+	maven("https://maven.theillusivec4.top/")
+	maven("https://maven.minecraftforge.net/")
+	maven("https://maven.blamejared.com/")
+	maven("https://maven.terraformersmc.com/")
+	maven("https://maven.wispforest.io/releases")
+	maven("https://dl.cloudsmith.io/public/geckolib3/geckolib/maven/")
+	maven("https://maven.kosmx.dev/")
+	maven("https://maven.octo-studios.com/releases")
+	maven("https://maven.shadowsoffire.dev/releases")
+	maven("https://code.redspace.io/releases")
+	maven("https://code.redspace.io/snapshots")
 }

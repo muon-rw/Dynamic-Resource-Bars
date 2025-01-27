@@ -7,6 +7,7 @@ import java.util.Map.Entry;
 import java.util.Set;
 import java.util.function.BiConsumer;
 import java.util.function.Supplier;
+import toni.lib.utils.PlatformUtils;
 
 import dev.muon.dynamic_resource_bars.DynamicResourceBars;
 import toni.lib.config.ConfigBase;
