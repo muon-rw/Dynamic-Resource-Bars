@@ -16,8 +16,8 @@ public class CClient extends ConfigBase {
     public final ConfigInt healthBorderHeight = i(10, 0, "healthBorderHeight", "Height of the health bar's background sprite, in pixels.");
     public final ConfigInt healthBarWidth = i(74, 0, "healthBarWidth", "Width of the actual animated bar, in pixels.");
     public final ConfigInt healthBarHeight = i(4, 0, "healthBarHeight", "Height of the actual animated bar, in pixels.");
-    public final ConfigInt healthBarXOffset = i(3, "healthBarXOffset", "How much to shift the animated bar to the right, in pixels. In other words, the thickness of the left health border.");
-    public final ConfigInt healthBarYOffset = i(3, "healthBarYOffset", "How much to shift the animated bar upward, in pixels. In other words, the thickness of the bottom health border.");
+    public final ConfigInt healthBarXOffset = i(3, "healthBarXOffset", "How much to shift the animated bar to the right relative to the border. In other words, the thickness of the left health border.");
+    public final ConfigInt healthBarYOffset = i(3, "healthBarYOffset", "How much to shift the animated bar upward relative to the border. In other words, the thickness of the bottom health border.");
     public final ConfigInt healthBarAnimationCycles = i(33, 0, "healthBarAnimationCycles", "Number of animation frames in the bar animation.");
     public final ConfigInt healthBarFrameHeight = i(6, 0, "healthBarFrameHeight", "Height of each frame in the health bar animation.");
     public final ConfigBool healthDetailOverlay = b(false, "healthDetailOverlay", "Enable extra fancy health overlay layer.");
@@ -31,8 +31,8 @@ public class CClient extends ConfigBase {
     public final ConfigInt staminaBorderHeight = i(10, 0, "staminaBorderHeight", "Height of the stamina bar's background sprite, in pixels.");
     public final ConfigInt staminaBarWidth = i(74, 0, "staminaBarWidth", "Width of the actual animated bar, in pixels.");
     public final ConfigInt staminaBarHeight = i(4, 0, "staminaBarHeight", "Height of the actual animated bar, in pixels.");
-    public final ConfigInt staminaBarXOffset = i(3, "staminaBarXOffset", "X offset for the stamina bar.");
-    public final ConfigInt staminaBarYOffset = i(3, "staminaBarYOffset", "Y offset for the stamina bar.");
+    public final ConfigInt staminaBarXOffset = i(3, "staminaBarXOffset", "How much to shift the animated bar to the right relative to the border. In other words, the thickness of the left stamina border.");
+    public final ConfigInt staminaBarYOffset = i(3, "staminaBarYOffset", "How much to shift the animated bar upward relative to the border. In other words, the thickness of the bottom stamina border.");
     public final ConfigInt staminaBarAnimationCycles = i(33, 0, "staminaBarAnimationCycles", "Number of animation frames in the bar animation.");
     public final ConfigInt staminaBarFrameHeight = i(6, 0, "staminaBarFrameHeight", "Height of each frame in the stamina bar animation.");
     public final ConfigBool staminaDetailOverlay = b(false, "staminaDetailOverlay", "Enable extra fancy stamina overlay layer.");
@@ -46,8 +46,8 @@ public class CClient extends ConfigBase {
     public final ConfigInt manaBorderHeight = i(10, 0, "manaBorderHeight", "Height of the mana bar's background sprite, in pixels.");
     public final ConfigInt manaBarWidth = i(74, 0, "manaBarWidth", "Width of the actual animated bar, in pixels.");
     public final ConfigInt manaBarHeight = i(4, 0, "manaBarHeight", "Height of the actual animated bar, in pixels.");
-    public final ConfigInt manaBarXOffset = i(3, "manaBarXOffset", "X offset for the mana bar.");
-    public final ConfigInt manaBarYOffset = i(3, "manaBarYOffset", "Y offset for the mana bar.");
+    public final ConfigInt manaBarXOffset = i(3, "manaBarXOffset", "How much to shift the animated bar to the right relative to the border. In other words, the thickness of the left mana border.");
+    public final ConfigInt manaBarYOffset = i(3, "manaBarYOffset", "How much to shift the animated bar upward relative to the border. In other words, the thickness of the bottom mana border.");
     public final ConfigInt manaBarAnimationCycles = i(33, 0, "manaBarAnimationCycles", "Number of animation frames in the bar animation.");
     public final ConfigInt manaBarFrameHeight = i(6, 0, "manaBarFrameHeight", "Height of each frame in the mana bar animation.");
     public final ConfigBool manaDetailOverlay = b(true, "manaDetailOverlay", "Enable extra fancy mana overlay layer.");
