@@ -8,9 +8,9 @@ public class CClient extends ConfigBase {
     public final ConfigGroup client = group(0, "client", "Client-only settings - If you're looking for general settings, look inside your world's serverconfig folder!");
 
     public final ConfigFloat textScalingFactor = f(0.5f, 0.0f,"textScalingFactor", "The amount to adjust the size of text rendered on resource bars");
-    public final ConfigBool enableResourceBars = b(true, "enableResourceBars", "Whether to render custom bars instead of hearts and hunger.");
 
-    // Replacing static health bar configuration
+    // TODO: Option to hide health text
+    public final ConfigBool enableHealthBar = b(true, "enableHealthBar", "Whether to render a custom bar instead of hearts.");
     public final ConfigEnum<HUDPositioning.BarPlacement> healthBarPlacement = e(HUDPositioning.BarPlacement.HEALTH, "healthBarPlacement", "Placement of the health bar.");
     public final ConfigInt healthBorderWidth = i(80, 0, "healthBorderWidth", "Width of the health bar's background sprite, in pixels.");
     public final ConfigInt healthBorderHeight = i(10, 0, "healthBorderHeight", "Height of the health bar's background sprite, in pixels.");
@@ -24,8 +24,9 @@ public class CClient extends ConfigBase {
     public final ConfigInt healthOverlayXOffset = i(0, "healthOverlayXOffset", "How much to shift the fancy detailed overlay to the right.");
     public final ConfigInt healthOverlayYOffset = i(-3, "healthOverlayYOffset", "How much to shift the fancy detailed overlay upward.");
 
-    // Replacing static stamina bar configuration
+    // TODO: staminaSource config, for mods like Feathers/Paragliders, and create barBehavior ConfigEnum + staminaText implementation
     public final ConfigEnum<HUDPositioning.BarPlacement> staminaBarPlacement = e(HUDPositioning.BarPlacement.HUNGER, "staminaBarPlacement", "Placement of the stamina bar.");
+    public final ConfigBool enableStaminaBar = b(true, "enableStaminaBar", "Whether to render a custom bar instead of hunger.");
     public final ConfigInt staminaBorderWidth = i(80, 0, "staminaBorderWidth", "Width of the stamina bar's background sprite, in pixels.");
     public final ConfigInt staminaBorderHeight = i(10, 0, "staminaBorderHeight", "Height of the stamina bar's background sprite, in pixels.");
     public final ConfigInt staminaBarWidth = i(74, 0, "staminaBarWidth", "Width of the actual animated bar, in pixels.");
@@ -38,8 +39,9 @@ public class CClient extends ConfigBase {
     public final ConfigInt staminaOverlayXOffset = i(0, "staminaOverlayXOffset", "How much to shift the fancy detailed overlay to the right.");
     public final ConfigInt staminaOverlayYOffset = i(-3, "staminaOverlayYOffset", "How much to shift the fancy detailed overlay upward.");
 
-    // Replacing static mana bar configuration
+    // TODO: Use manaText config bool
     public final ConfigEnum<HUDPositioning.BarPlacement> manaBarPlacement = e(HUDPositioning.BarPlacement.ABOVE_UTILITIES, "manaBarPlacement", "Placement of the mana bar.");
+    public final ConfigBool enableManaBar = b(true, "enableManaBar", "Whether to render a custom bar instead of supported mods' built-in mana bars.");
     public final ConfigInt manaBorderWidth = i(80, 0, "manaBorderWidth", "Width of the mana bar's background sprite, in pixels.");
     public final ConfigInt manaBorderHeight = i(10, 0, "manaBorderHeight", "Height of the mana bar's background sprite, in pixels.");
     public final ConfigInt manaBarWidth = i(74, 0, "manaBarWidth", "Width of the actual animated bar, in pixels.");
