@@ -1,4 +1,4 @@
 {
-  "example_mod.configuration.client": "client",
-  "example_mod.configuration.example": "example"
+  "dynamic_resource_bars.configuration.client": "client",
+  "dynamic_resource_bars.configuration.example": "example"
 }
