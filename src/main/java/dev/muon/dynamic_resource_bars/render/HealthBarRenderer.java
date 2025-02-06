@@ -51,21 +51,21 @@ public class HealthBarRenderer {
         }
     }
 
-    public static void render(GuiGraphics graphics, Player player, float maxHealth, float actualHealth, int absorptionAmount, #if NEWER_THAN_20_1 DeltaTracker deltaTracker #else float partialTicks #endif) {
+    public static void render(GuiGraphics graphics, Player player, float maxHealth, float actualHealth, int absorptionAmount,
+            #if NEWER_THAN_20_1 DeltaTracker deltaTracker #else float partialTicks #endif) {
 
         if (!Minecraft.getInstance().gameMode.canHurtPlayer()) {
             return;
         }
-        Position healthPos = HUDPositioning.getHealthAnchor()
-                .offset(AllConfigs.client().healthBarXOffset.get(), AllConfigs.client().healthBarYOffset.get());
+        Position healthPos = HUDPositioning.getPositionFromAnchor(AllConfigs.client().healthBarAnchor.get())
+                .offset(AllConfigs.client().healthTotalXOffset.get(), AllConfigs.client().healthTotalYOffset.get());
 
-        // Configs
-        int borderWidth = AllConfigs.client().healthBorderWidth.get();
-        int borderHeight = AllConfigs.client().healthBorderHeight.get();
+        int backgroundWidth = AllConfigs.client().healthBackgroundWidth.get();
+        int backgroundHeight = AllConfigs.client().healthBackgroundHeight.get();
         int barWidth = AllConfigs.client().healthBarWidth.get();
         int barHeight = AllConfigs.client().healthBarHeight.get();
-        int barXOffset = AllConfigs.client().healthBarXOffset.get();
-        int barYOffset = AllConfigs.client().healthBarYOffset.get();
+        int barOnlyXOffset = AllConfigs.client().healthBarXOffset.get();
+        int barOnlyYOffset = AllConfigs.client().healthBarYOffset.get();
         int animationCycles = AllConfigs.client().healthBarAnimationCycles.get(); // Total frames in animation
         int frameHeight = AllConfigs.client().healthBarFrameHeight.get();      // Height of each frame in texture
 
@@ -73,20 +73,20 @@ public class HealthBarRenderer {
         int yPos = healthPos.y();
 
         graphics.blit(
-                DynamicResourceBars.loc("textures/gui/health_border.png"), xPos, yPos, 0, 0, borderWidth, borderHeight, 256, 256
+                DynamicResourceBars.loc("textures/gui/health_background.png"), xPos, yPos, 0, 0, backgroundWidth, backgroundHeight, 256, 256
         );
 
-        int animOffset = (int) (((player.tickCount +#if NEWER_THAN_20_1 deltaTracker.getGameTimeDeltaTicks() #else partialTicks #endif) / 3) % animationCycles) * frameHeight;
+        int animOffset = (int) (((player.tickCount + #if NEWER_THAN_20_1 deltaTracker.getGameTimeDeltaTicks() #else partialTicks #endif) / 3) % animationCycles) * frameHeight;
 
-        renderBaseBar(graphics, player, maxHealth, actualHealth, xPos, yPos, barWidth, barHeight, barXOffset, barYOffset, animOffset);
-        renderBarOverlays(graphics, player, absorptionAmount, xPos, yPos, barWidth, barHeight, barXOffset, barYOffset);
-        renderBorderOverlays(graphics, player, xPos, yPos, borderWidth, borderHeight);
+        renderBaseBar(graphics, player, maxHealth, actualHealth, xPos, yPos, barWidth, barHeight, barOnlyXOffset, barOnlyYOffset, animOffset);
+        renderBarOverlays(graphics, player, absorptionAmount, xPos, yPos, barWidth, barHeight, barOnlyXOffset, barOnlyYOffset);
+        renderBackgroundOverlays(graphics, player, xPos, yPos, backgroundWidth, backgroundHeight);
 
         RenderSystem.setShaderColor(1.0f, 1.0f, 1.0f, 1.0f);
 
 
-        int textX = (xPos + (borderWidth / 2));
-        int textY = (yPos + barYOffset);
+        int textX = (xPos + (backgroundWidth / 2));
+        int textY = (yPos + barOnlyYOffset);
 
         if (shouldRenderText(actualHealth, maxHealth)) {
             int color = getHealthTextColor();
@@ -95,7 +95,7 @@ public class HealthBarRenderer {
         }
         if (absorptionAmount > 0) {
             String absorptionText = "+" + absorptionAmount;
-            int absorptionX = xPos + borderWidth - barXOffset -
+            int absorptionX = xPos + backgroundWidth - barOnlyXOffset -
                     (Minecraft.getInstance().font.width(absorptionText) / 2);
             RenderUtil.renderAdditionText(absorptionText, graphics, absorptionX, textY, (RenderUtil.BASE_TEXT_ALPHA << 24) | 0xFFFFFF);
         }
@@ -137,8 +137,8 @@ public class HealthBarRenderer {
     }
 
 
-    private static void renderBorderOverlays(GuiGraphics graphics, Player player,
-                                             int xPos, int yPos, int borderWidth, int borderHeight) {
+    private static void renderBackgroundOverlays(GuiGraphics graphics, Player player,
+                                             int xPos, int yPos, int backgroundWidth, int backgroundHeight) {
 
         if (player.level().getLevelData().isHardcore()) {
             RenderSystem.enableBlend();
@@ -146,7 +146,7 @@ public class HealthBarRenderer {
             graphics.blit(
                     DynamicResourceBars.loc("textures/gui/hardcore_overlay.png"),
                     xPos, yPos,
-                    0, 0, borderWidth, borderHeight,
+                    0, 0, backgroundWidth, backgroundHeight,
                     256, 256
             );
             RenderSystem.disableBlend();
@@ -160,7 +160,7 @@ public class HealthBarRenderer {
             graphics.blit(
                     DynamicResourceBars.loc("textures/gui/wetness_overlay.png"),
                     xPos, yPos,
-                    0, 0, borderWidth, borderHeight,
+                    0, 0, backgroundWidth, backgroundHeight,
                     256, 256
             );
             RenderSystem.setShaderColor(1.0f, 1.0f, 1.0f, 1.0f);
@@ -172,7 +172,7 @@ public class HealthBarRenderer {
                     DynamicResourceBars.loc("textures/gui/detail_overlay.png"),
                     xPos + AllConfigs.client().healthOverlayXOffset.get(),
                     yPos + AllConfigs.client().healthOverlayYOffset.get(),
-                    0, 0, borderWidth, borderHeight,
+                    0, 0, backgroundWidth, backgroundHeight,
                     256, 256
             );
         }
@@ -266,7 +266,7 @@ public class HealthBarRenderer {
 
         int alpha = RenderUtil.calculateTextAlpha(timeSinceFullHealth);
 
-        // Values lower than 10 cause rendering artifacts
+        // Values too close to 0 cause rendering artifacts
         alpha = Math.max(10, alpha);
 
         return (alpha << 24) | 0xFFFFFF;

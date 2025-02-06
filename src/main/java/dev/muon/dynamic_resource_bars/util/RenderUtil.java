@@ -52,6 +52,29 @@ public class RenderUtil {
         poseStack.popPose();
     }
 
+    public static void renderArmorText(float value, GuiGraphics graphics, int baseX, int baseY, int color) {
+        Minecraft minecraft = Minecraft.getInstance();
+        PoseStack poseStack = graphics.pose();
+        poseStack.pushPose();
+        float scalingFactor = AllConfigs.client().textScalingFactor.getF();
+
+        int xPos = (int) (baseX / scalingFactor);
+        int yPos = (int) (baseY / scalingFactor);
+        poseStack.scale(scalingFactor, scalingFactor, 1.0f);
+
+        String text;
+        if (Math.abs(value - Math.floor(value)) < 0.1f) {
+            text = String.valueOf((int)value);
+        } else {
+            text = String.format("%.1f", value);
+        }
+
+        int textWidth = minecraft.font.width(text);
+        graphics.drawString(minecraft.font, text, xPos - (textWidth / 2), yPos, color, true);
+
+        poseStack.popPose();
+    }
+
     public static int calculateTextAlpha(long timeSinceEvent) {
         int alpha;
         if (timeSinceEvent < TEXT_DISPLAY_DURATION) {
@@ -61,7 +84,7 @@ public class RenderUtil {
         } else {
             alpha = 0;
         }
-        // Alpha values too low cause rendering inconsistencies, not sure why
+        // Values too close to 0 cause rendering artifacts
         return Math.max(10, Math.min(alpha, BASE_TEXT_ALPHA));
     }
 

@@ -6,6 +6,11 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 
+#if after_21_1
+    import fuzs.puzzleslib.api.client.event.v1.gui.RenderGuiLayerEvents;
+    import dev.muon.dynamic_resource_bars.event.CommonEvents;
+#endif
+
 #if FABRIC
     import net.fabricmc.api.ClientModInitializer;
     import net.fabricmc.api.ModInitializer;
@@ -77,6 +82,17 @@ public class DynamicResourceBars #if FABRIC implements ModInitializer, ClientMod
             //modContainer.registerExtensionPoint(IConfigScreenFactory.class, ConfigurationScreen::new);
             #endif
         });
+        #endif
+
+        // 1.20.1 Forge is handled via ForgeEvents
+        // 1.20.1 Fabric is handled via mixin
+        #if NEWER_THAN_20_1
+        RenderGuiLayerEvents.before(RenderGuiLayerEvents.PLAYER_HEALTH)
+                .register(CommonEvents::onRenderPlayerHealth);
+        RenderGuiLayerEvents.before(RenderGuiLayerEvents.FOOD_LEVEL)
+                .register(CommonEvents::onRenderHunger);
+        RenderGuiLayerEvents.before(RenderGuiLayerEvents.ARMOR_LEVEL)
+                .register(CommonEvents::onRenderArmor);
         #endif
     }
 

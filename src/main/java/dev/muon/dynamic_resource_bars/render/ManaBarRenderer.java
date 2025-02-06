@@ -7,6 +7,7 @@ import dev.muon.dynamic_resource_bars.util.HUDPositioning;
 import dev.muon.dynamic_resource_bars.util.ManaProvider;
 import dev.muon.dynamic_resource_bars.util.Position;
 import dev.muon.dynamic_resource_bars.util.RenderUtil;
+import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.world.entity.player.Player;
 
@@ -24,17 +25,21 @@ public class ManaBarRenderer {
     private static final int RESERVED_MANA_COLOR = 0x232323;
 
     public static void render(GuiGraphics graphics, #if NEWER_THAN_20_1 DeltaTracker deltaTracker #else float partialTicks #endif, ManaProvider manaProvider, Player player) {
+        if (!Minecraft.getInstance().gameMode.canHurtPlayer()) {
+            return;
+        }
 
         float alpha = getCurrentAlpha();
         RenderSystem.enableBlend();
         RenderSystem.setShaderColor(1.0f, 1.0f, 1.0f, alpha);
 
-        Position manaPos = HUDPositioning.getAboveUtilitiesAnchor()
-                .offset(AllConfigs.client().manaBarXOffset.get(), AllConfigs.client().manaBarYOffset.get());
+        Position manaPos = HUDPositioning.getPositionFromAnchor(AllConfigs.client().manaBarAnchor.get())
+                .offset(AllConfigs.client().manaTotalXOffset.get(), AllConfigs.client().manaTotalYOffset.get());
+        boolean isRightAnchored = AllConfigs.client().healthBarAnchor.get().getSide() == HUDPositioning.AnchorSide.RIGHT;
 
         // Configs from constants
-        int borderWidth = AllConfigs.client().manaBorderWidth.get();
-        int borderHeight = AllConfigs.client().manaBorderHeight.get();
+        int backgroundWidth = AllConfigs.client().manaBackgroundWidth.get();
+        int backgroundHeight = AllConfigs.client().manaBackgroundHeight.get();
         int barWidth = AllConfigs.client().manaBarWidth.get();
         int barHeight = AllConfigs.client().manaBarHeight.get();
         int barXOffset = AllConfigs.client().manaBarXOffset.get();
@@ -42,14 +47,14 @@ public class ManaBarRenderer {
         int animationCycles = AllConfigs.client().manaBarAnimationCycles.get(); // Total frames in animation
         int frameHeight = AllConfigs.client().manaBarFrameHeight.get();      // Height of each frame in texture
 
-        int xPos = manaPos.x() - (borderWidth / 2);
+        int xPos = manaPos.x();
         int yPos = manaPos.y();
 
         int animOffset = (int) (((player.tickCount + #if NEWER_THAN_20_1 deltaTracker.getGameTimeDeltaTicks() #else partialTicks #endif) / 3) % animationCycles) * frameHeight;
 
         renderMainBar(graphics, manaProvider, animOffset, xPos, yPos,
-                borderWidth, borderHeight, barWidth, barHeight,
-                barXOffset, barYOffset);
+                backgroundWidth, backgroundHeight, barWidth, barHeight,
+                barXOffset, barYOffset, isRightAnchored);
 
         renderReservedOverlay(graphics, manaProvider, animOffset,
                 xPos, yPos, barWidth, barHeight,
@@ -59,13 +64,13 @@ public class ManaBarRenderer {
             graphics.blit(DynamicResourceBars.loc("textures/gui/detail_overlay.png"),
                     xPos + AllConfigs.client().manaOverlayXOffset.get(),
                     yPos + AllConfigs.client().manaOverlayYOffset.get(),
-                    0, 0, borderWidth, borderHeight, 256, 256);
+                    0, 0, backgroundWidth, backgroundHeight, 256, 256);
         }
 
 
         RenderSystem.setShaderColor(1.0f, 1.0f, 1.0f, 1.0f);
 
-        int textX = (xPos + (borderWidth / 2));
+        int textX = (xPos + (backgroundWidth / 2));
         int textY = (yPos + barYOffset);
         if (shouldRenderText(manaProvider.getCurrentMana(), manaProvider.getMaxMana())) {
             int color = getManaTextColor();
@@ -93,19 +98,24 @@ public class ManaBarRenderer {
 
     private static void renderMainBar(GuiGraphics graphics, ManaProvider manaProvider,
                                       int animOffset, int xPos, int yPos,
-                                      int borderWidth, int borderHeight, int barWidth, int barHeight,
-                                      int barXOffset, int barYOffset) {
-        // Render border
-        graphics.blit(DynamicResourceBars.loc("textures/gui/mana_border.png"),
-                xPos, yPos, 0, 0, borderWidth, borderHeight, 256, 256);
+                                      int backgroundWidth, int backgroundHeight, int barWidth, int barHeight,
+                                      int barXOffset, int barYOffset, boolean isRightAnchored) {
+        // Render background
+        graphics.blit(DynamicResourceBars.loc("textures/gui/mana_background.png"),
+                xPos, yPos, 0, 0, backgroundWidth, backgroundHeight, 256, 256);
 
         // Render mana bar
         float maxMana = manaProvider.getMaxMana() * (1.0f + manaProvider.getReservedMana());
         double currentMana = manaProvider.getCurrentMana();
         int partialBarWidth = (int) (barWidth * (currentMana / maxMana));
 
+        int barX = xPos + barXOffset;
+        if (isRightAnchored) {
+            barX = xPos + barWidth - barXOffset - partialBarWidth;
+        }
+
         graphics.blit(DynamicResourceBars.loc("textures/gui/mana_bar.png"),
-                xPos + barXOffset, yPos + barYOffset,
+                barX, yPos + barYOffset,
                 0, animOffset, partialBarWidth, barHeight, 256, 256);
     }
 
@@ -172,7 +182,7 @@ public class ManaBarRenderer {
         long timeSinceFullMana = fullManaStartTime > 0 ?
                 System.currentTimeMillis() - fullManaStartTime : 0;
 
-        // Stop rendering before alpha would drop below 10
+        // Values too close to 0 cause rendering artifacts
         return (currentMana < maxMana ||
                 (fullManaStartTime > 0 && timeSinceFullMana < RenderUtil.TEXT_DISPLAY_DURATION))
                 && getCurrentAlpha() > 0.05f;
