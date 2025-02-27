@@ -14,6 +14,7 @@ blahaj {
 		txnilib("1.0.22")
 		forgeConfig()
 
+		// Doesn't work. TODO ask toni
 		deps.implementation ("systems.manifold:manifold-rt:2024.1.54")
 		deps.testImplementation("junit:junit:4.12")
 		deps.annotationProcessor("systems.manifold", "manifold", "2024.1.54")
@@ -42,6 +43,7 @@ blahaj {
 	}
 }
 
+// Also doesn't work. TODO ask toni
 dependencies {
 	implementation ("systems.manifold:manifold-rt:2024.1.54")
 	testImplementation("junit:junit:4.12")

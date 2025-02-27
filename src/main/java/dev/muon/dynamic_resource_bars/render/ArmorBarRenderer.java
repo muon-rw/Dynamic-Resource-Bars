@@ -9,6 +9,9 @@ import dev.muon.dynamic_resource_bars.util.Position;
 import dev.muon.dynamic_resource_bars.util.RenderUtil;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.core.Holder;
+import net.minecraft.core.registries.BuiltInRegistries;
+import net.minecraft.core.registries.Registries;
 import net.minecraft.world.entity.EquipmentSlot;
 import net.minecraft.world.entity.ai.attributes.Attribute;
 import net.minecraft.world.entity.ai.attributes.AttributeModifier;
@@ -16,8 +19,13 @@ import net.minecraft.world.entity.ai.attributes.Attributes;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ArmorItem;
 import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.enchantment.Enchantment;
 import net.minecraft.world.item.enchantment.EnchantmentHelper;
 import net.minecraft.world.item.enchantment.Enchantments;
+
+#if NEWER_THAN_20_1
+import net.minecraft.client.DeltaTracker;
+#endif
 
 public class ArmorBarRenderer {
     private static long armorTextStartTime = 0;
@@ -120,9 +128,12 @@ public class ArmorBarRenderer {
                                                 int xPos, int yPos, int barWidth, int barHeight,
                                                 int barOnlyXOffset, int barOnlyYOffset, int iconSize) {
         int totalProtection = 0;
+        // TODO: 1.21+
+        #if UPTO_20_1
         for (ItemStack armorPiece : player.getArmorSlots()) {
             totalProtection += EnchantmentHelper.getItemEnchantmentLevel(Enchantments.ALL_DAMAGE_PROTECTION, armorPiece);
         }
+        #endif
 
         if (totalProtection <= 0) return;
 
@@ -133,7 +144,7 @@ public class ArmorBarRenderer {
         int animationCycles = AllConfigs.client().protOverlayAnimationCycles.get();
         int maxProtection = AllConfigs.client().maxExpectedProt.get();
 
-        int animOffset = (int)(((player.tickCount + Minecraft.getInstance().getFrameTime()) / 3) % animationCycles) * frameHeight;
+        int animOffset = (int)(((player.tickCount + #if NEWER_THAN_20_1 Minecraft.getInstance().getTimer().getGameTimeDeltaTicks() #else Minecraft.getInstance().getFrameTime() #endif) / 3) % animationCycles) * frameHeight;
 
         float protectionScale = Math.min(1.0f, (float)totalProtection / maxProtection);
         int adjustedBarWidth = AllConfigs.client().enableArmorIcon.get() ?
@@ -185,6 +196,8 @@ public class ArmorBarRenderer {
 
         if (stack.getItem() instanceof ArmorItem) return true;
 
+        // TODO: 1.21+
+        #if UPTO_20_1
         for (EquipmentSlot slot : EquipmentSlot.values()) {
             Multimap<Attribute, AttributeModifier> modifiers = stack.getAttributeModifiers(slot);
             if (modifiers.get(Attributes.ARMOR).stream()
@@ -193,6 +206,7 @@ public class ArmorBarRenderer {
                 return true;
             }
         }
+        #endif
         return false;
     }
 }
