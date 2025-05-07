@@ -18,7 +18,7 @@ import net.minecraft.world.entity.player.Player;
 public class StaminaBarRenderer {
     private static final float CRITICAL_THRESHOLD = 6.0f;
     // TODO: Appleskin compat
-    // TODO: Improve drain/internal stamina/flash
+    // TODO: Pulse when hunger drains a tick, similar to vanilla shake
 
     private enum BarType {
         NORMAL("stamina_bar"),
