@@ -43,24 +43,6 @@ public class GuiMixin {
         this.medieval$currentDeltaTracker = deltaTracker;
     }
 
-    // Using PuzzlesLib instead here, see CommonEvents
-    /*
-    @Inject(method = "renderHearts", at = @At("HEAD"), cancellable = true)
-    private void renderCustomHealth(GuiGraphics graphics, Player player, int originalX, int originalY, int height, int offsetHeartIndex, float maxHealth, int health, int displayHealth, int absorptionAmount, boolean renderHighlight, CallbackInfo ci) {
-        if (minecraft.options.hideGui) return;
-        HealthBarRenderer.render(graphics, player, player.getMaxHealth(), player.getHealth(), absorptionAmount, medieval$currentDeltaTracker);
-        ci.cancel();
-    }
-
-
-    @Inject(method = "renderFood", at = @At("HEAD"), cancellable = true)
-    private void renderCustomFood(GuiGraphics graphics, Player player, int originalY, int originalX, CallbackInfo ci) {
-        if (minecraft.options.hideGui) return;
-        StaminaBarRenderer.render(graphics, player, medieval$currentDeltaTracker);
-        ci.cancel();
-    }
-     */
-
     @ModifyArg(
             method = "renderArmor",
             at = @At(value = "INVOKE", target = "Lnet/minecraft/client/gui/GuiGraphics;blitSprite(Lnet/minecraft/resources/ResourceLocation;IIII)V"),
@@ -73,7 +55,6 @@ public class GuiMixin {
         return originalY;
     }
     // TODO: Air shift by needed
-
 
     #endif
 
@@ -115,10 +96,10 @@ public class GuiMixin {
     @ModifyVariable(method = "renderPlayerHealth", at = @At("STORE"), ordinal = 11, slice = @Slice(from = @At(value = "INVOKE", target = "Lnet/minecraft/world/entity/player/Player;getArmorValue()I"), to = @At(value = "FIELD", target = "Lnet/minecraft/world/effect/MobEffects;REGENERATION:Lnet/minecraft/world/effect/MobEffect;")))
     private int replaceArmor(int armorValue, GuiGraphics guiGraphics) {
         Player player = this.minecraft.player;
-        if (AllConfigs.client().enableArmorBar.get()) {
+        if (AllConfigs.client().disableDefaultArmor.get()) {
             armorValue = 0;
-            ArmorBarRenderer.render(guiGraphics, player);
         }
+        //    ArmorBarRenderer.render(guiGraphics, player);
         return armorValue;
     }
     #endif

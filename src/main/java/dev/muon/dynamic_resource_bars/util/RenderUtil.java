@@ -4,6 +4,7 @@ import com.mojang.blaze3d.vertex.PoseStack;
 import dev.muon.dynamic_resource_bars.foundation.config.AllConfigs;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.network.chat.Component;
 
 public class RenderUtil {
     public static final long TEXT_DISPLAY_DURATION = 2000L;
@@ -12,29 +13,45 @@ public class RenderUtil {
     // Only used for the mana bar
     public static final long BAR_FADEOUT_DURATION = 1500L;
 
-    public static void renderText(float current, float max, GuiGraphics graphics, int baseX, int baseY, int color) {
+    public static void renderText(float current, float max, GuiGraphics graphics, int baseX, int baseY, int color, HorizontalAlignment alignment) {
         Minecraft minecraft = Minecraft.getInstance();
         PoseStack poseStack = graphics.pose();
         poseStack.pushPose();
         float scalingFactor = AllConfigs.client().textScalingFactor.getF();
 
-        int xPos = (int) (baseX / scalingFactor);
-        int yPos = (int) (baseY / scalingFactor);
+        // Apply scaling
         poseStack.scale(scalingFactor, scalingFactor, 1.0f);
+        int scaledX = (int) (baseX / scalingFactor);
+        // Adjust Y for vertical centering. Font height is 9, so half is 4.5, round to 4 or 5.
+        // Minecraft's drawString typically treats y as the top of the text.
+        // To center, we need to shift it up by half the text height.
+        // Font.lineHeight is usually 9.
+        int scaledY = (int) (baseY / scalingFactor) - (minecraft.font.lineHeight / 2);
+
 
         String currentText = String.valueOf((int)current);
         String maxText = String.valueOf((int)max);
-        String slashText = "/";
+        String slashText = " / "; // Added spaces for better readability
+        Component fullTextComponent = Component.literal(currentText + slashText + maxText);
+        String fullText = fullTextComponent.getString();
+        int totalTextWidth = minecraft.font.width(fullText);
 
-        int slashWidth = minecraft.font.width(slashText);
-        int currentWidth = minecraft.font.width(currentText);
-        int slashX = xPos - (slashWidth / 2);
+        int actualX = scaledX;
+        if (alignment == HorizontalAlignment.CENTER) {
+            actualX = scaledX - (totalTextWidth / 2);
+        } else if (alignment == HorizontalAlignment.RIGHT) {
+            actualX = scaledX - totalTextWidth;
+        }
+        // For LEFT alignment, scaledX is already the starting point.
 
-        graphics.drawString(minecraft.font, currentText, slashX - currentWidth, yPos, color, true);
-        graphics.drawString(minecraft.font, slashText, slashX, yPos, color, true);
-        graphics.drawString(minecraft.font, maxText, slashX + slashWidth, yPos, color, true);
+        graphics.drawString(minecraft.font, fullTextComponent, actualX, scaledY, color, true);
 
         poseStack.popPose();
+    }
+
+    // Overload for existing calls that don't specify alignment (defaults to CENTER)
+    public static void renderText(float current, float max, GuiGraphics graphics, int baseX, int baseY, int color) {
+        renderText(current, max, graphics, baseX, baseY, color, HorizontalAlignment.CENTER);
     }
 
     public static void renderAdditionText(String text, GuiGraphics graphics, int baseX, int baseY, int color) {
@@ -59,7 +76,7 @@ public class RenderUtil {
         float scalingFactor = AllConfigs.client().textScalingFactor.getF();
 
         int xPos = (int) (baseX / scalingFactor);
-        int yPos = (int) (baseY / scalingFactor);
+        int yPos = (int) (baseY / scalingFactor) - (minecraft.font.lineHeight / 2); // Added vertical centering
         poseStack.scale(scalingFactor, scalingFactor, 1.0f);
 
         String text;
@@ -70,7 +87,7 @@ public class RenderUtil {
         }
 
         int textWidth = minecraft.font.width(text);
-        graphics.drawString(minecraft.font, text, xPos - (textWidth / 2), yPos, color, true);
+        graphics.drawString(minecraft.font, text, xPos - (textWidth / 2), yPos, color, true); // Assumes armor text is always centered
 
         poseStack.popPose();
     }

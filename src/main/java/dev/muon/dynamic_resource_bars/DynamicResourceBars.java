@@ -1,5 +1,8 @@
 package dev.muon.dynamic_resource_bars;
 
+import com.terraformersmc.modmenu.api.ConfigScreenFactory;
+import com.terraformersmc.modmenu.api.ModMenuApi;
+import dev.muon.dynamic_resource_bars.client.gui.ModConfigScreen;
 import dev.muon.dynamic_resource_bars.foundation.config.AllConfigs;
 import net.minecraft.resources.ResourceLocation;
 import org.apache.logging.log4j.LogManager;
@@ -41,16 +44,14 @@ import net.neoforged.fml.event.lifecycle.FMLClientSetupEvent;
 import net.neoforged.fml.event.lifecycle.FMLCommonSetupEvent;
 import net.neoforged.bus.api.IEventBus;
 import net.neoforged.fml.ModContainer;
-import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.client.gui.IConfigScreenFactory;
-import net.neoforged.neoforge.client.gui.ConfigurationScreen;
 #endif
 
 
 #if FORGELIKE
 @Mod("dynamic_resource_bars")
 #endif
-public class DynamicResourceBars #if FABRIC implements ModInitializer, ClientModInitializer #endif
+public class DynamicResourceBars #if FABRIC implements ModInitializer, ClientModInitializer, ModMenuApi #endif
 {
     public static final String MODNAME = "Dynamic RPG Resource Bars";
     public static final String ID = "dynamic_resource_bars";
@@ -64,6 +65,13 @@ public class DynamicResourceBars #if FABRIC implements ModInitializer, ClientMod
         #endif
     }
 
+    #if FABRIC
+    @Override
+    public ConfigScreenFactory<?> getModConfigScreenFactory() {
+        return parent -> new ModConfigScreen(parent);
+    }
+    #endif
+
     public DynamicResourceBars(#if NEO IEventBus modEventBus, ModContainer modContainer #endif) {
         #if FORGE
         var context = FMLJavaModLoadingContext.get();
@@ -76,12 +84,20 @@ public class DynamicResourceBars #if FABRIC implements ModInitializer, ClientMod
 
         AllConfigs.register((type, spec) -> {
             #if FORGE
-            ModLoadingContext.get().registerConfig(type, spec);
+            // ModLoadingContext.get().registerConfig(type, spec);
             #elif NEO
-            modContainer.registerConfig(type, spec);
-            //modContainer.registerExtensionPoint(IConfigScreenFactory.class, ConfigurationScreen::new);
+            // modContainer.registerConfig(type, spec); // Config registration itself is fine
             #endif
         });
+        
+        // Config Screen Registration (Example for NeoForge)
+        #if NEO
+        modContainer.registerConfig(AllConfigs.CLIENT_CONFIG.getRight(), AllConfigs.CLIENT_CONFIG.getLeft()); // Example actual registration
+        // Replace the default config screen with our custom one
+        modContainer.registerExtensionPoint(IConfigScreenFactory.class, 
+            (minecraft, screen) -> new ModConfigScreen(screen)
+        );
+        #endif
         #endif
 
         // 1.20.1 Forge is handled via ForgeEvents
@@ -104,6 +120,7 @@ public class DynamicResourceBars #if FABRIC implements ModInitializer, ClientMod
                 #if AFTER_21_1
                 NeoForgeConfigRegistry.INSTANCE.register(DynamicResourceBars.ID, type, spec);
                 #else
+                // For 1.20.1 Fabric, ForgeConfigRegistry is used for config file, ModMenuApi for screen
                 ForgeConfigRegistry.INSTANCE.register(DynamicResourceBars.ID, type, spec);
                 #endif
             });
@@ -112,16 +129,25 @@ public class DynamicResourceBars #if FABRIC implements ModInitializer, ClientMod
 
     #if FABRIC @Override #endif
     public void onInitializeClient() {
-        #if AFTER_21_1
-            #if FABRIC
-            ConfigScreenFactoryRegistry.INSTANCE.register(DynamicResourceBars.ID, ConfigurationScreen::new);
+        #if FABRIC
+            #if AFTER_21_1
+            // This uses ForgeConfigApiPort's registry for newer versions
+            ConfigScreenFactoryRegistry.INSTANCE.register(DynamicResourceBars.ID, 
+                (minecraft, screen) -> new ModConfigScreen(screen) 
+            );
+            #else
+            // For 1.20.1 Fabric, ModMenu finds the config screen via the ModMenuApi interface implemented by this class.
+            // No explicit registration needed here for ModMenu itself if getModConfigScreenFactory() is present.
+            // The ForgeConfigRegistry call in onInitialize handles the config *file*.
+            System.out.println(ID + ": ModMenu will use getModConfigScreenFactory() for config screen on this version.");
             #endif
         #endif
     }
 
-    // Forg event stubs to call the Fabric initialize methods, and set up cloth config screen
     #if FORGELIKE
     public void commonSetup(FMLCommonSetupEvent event) { onInitialize(); }
-    public void clientSetup(FMLClientSetupEvent event) { onInitializeClient(); }
+    public void clientSetup(FMLClientSetupEvent event) { 
+        onInitializeClient(); 
+    }
     #endif
 }

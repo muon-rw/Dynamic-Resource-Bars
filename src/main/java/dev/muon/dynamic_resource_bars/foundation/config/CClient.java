@@ -1,134 +1,183 @@
 package dev.muon.dynamic_resource_bars.foundation.config;
 
 import dev.muon.dynamic_resource_bars.util.HUDPositioning;
+import dev.muon.dynamic_resource_bars.util.HorizontalAlignment;
+import dev.muon.dynamic_resource_bars.util.TextBehavior;
 import toni.lib.config.ConfigBase;
 
 public class CClient extends ConfigBase {
 
+    // --- General Defaults ---
+    public static final float DEFAULT_TEXT_SCALING_FACTOR = 0.5f;
+    public static final boolean DEFAULT_DISABLE_DEFAULT_ARMOR = true;
+
     public final ConfigGroup general = group(0, "general", "Customize shared settings");
-    public final ConfigFloat textScalingFactor = f(0.5f, 0.0f,"textScalingFactor", "The amount to adjust the size of text rendered on resource bars");
-    public final ConfigBool disableDefaultArmor = b(true, "disableDefaultArmor", "Whether to hide the vanilla armor bar from the HUD")
+    public final ConfigFloat textScalingFactor = f(DEFAULT_TEXT_SCALING_FACTOR, 0.0f,"textScalingFactor", "The amount to adjust the size of text rendered on resource bars");
+    public final ConfigBool disableDefaultArmor = b(DEFAULT_DISABLE_DEFAULT_ARMOR, "disableDefaultArmor", "Whether to hide the vanilla armor bar from the HUD");
 
     /**
      * Health
      */
-    public final ConfigGroup health = group(0, "health", "Customize hearts / the health bar");
-    public final ConfigBool enableHealthBar = b(true, "enableHealthBar", "Whether to render a custom bar instead of hearts.");
-    public final ConfigEnum<HUDPositioning.BarPlacement> healthBarAnchor = e(HUDPositioning.BarPlacement.HEALTH, "healthBarAnchor", "Anchor point for the health bar.");
-    public final ConfigBool fadeHealthWhenFull = b(false, "fadeHealthWhenFull", "Whether to dynamically hide the health bar when the player is at full health")
-    public final ConfigEnum<TextBehavior> showHealthText = e(TextBehavior.WHEN_NOT_FULL, "Show Health Text", "When health current/maximum values should be rendered as a text overlay. Always hidden when the bar is invisible, even if set to ALWAYS")
-    public final ConfigBool enableHealthForeground = b(false, "Enable Foreground Layer", "Render an extra layer on top of the health bar");
-    public final ConfigBool enableHealthBackground = b(true, "Enable Background Layer", "Render an extra layer behind the health bar");
+    // --- Health Defaults ---
+    public static final boolean DEFAULT_ENABLE_HEALTH_BAR = true;
+    public static final HUDPositioning.BarPlacement DEFAULT_HEALTH_BAR_ANCHOR = HUDPositioning.BarPlacement.HEALTH;
+    public static final boolean DEFAULT_FADE_HEALTH_WHEN_FULL = false;
+    public static final TextBehavior DEFAULT_SHOW_HEALTH_TEXT = TextBehavior.WHEN_NOT_FULL;
+    public static final HorizontalAlignment DEFAULT_HEALTH_TEXT_ALIGN = HorizontalAlignment.CENTER;
+    public static final boolean DEFAULT_ENABLE_HEALTH_FOREGROUND = false;
+    public static final boolean DEFAULT_ENABLE_HEALTH_BACKGROUND = true;
+    public static final int DEFAULT_HEALTH_BACKGROUND_WIDTH = 80;
+    public static final int DEFAULT_HEALTH_BACKGROUND_HEIGHT = 10;
+    public static final int DEFAULT_HEALTH_BAR_WIDTH = 74;
+    public static final int DEFAULT_HEALTH_BAR_HEIGHT = 4;
+    public static final int DEFAULT_HEALTH_OVERLAY_WIDTH = 80;
+    public static final int DEFAULT_HEALTH_OVERLAY_HEIGHT = 10;
+    public static final int DEFAULT_HEALTH_BAR_X_OFFSET = 3;
+    public static final int DEFAULT_HEALTH_BAR_Y_OFFSET = 3;
+    public static final int DEFAULT_HEALTH_TOTAL_X_OFFSET = 0; // Recalculated based on anchor
+    public static final int DEFAULT_HEALTH_TOTAL_Y_OFFSET = 0;
+    public static final int DEFAULT_HEALTH_OVERLAY_X_OFFSET = 0;
+    public static final int DEFAULT_HEALTH_OVERLAY_Y_OFFSET = -3;
 
-    // sizing - TODO: Migrate to in-game editor
-    // background width + height + pos
-    // foreground width + height + pos
-    // bar width + height + pos
-    // The animation settings don't really lend themselves well to an in-game editor
-    public final ConfigInt healthBackgroundWidth = i(80, 0, "healthBackgroundWidth", "Width of the health bar's background sprite, in pixels.");
-    public final ConfigInt healthBackgroundHeight = i(10, 0, "healthBackgroundHeight", "Height of the health bar's background sprite, in pixels.");
-    public final ConfigInt healthBarWidth = i(74, 0, "healthBarWidth", "Width of the actual animated bar, in pixels.");
-    public final ConfigInt healthBarHeight = i(4, 0, "healthBarHeight", "Height of the actual animated bar, in pixels.");
+
+    public final ConfigGroup health = group(0, "health", "Customize hearts / the health bar");
+    public final ConfigBool enableHealthBar = b(DEFAULT_ENABLE_HEALTH_BAR, "enableHealthBar", "Whether to render a custom bar instead of hearts.");
+    public final ConfigEnum<HUDPositioning.BarPlacement> healthBarAnchor = e(DEFAULT_HEALTH_BAR_ANCHOR, "healthBarAnchor", "Anchor point for the health bar.");
+    public final ConfigBool fadeHealthWhenFull = b(DEFAULT_FADE_HEALTH_WHEN_FULL, "fadeHealthWhenFull", "Whether to dynamically hide the health bar when the player is at full health");
+    public final ConfigEnum<TextBehavior> showHealthText = e(DEFAULT_SHOW_HEALTH_TEXT, "Show Health Text", "When health current/maximum values should be rendered as a text overlay. Always hidden when the bar is invisible, even if set to ALWAYS");
+    public final ConfigEnum<HorizontalAlignment> healthTextAlign = e(DEFAULT_HEALTH_TEXT_ALIGN, "Health Text Align", "Horizontal alignment for the health value text.");
+    public final ConfigBool enableHealthForeground = b(DEFAULT_ENABLE_HEALTH_FOREGROUND, "Enable Foreground Layer", "Render an extra layer on top of the health bar. Can be toggled in HUD editor.");
+    public final ConfigBool enableHealthBackground = b(DEFAULT_ENABLE_HEALTH_BACKGROUND, "Enable Background Layer", "Render an extra layer behind the health bar. Can be toggled in HUD editor.");
+
+    // --- Sizing ---
+    public final ConfigInt healthBackgroundWidth = i(DEFAULT_HEALTH_BACKGROUND_WIDTH, 0, "healthBackgroundWidth", "Width of the health bar's background sprite, in pixels.");
+    public final ConfigInt healthBackgroundHeight = i(DEFAULT_HEALTH_BACKGROUND_HEIGHT, 0, "healthBackgroundHeight", "Height of the health bar's background sprite, in pixels.");
+    public final ConfigInt healthBarWidth = i(DEFAULT_HEALTH_BAR_WIDTH, 0, "healthBarWidth", "Width of the actual animated bar, in pixels.");
+    public final ConfigInt healthBarHeight = i(DEFAULT_HEALTH_BAR_HEIGHT, 0, "healthBarHeight", "Height of the actual animated bar, in pixels.");
     public final ConfigInt healthBarAnimationCycles = i(33, 0, "healthBarAnimationCycles", "Number of animation frames in the bar animation.");
     public final ConfigInt healthBarFrameHeight = i(6, 0, "healthBarFrameHeight", "Height of each frame in the health bar animation.");
 
-    // positioning - TODO: Migrate to in-game editor
-    // bar position (relative to HUDPositioning.BarPlacement config anchor)
-    // background position (relative to HUDPositioning.BarPlacement config anchor)
-    // foreground position (relative to HUDPositioning.BarPlacement config anchor)
-    public final ConfigInt healthBarXOffset = i(3, "healthBarXOffset", "How much to shift the animated bar to the right relative to the background. In other words, the thickness of the background's left border.");
-    public final ConfigInt healthBarYOffset = i(3, "healthBarYOffset", "How much to shift the animated bar upward relative to the background. In other words, the thickness of the bottom background's bottom border.");
-    public final ConfigInt healthTotalXOffset = i(0, "healthTotalXOffset", "How much to shift the entire bar+background complex to the right");
-    public final ConfigInt healthTotalYOffset = i(0, "healthTotalYOffset", "How much to shift the entire bar+background complex upward");
+    // --- New Foreground Sizing ---
+    public final ConfigInt healthOverlayWidth = i(DEFAULT_HEALTH_OVERLAY_WIDTH, 0, "healthOverlayWidth", "Width of the health bar's foreground sprite, in pixels.");
+    public final ConfigInt healthOverlayHeight = i(DEFAULT_HEALTH_OVERLAY_HEIGHT, 0, "healthOverlayHeight", "Height of the health bar's foreground sprite, in pixels.");
 
-    // The tricky bit: Integrating all of this customizability Health Bar *border* overlays (which I believe is just wetness),
-    // Especially if we're now going to allow users to disable the backgrounds entirely,
-    // Maybe the wetness overlay should explicitly go *around* the bar, instead of sized to the border
-    // That's a bit odd as a concept
-    // Will require refactors. Ideally not requiring additional configs for overlay settings, not sure
-    // Needs to be worried about by initial release, however.
-    public final ConfigInt healthOverlayXOffset = i(0, "healthOverlayXOffset", "How much to shift the fancy detailed overlay to the right.");
-    public final ConfigInt healthOverlayYOffset = i(-3, "healthOverlayYOffset", "How much to shift the fancy detailed overlay upward.");
+    // --- Positioning ---
+    public final ConfigInt healthBarXOffset = i(DEFAULT_HEALTH_BAR_X_OFFSET, "healthBarXOffset", "Bar X offset relative to background. Adjusted via HUD editor focus mode.");
+    public final ConfigInt healthBarYOffset = i(DEFAULT_HEALTH_BAR_Y_OFFSET, "healthBarYOffset", "Bar Y offset relative to background. Adjusted via HUD editor focus mode.");
+    public final ConfigInt healthTotalXOffset = i(DEFAULT_HEALTH_TOTAL_X_OFFSET, "healthTotalXOffset", "Overall bar complex X offset relative to anchor. Adjusted via HUD editor.");
+    public final ConfigInt healthTotalYOffset = i(DEFAULT_HEALTH_TOTAL_Y_OFFSET, "healthTotalYOffset", "Overall bar complex Y offset relative to anchor. Adjusted via HUD editor.");
+    public final ConfigInt healthOverlayXOffset = i(DEFAULT_HEALTH_OVERLAY_X_OFFSET, "healthOverlayXOffset", "Foreground overlay X offset. Adjusted via HUD editor focus mode.");
+    public final ConfigInt healthOverlayYOffset = i(DEFAULT_HEALTH_OVERLAY_Y_OFFSET, "healthOverlayYOffset", "Foreground overlay Y offset. Adjusted via HUD editor focus mode.");
+
 
     /**
      * Stamina
      */
-    public final ConfigGroup stamina = group(0, "stamina", "Customize hunger / the stamina bar");
-    public final ConfigBool enableStaminaBar = b(true, "enableStaminaBar", "Whether to render a custom bar instead of hunger.");
-    public final ConfigEnum<HUDPositioning.BarPlacement> staminaBarAnchor = e(HUDPositioning.BarPlacement.HUNGER, "staminaBarAnchor", "Anchor point for the stamina bar.");
-    public final ConfigBool fadeStaminaWhenFull = b(false, "fadeStaminaWhenFull", "Whether to dynamically hide the stamina bar when the player is at full hunger/stamina")
-    public final ConfigEnum<TextBehavior> showStaminaText = e(TextBehavior.NEVER, "showStaminaText", "When mana current/maximum values should be rendered as a text overlay. Always hidden when the bar is invisible, even if set to ALWAYS")
-    public final ConfigBool enableStaminaForeground = b(false, "Enable Foreground Layer", "Render an extra layer on top of the stamina bar");
-    public final ConfigBool enableStaminaBackground = b(true, "Enable Background Layer", "Render an extra layer behind the stamina bar");
-    // TODO: staminaSource config, for mods like Feathers/Paragliders, and create barBehavior ConfigEnum + staminaText implementation
-    // But then what do we do if someone has Stamina set to an external source *and* wants hunger rendered?
-    // Worry about this later for sure
+    // --- Stamina Defaults ---
+    public static final boolean DEFAULT_ENABLE_STAMINA_BAR = true;
+    public static final HUDPositioning.BarPlacement DEFAULT_STAMINA_BAR_ANCHOR = HUDPositioning.BarPlacement.HUNGER;
+    public static final boolean DEFAULT_FADE_STAMINA_WHEN_FULL = false;
+    public static final TextBehavior DEFAULT_SHOW_STAMINA_TEXT = TextBehavior.NEVER;
+    public static final HorizontalAlignment DEFAULT_STAMINA_TEXT_ALIGN = HorizontalAlignment.CENTER;
+    public static final boolean DEFAULT_ENABLE_STAMINA_FOREGROUND = false;
+    public static final boolean DEFAULT_ENABLE_STAMINA_BACKGROUND = true;
+    public static final int DEFAULT_STAMINA_BACKGROUND_WIDTH = 80;
+    public static final int DEFAULT_STAMINA_BACKGROUND_HEIGHT = 10;
+    public static final int DEFAULT_STAMINA_BAR_WIDTH = 74;
+    public static final int DEFAULT_STAMINA_BAR_HEIGHT = 4;
+    public static final int DEFAULT_STAMINA_OVERLAY_WIDTH = 80;
+    public static final int DEFAULT_STAMINA_OVERLAY_HEIGHT = 10;
+    public static final int DEFAULT_STAMINA_OVERLAY_X_OFFSET = 0;
+    public static final int DEFAULT_STAMINA_OVERLAY_Y_OFFSET = -3;
+    public static final int DEFAULT_STAMINA_BAR_X_OFFSET = 3;
+    public static final int DEFAULT_STAMINA_BAR_Y_OFFSET = 3;
+    public static final int DEFAULT_STAMINA_TOTAL_X_OFFSET = 0; // Recalculated based on anchor
+    public static final int DEFAULT_STAMINA_TOTAL_Y_OFFSET = 0;
 
-    // sizing - TODO: Migrate to in-game editor
-    // background width + height + pos
-    // foreground width + height + pos
-    // bar width + height + pos
-    public final ConfigInt staminaBackgroundWidth = i(80, 0, "staminaBackgroundWidth", "Width of the stamina bar's background sprite, in pixels.");
-    public final ConfigInt staminaBackgroundHeight = i(10, 0, "staminaBackgroundHeight", "Height of the stamina bar's background sprite, in pixels.");
-    public final ConfigInt staminaBarWidth = i(74, 0, "staminaBarWidth", "Width of the actual animated bar, in pixels.");
-    public final ConfigInt staminaBarHeight = i(4, 0, "staminaBarHeight", "Height of the actual animated bar, in pixels.");
+    public final ConfigGroup stamina = group(0, "stamina", "Customize hunger / the stamina bar");
+    public final ConfigBool enableStaminaBar = b(DEFAULT_ENABLE_STAMINA_BAR, "enableStaminaBar", "Whether to render a custom bar instead of hunger.");
+    public final ConfigEnum<HUDPositioning.BarPlacement> staminaBarAnchor = e(DEFAULT_STAMINA_BAR_ANCHOR, "staminaBarAnchor", "Anchor point for the stamina bar.");
+    public final ConfigBool fadeStaminaWhenFull = b(DEFAULT_FADE_STAMINA_WHEN_FULL, "fadeStaminaWhenFull", "Whether to dynamically hide the stamina bar when the player is at full hunger/stamina");
+    public final ConfigEnum<TextBehavior> showStaminaText = e(DEFAULT_SHOW_STAMINA_TEXT, "showStaminaText", "When mana current/maximum values should be rendered as a text overlay. Always hidden when the bar is invisible, even if set to ALWAYS");
+    public final ConfigEnum<HorizontalAlignment> staminaTextAlign = e(DEFAULT_STAMINA_TEXT_ALIGN, "Stamina Text Align", "Horizontal alignment for the stamina value text.");
+    public final ConfigBool enableStaminaForeground = b(DEFAULT_ENABLE_STAMINA_FOREGROUND, "Enable Foreground Layer", "Render an extra layer on top of the stamina bar. Can be toggled in HUD editor.");
+    public final ConfigBool enableStaminaBackground = b(DEFAULT_ENABLE_STAMINA_BACKGROUND, "Enable Background Layer", "Render an extra layer behind the stamina bar. Can be toggled in HUD editor.");
+
+    // --- Sizing ---
+    public final ConfigInt staminaBackgroundWidth = i(DEFAULT_STAMINA_BACKGROUND_WIDTH, 0, "staminaBackgroundWidth", "Width of the stamina bar's background sprite, in pixels.");
+    public final ConfigInt staminaBackgroundHeight = i(DEFAULT_STAMINA_BACKGROUND_HEIGHT, 0, "staminaBackgroundHeight", "Height of the stamina bar's background sprite, in pixels.");
+    public final ConfigInt staminaBarWidth = i(DEFAULT_STAMINA_BAR_WIDTH, 0, "staminaBarWidth", "Width of the actual animated bar, in pixels.");
+    public final ConfigInt staminaBarHeight = i(DEFAULT_STAMINA_BAR_HEIGHT, 0, "staminaBarHeight", "Height of the actual animated bar, in pixels.");
     public final ConfigInt staminaBarAnimationCycles = i(33, 0, "staminaBarAnimationCycles", "Number of animation frames in the bar animation.");
     public final ConfigInt staminaBarFrameHeight = i(6, 0, "staminaBarFrameHeight", "Height of each frame in the stamina bar animation.");
 
-    // positioning - TODO: Migrate to in-game editor
-    // bar position (relative to HUDPositioning.BarPlacement config anchor)
-    // background position (relative to HUDPositioning.BarPlacement config anchor)
-    // foreground position (relative to HUDPositioning.BarPlacement config anchor)
-    public final ConfigInt staminaOverlayXOffset = i(0, "staminaOverlayXOffset", "How much to shift the fancy detailed overlay to the right.");
-    public final ConfigInt staminaOverlayYOffset = i(-3, "staminaOverlayYOffset", "How much to shift the fancy detailed overlay upward.");
-    public final ConfigInt staminaBarXOffset = i(3, "staminaBarXOffset", "How much to shift the animated bar to the right relative to the background. In other words, the thickness of the background's left border.");
-    public final ConfigInt staminaBarYOffset = i(3, "staminaBarYOffset", "How much to shift the animated bar upward relative to the background. In other words, the thickness of the background's bottom border.");
-    public final ConfigInt staminaTotalXOffset = i(0, "staminaTotalXOffset", "How much to shift the entire bar+background complex to the right");
-    public final ConfigInt staminaTotalYOffset = i(0, "staminaTotalYOffset", "How much to shift the entire bar+background complex upward");
+    // --- New Foreground Sizing ---
+    public final ConfigInt staminaOverlayWidth = i(DEFAULT_STAMINA_OVERLAY_WIDTH, 0, "staminaOverlayWidth", "Width of the stamina bar's foreground sprite, in pixels.");
+    public final ConfigInt staminaOverlayHeight = i(DEFAULT_STAMINA_OVERLAY_HEIGHT, 0, "staminaOverlayHeight", "Height of the stamina bar's foreground sprite, in pixels.");
 
+    // --- Positioning ---
+    public final ConfigInt staminaOverlayXOffset = i(DEFAULT_STAMINA_OVERLAY_X_OFFSET, "staminaOverlayXOffset", "Foreground overlay X offset. Adjusted via HUD editor focus mode.");
+    public final ConfigInt staminaOverlayYOffset = i(DEFAULT_STAMINA_OVERLAY_Y_OFFSET, "staminaOverlayYOffset", "Foreground overlay Y offset. Adjusted via HUD editor focus mode.");
+    public final ConfigInt staminaBarXOffset = i(DEFAULT_STAMINA_BAR_X_OFFSET, "staminaBarXOffset", "Bar X offset relative to background. Adjusted via HUD editor focus mode.");
+    public final ConfigInt staminaBarYOffset = i(DEFAULT_STAMINA_BAR_Y_OFFSET, "staminaBarYOffset", "Bar Y offset relative to background. Adjusted via HUD editor focus mode.");
+    public final ConfigInt staminaTotalXOffset = i(DEFAULT_STAMINA_TOTAL_X_OFFSET, "staminaTotalXOffset", "Overall bar complex X offset relative to anchor. Adjusted via HUD editor.");
+    public final ConfigInt staminaTotalYOffset = i(DEFAULT_STAMINA_TOTAL_Y_OFFSET, "staminaTotalYOffset", "Overall bar complex Y offset relative to anchor. Adjusted via HUD editor.");
 
     /**
      * Mana
      */
+    // --- Mana Defaults ---
+    public static final boolean DEFAULT_ENABLE_MANA_BAR = true;
+    public static final HUDPositioning.BarPlacement DEFAULT_MANA_BAR_ANCHOR = HUDPositioning.BarPlacement.ABOVE_UTILITIES;
+    public static final boolean DEFAULT_FADE_MANA_WHEN_FULL = true;
+    public static final TextBehavior DEFAULT_SHOW_MANA_TEXT = TextBehavior.WHEN_NOT_FULL;
+    public static final HorizontalAlignment DEFAULT_MANA_TEXT_ALIGN = HorizontalAlignment.CENTER;
+    public static final boolean DEFAULT_ENABLE_MANA_FOREGROUND = true;
+    public static final boolean DEFAULT_ENABLE_MANA_BACKGROUND = true;
+    public static final int DEFAULT_MANA_BACKGROUND_WIDTH = 80;
+    public static final int DEFAULT_MANA_BACKGROUND_HEIGHT = 10;
+    public static final int DEFAULT_MANA_BAR_WIDTH = 74;
+    public static final int DEFAULT_MANA_BAR_HEIGHT = 4;
+    public static final int DEFAULT_MANA_OVERLAY_WIDTH = 80;
+    public static final int DEFAULT_MANA_OVERLAY_HEIGHT = 10;
+    public static final int DEFAULT_MANA_BAR_X_OFFSET = 3;
+    public static final int DEFAULT_MANA_BAR_Y_OFFSET = 3;
+    public static final int DEFAULT_MANA_TOTAL_X_OFFSET = -40; // Recalculated based on anchor (ABOVE_UTILITIES is centered)
+    public static final int DEFAULT_MANA_TOTAL_Y_OFFSET = 0;
+    public static final int DEFAULT_MANA_OVERLAY_X_OFFSET = 0;
+    public static final int DEFAULT_MANA_OVERLAY_Y_OFFSET = -3;
+
+
     public final ConfigGroup mana = group(0, "mana", "Customize the mana bar");
-    public final ConfigBool enableManaBar = b(true, "enableManaBar", "Whether to render a custom bar instead of supported mods' built-in mana bars.");
-    public final ConfigEnum<HUDPositioning.BarPlacement> manaBarAnchor = e(HUDPositioning.BarPlacement.ABOVE_UTILITIES, "manaBarAnchor", "Anchor point for the mana bar.");
-    public final ConfigBool fadeManaWhenFull = b(true, "fadeManaWhenFull", "Whether to dynamically hide the mana bar when mana is full. ")
-    public final ConfigEnum<TextBehavior> showManaText = e(TextBehavior.WHEN_NOT_FULL, "showManaText", "When mana current/maximum values should be rendered as a text overlay. Always hidden when the bar is invisible, even if set to ALWAYS")
-    public final ConfigBool enableManaForeground = b(true, "enableManaForeground", "Render an extra layer on top of the resource bar");
-    public final ConfigBool enableManaBackground = b(true, "enableManaBackground", "Render an extra layer behind the resource bar");
-    // Mana Source config, choosing a priority?
-    // Or do we count on users to only have one relevant mana mod,
-    // having some sort of implicit but not customizable priority?
-    // The only important one here is to favor Ars Nouveau over Iron's -
-    // But then we require a mana unification mod, which others don't have. Better than 2 mana bars.
-    // I suppose we could release the mana unification mod
+    public final ConfigBool enableManaBar = b(DEFAULT_ENABLE_MANA_BAR, "enableManaBar", "Whether to render a custom bar instead of supported mods' built-in mana bars.");
+    public final ConfigEnum<HUDPositioning.BarPlacement> manaBarAnchor = e(DEFAULT_MANA_BAR_ANCHOR, "manaBarAnchor", "Anchor point for the mana bar.");
+    public final ConfigBool fadeManaWhenFull = b(DEFAULT_FADE_MANA_WHEN_FULL, "fadeManaWhenFull", "Whether to dynamically hide the mana bar when mana is full. ");
+    public final ConfigEnum<TextBehavior> showManaText = e(DEFAULT_SHOW_MANA_TEXT, "showManaText", "When mana current/maximum values should be rendered as a text overlay. Always hidden when the bar is invisible, even if set to ALWAYS");
+    public final ConfigEnum<HorizontalAlignment> manaTextAlign = e(DEFAULT_MANA_TEXT_ALIGN, "Mana Text Align", "Horizontal alignment for the mana value text.");
+    public final ConfigBool enableManaForeground = b(DEFAULT_ENABLE_MANA_FOREGROUND, "enableManaForeground", "Render an extra layer on top of the resource bar. Can be toggled in HUD editor.");
+    public final ConfigBool enableManaBackground = b(DEFAULT_ENABLE_MANA_BACKGROUND, "enableManaBackground", "Render an extra layer behind the resource bar. Can be toggled in HUD editor.");
 
-
-    // sizing - TODO: Migrate to in-game editor
-    // background width + height + pos
-    // foreground width + height + pos
-    // bar width + height + pos
-    public final ConfigInt manaBackgroundWidth = i(80, 0, "manaBackgroundWidth", "Width of the mana bar's background sprite, in pixels.");
-    public final ConfigInt manaBackgroundHeight = i(10, 0, "manaBackgroundHeight", "Height of the mana bar's background sprite, in pixels.");
-    public final ConfigInt manaBarWidth = i(74, 0, "manaBarWidth", "Width of the actual animated bar, in pixels.");
-    public final ConfigInt manaBarHeight = i(4, 0, "manaBarHeight", "Height of the actual animated bar, in pixels.");
+    // --- Sizing ---
+    public final ConfigInt manaBackgroundWidth = i(DEFAULT_MANA_BACKGROUND_WIDTH, 0, "manaBackgroundWidth", "Width of the mana bar's background sprite, in pixels.");
+    public final ConfigInt manaBackgroundHeight = i(DEFAULT_MANA_BACKGROUND_HEIGHT, 0, "manaBackgroundHeight", "Height of the mana bar's background sprite, in pixels.");
+    public final ConfigInt manaBarWidth = i(DEFAULT_MANA_BAR_WIDTH, 0, "manaBarWidth", "Width of the actual animated bar, in pixels.");
+    public final ConfigInt manaBarHeight = i(DEFAULT_MANA_BAR_HEIGHT, 0, "manaBarHeight", "Height of the actual animated bar, in pixels.");
     public final ConfigInt manaBarAnimationCycles = i(33, 0, "manaBarAnimationCycles", "Number of animation frames in the bar animation.");
     public final ConfigInt manaBarFrameHeight = i(6, 0, "manaBarFrameHeight", "Height of each frame in the mana bar animation.");
 
-    // positioning - TODO: Migrate to in-game editor
-    // bar position (relative to HUDPositioning.BarPlacement config anchor)
-    // background position (relative to HUDPositioning.BarPlacement config anchor)
-    // foreground position (relative to HUDPositioning.BarPlacement config anchor)
-    public final ConfigInt manaBarXOffset = i(3, "manaBarXOffset", "How much to shift the animated bar to the right relative to the background. In other words, the thickness of the background's left border.");
-    public final ConfigInt manaBarYOffset = i(3, "manaBarYOffset", "How much to shift the animated bar upward relative to the background. In other words, the thickness of the background's bottom border.");
-    public final ConfigInt manaTotalXOffset = i(0, "manaTotalXOffset", "How much to shift the entire bar+background complex to the right");
-    public final ConfigInt manaTotalYOffset = i(0, "manaTotalYOffset", "How much to shift the entire bar+background complex upward");
-    public final ConfigInt manaOverlayXOffset = i(0, "manaOverlayXOffset", "How much to shift the fancy detailed overlay to the right.");
-    public final ConfigInt manaOverlayYOffset = i(-3, "manaOverlayYOffset", "How much to shift the fancy detailed overlay upward.");
+    // --- New Foreground Sizing ---
+    public final ConfigInt manaOverlayWidth = i(DEFAULT_MANA_OVERLAY_WIDTH, 0, "manaOverlayWidth", "Width of the mana bar's foreground sprite, in pixels.");
+    public final ConfigInt manaOverlayHeight = i(DEFAULT_MANA_OVERLAY_HEIGHT, 0, "manaOverlayHeight", "Height of the mana bar's foreground sprite, in pixels.");
+
+    // --- Positioning ---
+    public final ConfigInt manaBarXOffset = i(DEFAULT_MANA_BAR_X_OFFSET, "manaBarXOffset", "Bar X offset relative to background. Adjusted via HUD editor focus mode.");
+    public final ConfigInt manaBarYOffset = i(DEFAULT_MANA_BAR_Y_OFFSET, "manaBarYOffset", "Bar Y offset relative to background. Adjusted via HUD editor focus mode.");
+    public final ConfigInt manaTotalXOffset = i(DEFAULT_MANA_TOTAL_X_OFFSET, "manaTotalXOffset", "Overall bar complex X offset relative to anchor. Adjusted via HUD editor.");
+    public final ConfigInt manaTotalYOffset = i(DEFAULT_MANA_TOTAL_Y_OFFSET, "manaTotalYOffset", "Overall bar complex Y offset relative to anchor. Adjusted via HUD editor.");
+    public final ConfigInt manaOverlayXOffset = i(DEFAULT_MANA_OVERLAY_X_OFFSET, "manaOverlayXOffset", "Foreground overlay X offset. Adjusted via HUD editor focus mode.");
+    public final ConfigInt manaOverlayYOffset = i(DEFAULT_MANA_OVERLAY_Y_OFFSET, "manaOverlayYOffset", "Foreground overlay Y offset. Adjusted via HUD editor focus mode.");
 
 
-/*
     public final ConfigGroup armor = group(0, "armor", "Customize the armor bar");
     public final ConfigEnum<HUDPositioning.BarPlacement> armorBarAnchor = e(HUDPositioning.BarPlacement.ARMOR, "armorBarAnchor", "Anchor point for the armor bar.");
     public final ConfigBool enableArmorBar = b(true, "enableArmorBar", "Whether to render a custom bar instead of the vanilla armor bar");
@@ -167,8 +216,6 @@ public class CClient extends ConfigBase {
     public final ConfigInt airIconXOffset = i(0, "airIconXOffset", "How much to shift the air icon to the right.");
     public final ConfigInt airIconYOffset = i(0, "airIconYOffset", "How much to shift the air icon upward.");
 
-
- */
 
     @Override
     public String getName() {
