@@ -26,11 +26,11 @@
   "gui.dynamic_resource_bars.hud_editor.help.focus.line3": "Use buttons for other settings.",
   "gui.dynamic_resource_bars.hud_editor.help.focus.line4": "ESC to save settings and close editor.",
 
-  "gui.dynamic_resource_bars.hud_editor.button.health_toggle_format": "Health Bar: %s",
-  "gui.dynamic_resource_bars.hud_editor.button.mana_toggle_format": "Mana Bar: %s",
-  "gui.dynamic_resource_bars.hud_editor.button.stamina_toggle_format": "Stamina Bar: %s",
-  "gui.dynamic_resource_bars.hud_editor.button.armor_behavior_format": "Armor Bar: %s",
-  "gui.dynamic_resource_bars.hud_editor.button.air_behavior_format": "Air Bar: %s",
+  "gui.dynamic_resource_bars.hud_editor.button.health_toggle_format": "Health: %s",
+  "gui.dynamic_resource_bars.hud_editor.button.mana_toggle_format": "Mana: %s",
+  "gui.dynamic_resource_bars.hud_editor.button.stamina_toggle_format": "Stamina: %s",
+  "gui.dynamic_resource_bars.hud_editor.button.armor_behavior_format": "Armor: %s",
+  "gui.dynamic_resource_bars.hud_editor.button.air_behavior_format": "Air: %s",
 
   "bar_behavior.vanilla": "Vanilla",
   "bar_behavior.custom": "Custom",
@@ -49,7 +49,7 @@
   "gui.dynamic_resource_bars.hud_editor.button.toggle_background_format": "Background: %s",
   "gui.dynamic_resource_bars.hud_editor.button.toggle_foreground_format": "Foreground: %s",
   "gui.dynamic_resource_bars.hud_editor.button.toggle_fade_full_format": "Fade When Full: %s",
-  "gui.dynamic_resource_bars.hud_editor.button.cycle_text_behavior_format": "Text Behavior: %s",
+  "gui.dynamic_resource_bars.hud_editor.button.cycle_text_behavior_format": "Text: %s",
   "gui.dynamic_resource_bars.hud_editor.button.cycle_text_align_format": "Text Align: %s",
   "gui.dynamic_resource_bars.hud_editor.button.cycle_anchor_format": "Anchor: %s",
   "gui.dynamic_resource_bars.hud_editor.button.resize_bar": "Change Sizes",
@@ -69,9 +69,9 @@
 
   "gui.dynamic_resource_bars.hud_editor.tooltip.no_mana_provider": "No compatible mana-providing mods are currently loaded",
 
-  "text_behavior.always": "Always Show",
-  "text_behavior.never": "Never Show",
-  "text_behavior.when_not_full": "Show When Not Full",
+  "text_behavior.always": "Always",
+  "text_behavior.never": "Never",
+  "text_behavior.when_not_full": "When Not Full",
 
   "horizontal_alignment.left": "Left",
   "horizontal_alignment.center": "Center",
