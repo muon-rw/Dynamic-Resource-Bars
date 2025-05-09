@@ -2,7 +2,7 @@ package dev.muon.dynamic_resource_bars.render;
 
 import com.mojang.blaze3d.systems.RenderSystem;
 import dev.muon.dynamic_resource_bars.DynamicResourceBars;
-import dev.muon.dynamic_resource_bars.foundation.config.ModConfigManager;
+import dev.muon.dynamic_resource_bars.config.ModConfigManager;
 import dev.muon.dynamic_resource_bars.util.HUDPositioning;
 import dev.muon.dynamic_resource_bars.util.ManaProvider;
 import dev.muon.dynamic_resource_bars.util.Position;
@@ -138,7 +138,7 @@ public class ManaBarRenderer {
             RenderUtil.renderText((float) manaProvider.getCurrentMana(), manaProvider.getMaxMana(), graphics,
                                 baseX, baseY, color, alignment);
         }
-        
+
         RenderSystem.setShaderColor(1.0f, 1.0f, 1.0f, 1.0f);
         RenderSystem.disableBlend();
 
@@ -203,7 +203,7 @@ public class ManaBarRenderer {
         }
 
         if (filledWidth > 0) {
-             graphics.blit(DynamicResourceBars.loc("textures/gui/mana_bar.png"),
+        graphics.blit(DynamicResourceBars.loc("textures/gui/mana_bar.png"),
                     barX, barY, 
                     0, animOffset,
                     filledWidth, barHeight,
@@ -222,7 +222,7 @@ public class ManaBarRenderer {
 
         int totalBarWidth = barAreaRect.width();
         int barHeight = barAreaRect.height();
-        
+
         int reserveManaPixelWidth = (int) (totalBarWidth * (reservedManaFraction / (1.0f + reservedManaFraction)));
         if (reserveManaPixelWidth <= 0) return;
 

@@ -1,4 +1,4 @@
-package dev.muon.dynamic_resource_bars.client.gui;
+package dev.muon.dynamic_resource_bars.config.gui;
 
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.Button;

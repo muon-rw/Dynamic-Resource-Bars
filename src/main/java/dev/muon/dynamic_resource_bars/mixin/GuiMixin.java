@@ -1,29 +1,7 @@
 package dev.muon.dynamic_resource_bars.mixin;
 
-import com.llamalad7.mixinextras.injector.ModifyExpressionValue;
-import com.llamalad7.mixinextras.injector.wrapoperation.Operation;
-import com.llamalad7.mixinextras.injector.wrapoperation.WrapOperation;
-import dev.muon.dynamic_resource_bars.foundation.config.ModConfigManager;
-import dev.muon.dynamic_resource_bars.render.AirBarRenderer;
-import dev.muon.dynamic_resource_bars.render.ArmorBarRenderer;
-import dev.muon.dynamic_resource_bars.render.HealthBarRenderer;
-import dev.muon.dynamic_resource_bars.render.StaminaBarRenderer;
-import dev.muon.dynamic_resource_bars.util.HUDPositioning;
-import fuzs.puzzleslib.api.event.v1.data.MutableInt;
-import net.fabricmc.loader.api.FabricLoader;
-import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Gui;
-import net.minecraft.client.gui.GuiGraphics;
-import net.minecraft.resources.ResourceLocation;
-import net.minecraft.world.entity.player.Player;
-import net.minecraft.world.item.ItemStack;
-import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
-import org.spongepowered.asm.mixin.Shadow;
-import org.spongepowered.asm.mixin.Unique;
-import org.spongepowered.asm.mixin.injection.*;
-import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
-import org.spongepowered.asm.mixin.injection.invoke.arg.Args;
 
 #if NEWER_THAN_20_1
     import net.minecraft.client.DeltaTracker;
@@ -55,6 +33,8 @@ public class GuiMixin {
         return originalY;
     }
     // TODO: Air shift by needed
+    // TODO: Add logic here to hide vanilla armor if !showVanillaArmorInsteadOfCustom for 1.21.1+
+    // This might involve a @ModifyVariable on armorValue or an @Inject to cancel renderArmor similar to 1.20.1.
 
     #endif
 
@@ -81,26 +61,35 @@ public class GuiMixin {
             cancellable = true
     )
     private void replaceFoodAndAir(GuiGraphics guiGraphics, CallbackInfo ci) {
-        if (!ModConfigManager.getClient().enableStaminaBar.get()) {
-            return;
-        }
         Player player = this.minecraft.player;
-        if (player != null) {
-            int partialTickFood = Math.round(this.minecraft.getFrameTime());
-            StaminaBarRenderer.render(guiGraphics, player, partialTickFood);
+        CClient config = ModConfigManager.getClient();
+        boolean customStaminaEnabled = config.enableStaminaBar.get();
+        BarRenderBehavior airBehavior = config.airBarBehavior.get();
+
+        if (customStaminaEnabled && player != null) {
+            StaminaBarRenderer.render(guiGraphics, player, this.minecraft.getFrameTime());
+        }
+        if (player != null) { 
             AirBarRenderer.render(guiGraphics, player);
         }
-        ci.cancel();
+        
+        boolean shouldCancelForAir = (airBehavior == BarRenderBehavior.CUSTOM || airBehavior == BarRenderBehavior.HIDDEN);
+        if (customStaminaEnabled || shouldCancelForAir) {
+             ci.cancel(); 
+        }
     }
 
-    @ModifyVariable(method = "renderPlayerHealth", at = @At("STORE"), ordinal = 11, slice = @Slice(from = @At(value = "INVOKE", target = "Lnet/minecraft/world/entity/player/Player;getArmorValue()I"), to = @At(value = "FIELD", target = "Lnet/minecraft/world/effect/MobEffects;REGENERATION:Lnet/minecraft/world/effect/MobEffect;")))
-    private int replaceArmor(int armorValue, GuiGraphics guiGraphics) {
-        Player player = this.minecraft.player;
-        if (ModConfigManager.getClient().disableDefaultArmor.get()) {
-            armorValue = 0;
+    @ModifyExpressionValue(
+        method = "renderPlayerHealth(Lnet/minecraft/client/gui/GuiGraphics;)V",
+        at = @At(value = "INVOKE", target = "Lnet/minecraft/world/entity/player/Player;getArmorValue()I")
+    )
+    private int dynamicbars$modifyArmorValue(int originalArmorValue) {
+        CClient config = ModConfigManager.getClient();
+        BarRenderBehavior armorBehavior = config.armorBarBehavior.get();
+        if (armorBehavior == BarRenderBehavior.CUSTOM || armorBehavior == BarRenderBehavior.HIDDEN) {
+            return 0;
         }
-        //    ArmorBarRenderer.render(guiGraphics, player);
-        return armorValue;
+        return originalArmorValue;
     }
     #endif
 

@@ -1,11 +1,10 @@
-package dev.muon.dynamic_resource_bars.foundation.config;
+package dev.muon.dynamic_resource_bars.config;
 
 import dev.muon.dynamic_resource_bars.util.HUDPositioning;
 import dev.muon.dynamic_resource_bars.util.HorizontalAlignment;
 import dev.muon.dynamic_resource_bars.util.TextBehavior;
-// Removed: import toni.lib.config.ConfigBase;
+import dev.muon.dynamic_resource_bars.util.BarRenderBehavior;
 
-// Import necessary (Neo)ForgeConfigSpec classes
 #if FABRIC
     #if AFTER_21_1
         import net.neoforged.neoforge.common.ModConfigSpec;
@@ -23,7 +22,7 @@ import dev.muon.dynamic_resource_bars.util.TextBehavior;
 #endif
 
 
-public class CClient {
+public class ClientConfig {
 
     // --- General Defaults ---
     public static final float DEFAULT_TEXT_SCALING_FACTOR = 0.5f;
@@ -180,9 +179,8 @@ public class CClient {
     /**
      * Armor
      */
+    public static final BarRenderBehavior DEFAULT_ARMOR_BAR_BEHAVIOR = BarRenderBehavior.VANILLA;
     public static final HUDPositioning.BarPlacement DEFAULT_ARMOR_BAR_ANCHOR = HUDPositioning.BarPlacement.ARMOR;
-    public static final boolean DEFAULT_ENABLE_ARMOR_BAR = true;
-    public static final boolean DEFAULT_HIDE_ARMOR_BAR = true;
     public static final int DEFAULT_MAX_EXPECTED_ARMOR = 20;
     public static final int DEFAULT_MAX_EXPECTED_PROT = 16;
     public static final int DEFAULT_ARMOR_BACKGROUND_WIDTH = 80;
@@ -200,9 +198,8 @@ public class CClient {
     public static final int DEFAULT_ARMOR_ICON_X_OFFSET = 0;
     public static final int DEFAULT_ARMOR_ICON_Y_OFFSET = 0;
 
+    public final EnumValue<BarRenderBehavior> armorBarBehavior;
     public final EnumValue<HUDPositioning.BarPlacement> armorBarAnchor;
-    public final BooleanValue enableArmorBar;
-    public final BooleanValue hideArmorBar;
     public final IntValue maxExpectedArmor;
     public final IntValue maxExpectedProt;
     public final IntValue armorBackgroundWidth;
@@ -223,9 +220,8 @@ public class CClient {
     /**
      * Air
      */
+    public static final BarRenderBehavior DEFAULT_AIR_BAR_BEHAVIOR = BarRenderBehavior.VANILLA;
     public static final HUDPositioning.BarPlacement DEFAULT_AIR_BAR_ANCHOR = HUDPositioning.BarPlacement.AIR;
-    public static final boolean DEFAULT_ENABLE_AIR_BAR = true;
-    public static final boolean DEFAULT_HIDE_AIR_BAR = false;
     public static final int DEFAULT_AIR_BACKGROUND_WIDTH = 80;
     public static final int DEFAULT_AIR_BACKGROUND_HEIGHT = 10;
     public static final int DEFAULT_AIR_BAR_WIDTH = 74;
@@ -239,9 +235,8 @@ public class CClient {
     public static final int DEFAULT_AIR_ICON_X_OFFSET = 0;
     public static final int DEFAULT_AIR_ICON_Y_OFFSET = 0;
 
+    public final EnumValue<BarRenderBehavior> airBarBehavior;
     public final EnumValue<HUDPositioning.BarPlacement> airBarAnchor;
-    public final BooleanValue enableAirBar;
-    public final BooleanValue hideAirBar;
     public final IntValue airBackgroundWidth;
     public final IntValue airBackgroundHeight;
     public final IntValue airBarWidth;
@@ -257,7 +252,7 @@ public class CClient {
 
 
     // Constructor takes a Builder
-    public CClient(#if (FABRIC && !AFTER_21_1) || FORGE ForgeConfigSpec.Builder builder #else ModConfigSpec.Builder builder #endif) {
+    public ClientConfig(#if (FABRIC && !AFTER_21_1) || FORGE ForgeConfigSpec.Builder builder #else ModConfigSpec.Builder builder #endif) {
         builder.push("general"); // Corresponds to group("general", ...)
         builder.comment("Customize shared settings");
 
@@ -288,19 +283,19 @@ public class CClient {
 
         showHealthText = builder
                 .comment("When health current/maximum values should be rendered as a text overlay. Always hidden when the bar is invisible, even if set to ALWAYS")
-                .defineEnum("showHealthText", DEFAULT_SHOW_HEALTH_TEXT); // Changed from "Show Health Text" key
+                .defineEnum("showHealthText", DEFAULT_SHOW_HEALTH_TEXT);
 
         healthTextAlign = builder
                 .comment("Horizontal alignment for the health value text.")
-                .defineEnum("healthTextAlign", DEFAULT_HEALTH_TEXT_ALIGN); // Changed from "Health Text Align" key
+                .defineEnum("healthTextAlign", DEFAULT_HEALTH_TEXT_ALIGN);
 
         enableHealthForeground = builder
                 .comment("Render an extra layer on top of the health bar. Can be toggled in HUD editor.")
-                .define("enableHealthForeground", DEFAULT_ENABLE_HEALTH_FOREGROUND); // Changed from "Enable Foreground Layer" key
+                .define("enableHealthForeground", DEFAULT_ENABLE_HEALTH_FOREGROUND);
 
         enableHealthBackground = builder
                 .comment("Render an extra layer behind the health bar. Can be toggled in HUD editor.")
-                .define("enableHealthBackground", DEFAULT_ENABLE_HEALTH_BACKGROUND); // Changed from "Enable Background Layer" key
+                .define("enableHealthBackground", DEFAULT_ENABLE_HEALTH_BACKGROUND);
 
         // --- Sizing ---
         healthBackgroundWidth = builder
@@ -419,9 +414,14 @@ public class CClient {
         // --- Armor --- 
         builder.push("armor");
         builder.comment("Customize the armor bar");
-        armorBarAnchor = builder.comment("Anchor point for the armor bar.").defineEnum("armorBarAnchor", DEFAULT_ARMOR_BAR_ANCHOR);
-        enableArmorBar = builder.comment("Whether to render a custom bar instead of the vanilla armor bar").define("enableArmorBar", DEFAULT_ENABLE_ARMOR_BAR);
-        hideArmorBar = builder.comment("Whether to hide armor entirely, including vanilla armor points. Requires enableArmorBar to be enabled.").define("hideArmorBar", DEFAULT_HIDE_ARMOR_BAR);
+
+        armorBarBehavior = builder
+                .comment("Determines how the armor bar is rendered: VANILLA, CUSTOM, or HIDDEN.")
+                .defineEnum("armorBarBehavior", DEFAULT_ARMOR_BAR_BEHAVIOR);
+        
+        armorBarAnchor = builder
+                .comment("Anchor point for the custom armor bar (if behavior is CUSTOM).")
+                .defineEnum("armorBarAnchor", DEFAULT_ARMOR_BAR_ANCHOR);
         maxExpectedArmor = builder.comment("The maximum obtainable armor value for your modpack, for the purpose of how much bar to render + the icon index").defineInRange("maxExpectedArmor", DEFAULT_MAX_EXPECTED_ARMOR, 0, Integer.MAX_VALUE);
         maxExpectedProt = builder.comment("The maximum obtainable Protection value for your modpack, for the purpose of how much overlay to render").defineInRange("maxExpectedProt", DEFAULT_MAX_EXPECTED_PROT, 0, Integer.MAX_VALUE);
         armorBackgroundWidth = builder.comment("Width of the armor bar's background sprite, in pixels.").defineInRange("armorBackgroundWidth", DEFAULT_ARMOR_BACKGROUND_WIDTH, 0, Integer.MAX_VALUE);
@@ -443,9 +443,12 @@ public class CClient {
         // --- Air --- 
         builder.push("air");
         builder.comment("Customize the air bar");
-        airBarAnchor = builder.comment("Anchor point for the air bar.").defineEnum("airBarAnchor", DEFAULT_AIR_BAR_ANCHOR);
-        enableAirBar = builder.comment("Whether to render a custom bar instead of the vanilla air bar").define("enableAirBar", DEFAULT_ENABLE_AIR_BAR);
-        hideAirBar = builder.comment("Whether to hide air entirely, including vanilla air points. Requires enableAirBar to be enabled.").define("hideAirBar", DEFAULT_HIDE_AIR_BAR);
+
+        airBarBehavior = builder
+                .comment("Determines how the air bar is rendered: VANILLA, CUSTOM, or HIDDEN.")
+                .defineEnum("airBarBehavior", DEFAULT_AIR_BAR_BEHAVIOR);
+
+        airBarAnchor = builder.comment("Anchor point for the custom air bar (if behavior is CUSTOM).").defineEnum("airBarAnchor", DEFAULT_AIR_BAR_ANCHOR);
         airBackgroundWidth = builder.comment("Width of the air bar's background sprite, in pixels.").defineInRange("airBackgroundWidth", DEFAULT_AIR_BACKGROUND_WIDTH, 0, Integer.MAX_VALUE);
         airBackgroundHeight = builder.comment("Height of the air bar's background sprite, in pixels.").defineInRange("airBackgroundHeight", DEFAULT_AIR_BACKGROUND_HEIGHT, 0, Integer.MAX_VALUE);
         airBarWidth = builder.comment("Width of the actual filled bar, in pixels.").defineInRange("airBarWidth", DEFAULT_AIR_BAR_WIDTH, 0, Integer.MAX_VALUE);

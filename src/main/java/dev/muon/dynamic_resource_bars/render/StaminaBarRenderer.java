@@ -3,7 +3,7 @@ package dev.muon.dynamic_resource_bars.render;
 
 import com.mojang.blaze3d.systems.RenderSystem;
 import dev.muon.dynamic_resource_bars.DynamicResourceBars;
-import dev.muon.dynamic_resource_bars.foundation.config.ModConfigManager;
+import dev.muon.dynamic_resource_bars.config.ModConfigManager;
 import dev.muon.dynamic_resource_bars.util.HUDPositioning;
 import dev.muon.dynamic_resource_bars.util.Position;
 import dev.muon.dynamic_resource_bars.util.RenderUtil;

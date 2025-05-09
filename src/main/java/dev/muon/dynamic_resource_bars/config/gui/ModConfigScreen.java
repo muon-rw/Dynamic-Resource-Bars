@@ -1,4 +1,4 @@
-package dev.muon.dynamic_resource_bars.client.gui;
+package dev.muon.dynamic_resource_bars.config.gui;
 
 import dev.muon.dynamic_resource_bars.DynamicResourceBars;
 import net.minecraft.client.Minecraft;
@@ -8,8 +8,6 @@ import net.minecraft.client.gui.components.Tooltip;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.network.chat.Component;
 
-// For NeoForge, this would be the screen returned by your IConfigScreenFactory
-// For Forge (older systems) or Fabric (with ForgeConfigApiPort), how it's invoked might differ slightly.
 public class ModConfigScreen extends Screen {
 
     private final Screen parentScreen; // The screen that opened this one (e.g., mods list)
@@ -68,11 +66,9 @@ public class ModConfigScreen extends Screen {
         #else
             this.renderBackground(graphics);
         #endif
-        
-        // Render widgets (buttons) and their tooltips first
+
         super.render(graphics, mouseX, mouseY, partialTicks);
 
-        // Draw title text AFTER super.render() to ensure it's on top
         graphics.drawCenteredString(this.font, this.title, this.width / 2, 20, 0xFFFFFF);
     }
 

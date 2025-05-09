@@ -1,5 +1,5 @@
 modLoader = "javafml"
-loaderVersion="[1,)"
+loaderVersion="[47,)"
 license="${license}"
 showAsResourcePack=false
 

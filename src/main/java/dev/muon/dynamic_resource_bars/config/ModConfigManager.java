@@ -1,6 +1,4 @@
-package dev.muon.dynamic_resource_bars.foundation.config;
-
-import dev.muon.dynamic_resource_bars.DynamicResourceBars;
+package dev.muon.dynamic_resource_bars.config;
 
 #if FABRIC
     #if AFTER_21_1
@@ -15,10 +13,10 @@ import dev.muon.dynamic_resource_bars.DynamicResourceBars;
     import net.fabricmc.loader.api.FabricLoader;
     import net.fabricmc.api.EnvType;
 #elif FORGE
-    import net.minecraftforge.fml.ModLoadingContext;
-    import net.minecraftforge.fml.config.ModConfig;
+import net.minecraftforge.fml.config.ModConfig;
     import net.minecraftforge.common.ForgeConfigSpec;
-    import net.minecraftforge.fml.loading.FMLEnvironment;
+import net.minecraftforge.fml.javafmlmod.FMLJavaModLoadingContext;
+import net.minecraftforge.fml.loading.FMLEnvironment;
     import net.minecraftforge.api.distmarker.Dist;
 #elif NEO
     // import net.neoforged.fml.ModLoadingContext; // For NeoForge, registration is usually via ModContainer
@@ -31,7 +29,7 @@ import dev.muon.dynamic_resource_bars.DynamicResourceBars;
 
 public class ModConfigManager {
 
-    private static CClient clientConfig;
+    private static ClientConfig clientConfig;
     #if FABRIC
         #if AFTER_21_1
             private static ModConfigSpec clientSpec;
@@ -44,19 +42,16 @@ public class ModConfigManager {
         private static ModConfigSpec clientSpec;
     #endif
 
-    public static CClient getClient() {
+    public static ClientConfig getClient() {
         return clientConfig;
     }
 
-    // Call this method from your main mod class constructor or initialization phases
-    public static void registerConfigs(#if NEO ModContainer modContainer #endif) {
-        // Since it's a client-only mod, we don't need the isClientContext check as aggressively,
-        // but it's good practice if common configs were ever introduced.
+    public static void registerConfigs(#if NEO ModContainer modContainer #elif FORGE FMLJavaModLoadingContext context #endif) {
         #if FABRIC
             if (FabricLoader.getInstance().getEnvironmentType() != EnvType.CLIENT) {
                 return;
             }
-        #elif FORGELIKE // Covers FORGE and NEO
+        #elif FORGELIKE
             if (FMLEnvironment.dist != Dist.CLIENT) {
                 return;
             }
@@ -74,7 +69,7 @@ public class ModConfigManager {
             ModConfigSpec.Builder clientBuilder = new ModConfigSpec.Builder();
         #endif
 
-        clientConfig = new CClient(clientBuilder);
+        clientConfig = new ClientConfig(clientBuilder);
         clientSpec = clientBuilder.build();
 
         #if FABRIC
@@ -84,7 +79,7 @@ public class ModConfigManager {
                 ForgeConfigRegistry.INSTANCE.register(DynamicResourceBars.ID, ModConfig.Type.CLIENT, clientSpec);
             #endif
         #elif FORGE
-            ModLoadingContext.get().registerConfig(ModConfig.Type.CLIENT, clientSpec);
+            context.registerConfig(ModConfig.Type.CLIENT, clientSpec);
         #elif NEO
             modContainer.registerConfig(ModConfig.Type.CLIENT, clientSpec);
         #endif

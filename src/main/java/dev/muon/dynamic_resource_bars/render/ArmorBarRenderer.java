@@ -3,15 +3,15 @@ package dev.muon.dynamic_resource_bars.render;
 import com.google.common.collect.Multimap;
 import com.mojang.blaze3d.systems.RenderSystem;
 import dev.muon.dynamic_resource_bars.DynamicResourceBars;
-import dev.muon.dynamic_resource_bars.foundation.config.ModConfigManager;
+import dev.muon.dynamic_resource_bars.config.ModConfigManager;
+import dev.muon.dynamic_resource_bars.config.ClientConfig;
+import dev.muon.dynamic_resource_bars.util.BarRenderBehavior;
 import dev.muon.dynamic_resource_bars.util.HUDPositioning;
 import dev.muon.dynamic_resource_bars.util.Position;
 import dev.muon.dynamic_resource_bars.util.RenderUtil;
+import dev.muon.dynamic_resource_bars.util.ScreenRect;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
-import net.minecraft.core.Holder;
-import net.minecraft.core.registries.BuiltInRegistries;
-import net.minecraft.core.registries.Registries;
 import net.minecraft.world.entity.EquipmentSlot;
 import net.minecraft.world.entity.ai.attributes.Attribute;
 import net.minecraft.world.entity.ai.attributes.AttributeModifier;
@@ -19,7 +19,6 @@ import net.minecraft.world.entity.ai.attributes.Attributes;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ArmorItem;
 import net.minecraft.world.item.ItemStack;
-import net.minecraft.world.item.enchantment.Enchantment;
 import net.minecraft.world.item.enchantment.EnchantmentHelper;
 import net.minecraft.world.item.enchantment.Enchantments;
 
@@ -65,18 +64,32 @@ public class ArmorBarRenderer {
         }
     }
 
-    public static void render(GuiGraphics graphics, Player player) {
-        if (ModConfigManager.getClient().hideArmorBar.get()) return;
-        Position armorPos = HUDPositioning.getPositionFromAnchor(ModConfigManager.getClient().armorBarAnchor.get())
-                .offset(ModConfigManager.getClient().armorTotalXOffset.get(), ModConfigManager.getClient().armorTotalYOffset.get());
+    public static ScreenRect getScreenRect(Player player) {
+        if (player == null) return new ScreenRect(0,0,0,0);
+        var config = ModConfigManager.getClient();
+        Position anchorPos = HUDPositioning.getPositionFromAnchor(config.armorBarAnchor.get());
+        
+        Position finalPos = anchorPos.offset(config.armorTotalXOffset.get(), config.armorTotalYOffset.get());
+        int backgroundWidth = config.armorBackgroundWidth.get();
+        int backgroundHeight = config.armorBackgroundHeight.get();
+        return new ScreenRect(finalPos.x(), finalPos.y(), backgroundWidth, backgroundHeight);
+    }
 
-        int backgroundWidth = ModConfigManager.getClient().armorBackgroundWidth.get();
-        int backgroundHeight = ModConfigManager.getClient().armorBackgroundHeight.get();
-        int barWidth = ModConfigManager.getClient().armorBarWidth.get();
-        int barHeight = ModConfigManager.getClient().armorBarHeight.get();
-        int barOnlyXOffset = ModConfigManager.getClient().armorBarXOffset.get();
-        int barOnlyYOffset = ModConfigManager.getClient().armorBarYOffset.get();
-        int iconSize = ModConfigManager.getClient().armorIconSize.get();
+    public static void render(GuiGraphics graphics, Player player) {
+        ClientConfig config = ModConfigManager.getClient();
+        if (config.armorBarBehavior.get() != BarRenderBehavior.CUSTOM) {
+            return;
+        }
+        Position armorPos = HUDPositioning.getPositionFromAnchor(config.armorBarAnchor.get())
+                .offset(config.armorTotalXOffset.get(), config.armorTotalYOffset.get());
+
+        int backgroundWidth = config.armorBackgroundWidth.get();
+        int backgroundHeight = config.armorBackgroundHeight.get();
+        int barWidth = config.armorBarWidth.get();
+        int barHeight = config.armorBarHeight.get();
+        int barOnlyXOffset = config.armorBarXOffset.get();
+        int barOnlyYOffset = config.armorBarYOffset.get();
+        int iconSize = config.armorIconSize.get();
 
         int xPos = armorPos.x();
         int yPos = armorPos.y();
@@ -86,13 +99,13 @@ public class ArmorBarRenderer {
         );
 
         int armorValue = player.getArmorValue();
-        float armorPercent = Math.min(1.0f, (float) armorValue / ModConfigManager.getClient().maxExpectedArmor.get());
+        float armorPercent = Math.min(1.0f, (float) armorValue / config.maxExpectedArmor.get());
 
         int filledWidth = Math.round((barWidth - (float) iconSize / 2) * armorPercent);
         if (filledWidth > 0) {
             graphics.blit(
                     DynamicResourceBars.loc("textures/gui/armor_bar.png"),
-                    xPos + (ModConfigManager.getClient().enableArmorIcon.get() ? barOnlyXOffset + iconSize / 2 : barOnlyXOffset),
+                    xPos + (config.enableArmorIcon.get() ? barOnlyXOffset + iconSize / 2 : barOnlyXOffset),
                     yPos + barOnlyYOffset,
                     0, 0,
                     filledWidth,
@@ -109,14 +122,14 @@ public class ArmorBarRenderer {
             RenderUtil.renderArmorText(armorValue,
                     graphics, textX, textY, color);
         }
-        renderProtectionOverlay(graphics, player, xPos, yPos, barWidth, barHeight, barOnlyXOffset, barOnlyYOffset, iconSize);
+        renderProtectionOverlay(graphics, player, config, xPos, yPos, barWidth, barHeight, barOnlyXOffset, barOnlyYOffset, iconSize);
 
-        if (ModConfigManager.getClient().enableArmorIcon.get()) {
+        if (config.enableArmorIcon.get()) {
             ArmorIcon icon = ArmorIcon.fromArmorValue(armorValue);
             graphics.blit(
                     DynamicResourceBars.loc("textures/gui/armors/" + icon.getTexture() + ".png"),
-                    xPos - 1 + ModConfigManager.getClient().armorIconXOffset.get(),
-                    yPos + (backgroundHeight - iconSize) / 2 - 2 + ModConfigManager.getClient().armorIconYOffset.get(),
+                    xPos - 1 + config.armorIconXOffset.get(),
+                    yPos + (backgroundHeight - iconSize) / 2 - 2 + config.armorIconYOffset.get(),
                     0, 0,
                     iconSize, iconSize,
                     iconSize, iconSize
@@ -124,7 +137,7 @@ public class ArmorBarRenderer {
         }
     }
 
-    private static void renderProtectionOverlay(GuiGraphics graphics, Player player,
+    private static void renderProtectionOverlay(GuiGraphics graphics, Player player, ClientConfig config,
                                                 int xPos, int yPos, int barWidth, int barHeight,
                                                 int barOnlyXOffset, int barOnlyYOffset, int iconSize) {
         int totalProtection = 0;
@@ -140,20 +153,20 @@ public class ArmorBarRenderer {
         RenderSystem.enableBlend();
         RenderSystem.defaultBlendFunc();
 
-        int frameHeight = ModConfigManager.getClient().protOverlayFrameHeight.get();
-        int animationCycles = ModConfigManager.getClient().protOverlayAnimationCycles.get();
-        int maxProtection = ModConfigManager.getClient().maxExpectedProt.get();
+        int frameHeight = config.protOverlayFrameHeight.get();
+        int animationCycles = config.protOverlayAnimationCycles.get();
+        int maxProtection = config.maxExpectedProt.get();
 
         int animOffset = (int)(((player.tickCount + #if NEWER_THAN_20_1 Minecraft.getInstance().getTimer().getGameTimeDeltaTicks() #else Minecraft.getInstance().getFrameTime() #endif) / 3) % animationCycles) * frameHeight;
 
         float protectionScale = Math.min(1.0f, (float)totalProtection / maxProtection);
-        int adjustedBarWidth = ModConfigManager.getClient().enableArmorIcon.get() ?
+        int adjustedBarWidth = config.enableArmorIcon.get() ?
                 barWidth - (iconSize / 2) : barWidth;
         int overlayWidth = (int)(adjustedBarWidth * protectionScale);
 
         graphics.blit(
                 DynamicResourceBars.loc("textures/gui/protection_overlay.png"),
-                xPos + (ModConfigManager.getClient().enableArmorIcon.get() ? barOnlyXOffset + iconSize / 2 : barOnlyXOffset),
+                xPos + (config.enableArmorIcon.get() ? barOnlyXOffset + iconSize / 2 : barOnlyXOffset),
                 yPos + barOnlyYOffset,
                 0, animOffset,
                 overlayWidth, barHeight,

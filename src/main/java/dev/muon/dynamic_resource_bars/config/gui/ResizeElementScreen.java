@@ -1,7 +1,7 @@
-package dev.muon.dynamic_resource_bars.client.gui;
+package dev.muon.dynamic_resource_bars.config.gui;
 
-import dev.muon.dynamic_resource_bars.foundation.config.ModConfigManager;
-import dev.muon.dynamic_resource_bars.foundation.config.CClient;
+import dev.muon.dynamic_resource_bars.config.ModConfigManager;
+import dev.muon.dynamic_resource_bars.config.ClientConfig;
 import dev.muon.dynamic_resource_bars.util.DraggableElement;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.Button;
@@ -41,7 +41,7 @@ public class ResizeElementScreen extends Screen {
     @Override
     protected void init() {
         super.init();
-        CClient config = ModConfigManager.getClient();
+        ClientConfig config = ModConfigManager.getClient();
         IntValue bgWidthConf, bgHeightConf, barWidthConf, barHeightConf, overlayWidthConf, overlayHeightConf;
 
         switch (elementToResize) {

@@ -1,7 +1,7 @@
 package dev.muon.dynamic_resource_bars.util;
 
 import com.mojang.blaze3d.vertex.PoseStack;
-import dev.muon.dynamic_resource_bars.foundation.config.ModConfigManager;
+import dev.muon.dynamic_resource_bars.config.ModConfigManager;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.network.chat.Component;

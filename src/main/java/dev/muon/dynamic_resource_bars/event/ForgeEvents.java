@@ -1,7 +1,9 @@
 package dev.muon.dynamic_resource_bars.event;
 
 import dev.muon.dynamic_resource_bars.DynamicResourceBars;
-import dev.muon.dynamic_resource_bars.foundation.config.ModConfigManager;
+import dev.muon.dynamic_resource_bars.config.ModConfigManager;
+import dev.muon.dynamic_resource_bars.config.ClientConfig;
+import dev.muon.dynamic_resource_bars.util.BarRenderBehavior;
 #if FORGE
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.client.event.RenderGuiOverlayEvent;
@@ -9,19 +11,32 @@ import net.minecraftforge.client.gui.overlay.VanillaGuiOverlay;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.common.Mod;
 
-// 1.20.1 Forge Only. See CommonEvents and GuiMixin
+// 1.20.1 Forge Only. See CommonEvents for 1.21.1, GuiMixin for 1.20.1 Fabric
 @Mod.EventBusSubscriber(modid = DynamicResourceBars.ID, value = Dist.CLIENT, bus = Mod.EventBusSubscriber.Bus.FORGE)
 public class ForgeEvents {
     @SubscribeEvent
     public static void cancelVanillaBars(RenderGuiOverlayEvent.Pre event) {
-        if (ModConfigManager.getClient().enableHealthBar.get() && event.getOverlay() == VanillaGuiOverlay.PLAYER_HEALTH.type()) {
+        ClientConfig config = ModConfigManager.getClient();
+
+        if (config.enableHealthBar.get() && event.getOverlay() == VanillaGuiOverlay.PLAYER_HEALTH.type()) {
             event.setCanceled(true);
         }
-        if (ModConfigManager.getClient().enableStaminaBar.get() && event.getOverlay() == VanillaGuiOverlay.FOOD_LEVEL.type()) {
+        if (config.enableStaminaBar.get() && event.getOverlay() == VanillaGuiOverlay.FOOD_LEVEL.type()) {
             event.setCanceled(true);
         }
-        if (ModConfigManager.getClient().enableArmorBar.get() && event.getOverlay() == VanillaGuiOverlay.ARMOR_LEVEL.type()) {
-            event.setCanceled(true);
+        
+        if (event.getOverlay() == VanillaGuiOverlay.ARMOR_LEVEL.type()) {
+            if (config.armorBarBehavior.get() == BarRenderBehavior.CUSTOM || 
+                config.armorBarBehavior.get() == BarRenderBehavior.HIDDEN) {
+                event.setCanceled(true);
+            }
+        }
+
+        if (event.getOverlay() == VanillaGuiOverlay.AIR_LEVEL.type()) {
+            if (config.airBarBehavior.get() == BarRenderBehavior.CUSTOM || 
+                config.airBarBehavior.get() == BarRenderBehavior.HIDDEN) {
+                event.setCanceled(true);
+            }
         }
     }
 }

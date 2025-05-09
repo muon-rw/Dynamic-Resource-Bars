@@ -1,7 +1,7 @@
 package dev.muon.dynamic_resource_bars;
 
-import dev.muon.dynamic_resource_bars.client.gui.ModConfigScreen;
-import dev.muon.dynamic_resource_bars.foundation.config.ModConfigManager;
+import dev.muon.dynamic_resource_bars.config.gui.ModConfigScreen;
+import dev.muon.dynamic_resource_bars.config.ModConfigManager;
 import net.minecraft.resources.ResourceLocation;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -23,9 +23,7 @@ import org.apache.logging.log4j.Logger;
 
 #if FORGE
     import net.minecraftforge.fml.common.Mod;
-    import net.minecraftforge.fml.ModLoadingContext;
     import net.minecraftforge.fml.event.lifecycle.FMLClientSetupEvent;
-    import net.minecraftforge.fml.event.lifecycle.FMLCommonSetupEvent;
     import net.minecraftforge.fml.javafmlmod.FMLJavaModLoadingContext;
     import net.minecraftforge.client.ConfigScreenHandler;
 #endif
@@ -42,7 +40,7 @@ import org.apache.logging.log4j.Logger;
 #if FORGELIKE
 @Mod(DynamicResourceBars.ID)
 #endif
-public class DynamicResourceBars #if FABRIC implements ModInitializer, ClientModInitializer, ModMenuApi #endif
+public class DynamicResourceBars #if FABRIC implements ClientModInitializer, ModMenuApi #endif
 {
     public static final String MODNAME = "Dynamic RPG Resource Bars";
     public static final String ID = "dynamic_resource_bars";
@@ -65,17 +63,15 @@ public class DynamicResourceBars #if FABRIC implements ModInitializer, ClientMod
     #endif
 
     // Constructor: Primarily for Forge/NeoForge due to argument injection
-    public DynamicResourceBars(#if NEO IEventBus modEventBus, ModContainer modContainer #endif) {
+    public DynamicResourceBars(#if NEO IEventBus modEventBus, ModContainer modContainer #elif FORGE FMLJavaModLoadingContext context #endif) {
         #if FORGE
-            var forgeModEventBus = FMLJavaModLoadingContext.get().getModEventBus();
-            ModConfigManager.registerConfigs(); // FORGE: Register configs
-            forgeModEventBus.addListener(this::commonSetup);
+            var forgeModEventBus = context.getModEventBus();
+            ModConfigManager.registerConfigs(context);
             forgeModEventBus.addListener(this::clientSetup);
-            ModLoadingContext.get().registerExtensionPoint(ConfigScreenHandler.ConfigScreenFactory.class, 
+            context.registerExtensionPoint(ConfigScreenHandler.ConfigScreenFactory.class,
                 () -> new ConfigScreenHandler.ConfigScreenFactory((mc, screen) -> new ModConfigScreen(screen)));
         #elif NEO
-            ModConfigManager.registerConfigs(modContainer); // NEO: Register configs
-            modEventBus.addListener(this::commonSetup);
+            ModConfigManager.registerConfigs(modContainer);
             modEventBus.addListener(this::clientSetup);
             modContainer.registerExtensionPoint(IConfigScreenFactory.class, 
                 (mc, screen) -> new ModConfigScreen(screen));
@@ -89,22 +85,14 @@ public class DynamicResourceBars #if FABRIC implements ModInitializer, ClientMod
         #endif
     }
 
-    // Fabric ModInitializer entry point
-    #if FABRIC @Override #endif
-    public void onInitialize() {
-        // Called by Fabric directly.
-        // Called by Forge/NeoForge via commonSetup listener.
-         }
-
     // Fabric ClientModInitializer entry point
     #if FABRIC @Override #endif
     public void onInitializeClient() {
         // Called by Fabric directly.
         // Called by Forge/NeoForge via clientSetup listener.
         #if FABRIC
-            ModConfigManager.registerConfigs(); // FABRIC: Register client configs here.
+            ModConfigManager.registerConfigs();
             #if AFTER_21_1
-                // Setup ModMenu config screen for Fabric 1.21.1+
                 ConfigScreenFactoryRegistry.INSTANCE.register(DynamicResourceBars.ID, 
                     (minecraft, screen) -> new ModConfigScreen(screen) 
                 );
@@ -115,9 +103,6 @@ public class DynamicResourceBars #if FABRIC implements ModInitializer, ClientMod
 
     // Forge/NeoForge specific setup methods that call the shared onInitialize/onInitializeClient
     #if FORGELIKE
-    public void commonSetup(FMLCommonSetupEvent event) { 
-        this.onInitialize(); 
-    }
     public void clientSetup(FMLClientSetupEvent event) { 
         this.onInitializeClient(); 
     }
