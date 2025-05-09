@@ -1,7 +1,27 @@
 package dev.muon.dynamic_resource_bars.mixin;
 
+import com.llamalad7.mixinextras.injector.ModifyExpressionValue;
+import com.llamalad7.mixinextras.injector.wrapoperation.Operation;
+import com.llamalad7.mixinextras.injector.wrapoperation.WrapOperation;
+import dev.muon.dynamic_resource_bars.config.ClientConfig;
+import dev.muon.dynamic_resource_bars.config.ModConfigManager;
+import dev.muon.dynamic_resource_bars.render.AirBarRenderer;
+import dev.muon.dynamic_resource_bars.render.HealthBarRenderer;
+import dev.muon.dynamic_resource_bars.render.StaminaBarRenderer;
+import dev.muon.dynamic_resource_bars.util.BarRenderBehavior;
+import dev.muon.dynamic_resource_bars.util.HUDPositioning;
+import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Gui;
+import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.world.entity.player.Player;
+import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
+import org.spongepowered.asm.mixin.Shadow;
+import org.spongepowered.asm.mixin.Unique;
+import org.spongepowered.asm.mixin.injection.ModifyArg;
+import org.spongepowered.asm.mixin.injection.At;
+import org.spongepowered.asm.mixin.injection.Inject;
+import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
 #if NEWER_THAN_20_1
     import net.minecraft.client.DeltaTracker;
@@ -10,7 +30,8 @@ import org.spongepowered.asm.mixin.Mixin;
 @Mixin(value = Gui.class, priority = 499)
 public class GuiMixin {
     #if NEWER_THAN_20_1
-    @Shadow @Final
+    @Shadow
+    @Final
     private Minecraft minecraft;
 
     @Unique
@@ -62,7 +83,7 @@ public class GuiMixin {
     )
     private void replaceFoodAndAir(GuiGraphics guiGraphics, CallbackInfo ci) {
         Player player = this.minecraft.player;
-        CClient config = ModConfigManager.getClient();
+        ClientConfig config = ModConfigManager.getClient();
         boolean customStaminaEnabled = config.enableStaminaBar.get();
         BarRenderBehavior airBehavior = config.airBarBehavior.get();
 
@@ -84,7 +105,7 @@ public class GuiMixin {
         at = @At(value = "INVOKE", target = "Lnet/minecraft/world/entity/player/Player;getArmorValue()I")
     )
     private int dynamicbars$modifyArmorValue(int originalArmorValue) {
-        CClient config = ModConfigManager.getClient();
+        ClientConfig config = ModConfigManager.getClient();
         BarRenderBehavior armorBehavior = config.armorBarBehavior.get();
         if (armorBehavior == BarRenderBehavior.CUSTOM || armorBehavior == BarRenderBehavior.HIDDEN) {
             return 0;
