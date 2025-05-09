@@ -3,7 +3,7 @@ package dev.muon.dynamic_resource_bars.render;
 import com.google.common.collect.Multimap;
 import com.mojang.blaze3d.systems.RenderSystem;
 import dev.muon.dynamic_resource_bars.DynamicResourceBars;
-import dev.muon.dynamic_resource_bars.foundation.config.AllConfigs;
+import dev.muon.dynamic_resource_bars.foundation.config.ModConfigManager;
 import dev.muon.dynamic_resource_bars.util.HUDPositioning;
 import dev.muon.dynamic_resource_bars.util.Position;
 import dev.muon.dynamic_resource_bars.util.RenderUtil;
@@ -59,24 +59,24 @@ public class ArmorBarRenderer {
                 return NONE;
             }
 
-            int maxArmor = AllConfigs.client().maxExpectedArmor.get();
+            int maxArmor = ModConfigManager.getClient().maxExpectedArmor.get();
             int tier = Math.max(1, Math.min(10, (int) ((float) armorValue / maxArmor * 10)));
             return values()[tier];
         }
     }
 
     public static void render(GuiGraphics graphics, Player player) {
-        if (AllConfigs.client().hideArmorBar.get()) return;
-        Position armorPos = HUDPositioning.getPositionFromAnchor(AllConfigs.client().armorBarAnchor.get())
-                .offset(AllConfigs.client().armorTotalXOffset.get(), AllConfigs.client().armorTotalYOffset.get());
+        if (ModConfigManager.getClient().hideArmorBar.get()) return;
+        Position armorPos = HUDPositioning.getPositionFromAnchor(ModConfigManager.getClient().armorBarAnchor.get())
+                .offset(ModConfigManager.getClient().armorTotalXOffset.get(), ModConfigManager.getClient().armorTotalYOffset.get());
 
-        int backgroundWidth = AllConfigs.client().armorBackgroundWidth.get();
-        int backgroundHeight = AllConfigs.client().armorBackgroundHeight.get();
-        int barWidth = AllConfigs.client().armorBarWidth.get();
-        int barHeight = AllConfigs.client().armorBarHeight.get();
-        int barOnlyXOffset = AllConfigs.client().armorBarXOffset.get();
-        int barOnlyYOffset = AllConfigs.client().armorBarYOffset.get();
-        int iconSize = AllConfigs.client().armorIconSize.get();
+        int backgroundWidth = ModConfigManager.getClient().armorBackgroundWidth.get();
+        int backgroundHeight = ModConfigManager.getClient().armorBackgroundHeight.get();
+        int barWidth = ModConfigManager.getClient().armorBarWidth.get();
+        int barHeight = ModConfigManager.getClient().armorBarHeight.get();
+        int barOnlyXOffset = ModConfigManager.getClient().armorBarXOffset.get();
+        int barOnlyYOffset = ModConfigManager.getClient().armorBarYOffset.get();
+        int iconSize = ModConfigManager.getClient().armorIconSize.get();
 
         int xPos = armorPos.x();
         int yPos = armorPos.y();
@@ -86,13 +86,13 @@ public class ArmorBarRenderer {
         );
 
         int armorValue = player.getArmorValue();
-        float armorPercent = Math.min(1.0f, (float) armorValue / AllConfigs.client().maxExpectedArmor.get());
+        float armorPercent = Math.min(1.0f, (float) armorValue / ModConfigManager.getClient().maxExpectedArmor.get());
 
         int filledWidth = Math.round((barWidth - (float) iconSize / 2) * armorPercent);
         if (filledWidth > 0) {
             graphics.blit(
                     DynamicResourceBars.loc("textures/gui/armor_bar.png"),
-                    xPos + (AllConfigs.client().enableArmorIcon.get() ? barOnlyXOffset + iconSize / 2 : barOnlyXOffset),
+                    xPos + (ModConfigManager.getClient().enableArmorIcon.get() ? barOnlyXOffset + iconSize / 2 : barOnlyXOffset),
                     yPos + barOnlyYOffset,
                     0, 0,
                     filledWidth,
@@ -111,12 +111,12 @@ public class ArmorBarRenderer {
         }
         renderProtectionOverlay(graphics, player, xPos, yPos, barWidth, barHeight, barOnlyXOffset, barOnlyYOffset, iconSize);
 
-        if (AllConfigs.client().enableArmorIcon.get()) {
+        if (ModConfigManager.getClient().enableArmorIcon.get()) {
             ArmorIcon icon = ArmorIcon.fromArmorValue(armorValue);
             graphics.blit(
                     DynamicResourceBars.loc("textures/gui/armors/" + icon.getTexture() + ".png"),
-                    xPos - 1 + AllConfigs.client().armorIconXOffset.get(),
-                    yPos + (backgroundHeight - iconSize) / 2 - 2 + AllConfigs.client().armorIconYOffset.get(),
+                    xPos - 1 + ModConfigManager.getClient().armorIconXOffset.get(),
+                    yPos + (backgroundHeight - iconSize) / 2 - 2 + ModConfigManager.getClient().armorIconYOffset.get(),
                     0, 0,
                     iconSize, iconSize,
                     iconSize, iconSize
@@ -140,20 +140,20 @@ public class ArmorBarRenderer {
         RenderSystem.enableBlend();
         RenderSystem.defaultBlendFunc();
 
-        int frameHeight = AllConfigs.client().protOverlayFrameHeight.get();
-        int animationCycles = AllConfigs.client().protOverlayAnimationCycles.get();
-        int maxProtection = AllConfigs.client().maxExpectedProt.get();
+        int frameHeight = ModConfigManager.getClient().protOverlayFrameHeight.get();
+        int animationCycles = ModConfigManager.getClient().protOverlayAnimationCycles.get();
+        int maxProtection = ModConfigManager.getClient().maxExpectedProt.get();
 
         int animOffset = (int)(((player.tickCount + #if NEWER_THAN_20_1 Minecraft.getInstance().getTimer().getGameTimeDeltaTicks() #else Minecraft.getInstance().getFrameTime() #endif) / 3) % animationCycles) * frameHeight;
 
         float protectionScale = Math.min(1.0f, (float)totalProtection / maxProtection);
-        int adjustedBarWidth = AllConfigs.client().enableArmorIcon.get() ?
+        int adjustedBarWidth = ModConfigManager.getClient().enableArmorIcon.get() ?
                 barWidth - (iconSize / 2) : barWidth;
         int overlayWidth = (int)(adjustedBarWidth * protectionScale);
 
         graphics.blit(
                 DynamicResourceBars.loc("textures/gui/protection_overlay.png"),
-                xPos + (AllConfigs.client().enableArmorIcon.get() ? barOnlyXOffset + iconSize / 2 : barOnlyXOffset),
+                xPos + (ModConfigManager.getClient().enableArmorIcon.get() ? barOnlyXOffset + iconSize / 2 : barOnlyXOffset),
                 yPos + barOnlyYOffset,
                 0, animOffset,
                 overlayWidth, barHeight,

@@ -14,7 +14,8 @@
   "gui.dynamic_resource_bars.element.stamina_bar": "Stamina Bar",
 
   "gui.dynamic_resource_bars.hud_editor.title": "HUD Element Editor",
-  "gui.dynamic_resource_bars.hud_editor.help.main": "Drag elements. Double-click a bar for sub-element tweaks. ESC to save & exit.",
+  "gui.dynamic_resource_bars.hud_editor.help.main.line1": "Click and drag bars to move. ESC to save & exit.",
+  "gui.dynamic_resource_bars.hud_editor.help.main.line2": "Double-click a bar for sub-element tweaks.",
   "gui.dynamic_resource_bars.hud_editor.help.focus": "Drag sub-elements. Double-click bar to unfocus. ESC to save & exit.",
   "gui.dynamic_resource_bars.hud_editor.header.settings_format": "%s Settings",
 
@@ -32,7 +33,7 @@
   "gui.dynamic_resource_bars.hud_editor.button.show_text_cycle_format": "Text: %s",
   "gui.dynamic_resource_bars.hud_editor.button.text_align_cycle_format": "Text Align: %s",
   "gui.dynamic_resource_bars.hud_editor.button.anchor_cycle_format": "Anchor: %s",
-  "gui.dynamic_resource_bars.hud_editor.button.resize": "Resize...",
+  "gui.dynamic_resource_bars.hud_editor.button.resize": "Change Sizes",
   "gui.dynamic_resource_bars.hud_editor.button.reset_position": "Reset Position",
   "gui.dynamic_resource_bars.hud_editor.button.reset_sizes": "Reset Sizes",
 

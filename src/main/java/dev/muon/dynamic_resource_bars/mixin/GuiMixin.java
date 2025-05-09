@@ -3,7 +3,7 @@ package dev.muon.dynamic_resource_bars.mixin;
 import com.llamalad7.mixinextras.injector.ModifyExpressionValue;
 import com.llamalad7.mixinextras.injector.wrapoperation.Operation;
 import com.llamalad7.mixinextras.injector.wrapoperation.WrapOperation;
-import dev.muon.dynamic_resource_bars.foundation.config.AllConfigs;
+import dev.muon.dynamic_resource_bars.foundation.config.ModConfigManager;
 import dev.muon.dynamic_resource_bars.render.AirBarRenderer;
 import dev.muon.dynamic_resource_bars.render.ArmorBarRenderer;
 import dev.muon.dynamic_resource_bars.render.HealthBarRenderer;
@@ -49,8 +49,8 @@ public class GuiMixin {
             index = 2
     )
     private static int shiftOnlyByBarHeight(int originalY) {
-        if (AllConfigs.client().enableHealthBar.get()) {
-            return Minecraft.getInstance().getWindow().getGuiScaledHeight() - HUDPositioning.getHealthAnchor().y() - AllConfigs.client().healthBackgroundHeight.get();
+        if (ModConfigManager.getClient().enableHealthBar.get()) {
+            return Minecraft.getInstance().getWindow().getGuiScaledHeight() - HUDPositioning.getHealthAnchor().y() - ModConfigManager.getClient().healthBackgroundHeight.get();
         }
         return originalY;
     }
@@ -68,7 +68,7 @@ public class GuiMixin {
             at = @At(value = "INVOKE", target = "Lnet/minecraft/client/gui/Gui;renderHearts(Lnet/minecraft/client/gui/GuiGraphics;Lnet/minecraft/world/entity/player/Player;IIIIFIIIZ)V")
     )
     private void replaceHearts(Gui instance, GuiGraphics guiGraphics, Player player, int x, int y, int height, int offsetHeartIndex, float maxHealth, int currentHealth, int displayHealth, int absorptionAmount, boolean renderHighlight, Operation<Void> original) {
-        if (AllConfigs.client().enableHealthBar.get()) {
+        if (ModConfigManager.getClient().enableHealthBar.get()) {
             HealthBarRenderer.render(guiGraphics, player, maxHealth, currentHealth, absorptionAmount, this.minecraft.getFrameTime());
         } else {
             original.call(instance, guiGraphics, player, x, y, height, offsetHeartIndex, maxHealth, currentHealth, displayHealth, absorptionAmount, renderHighlight);
@@ -81,7 +81,7 @@ public class GuiMixin {
             cancellable = true
     )
     private void replaceFoodAndAir(GuiGraphics guiGraphics, CallbackInfo ci) {
-        if (!AllConfigs.client().enableStaminaBar.get()) {
+        if (!ModConfigManager.getClient().enableStaminaBar.get()) {
             return;
         }
         Player player = this.minecraft.player;
@@ -96,7 +96,7 @@ public class GuiMixin {
     @ModifyVariable(method = "renderPlayerHealth", at = @At("STORE"), ordinal = 11, slice = @Slice(from = @At(value = "INVOKE", target = "Lnet/minecraft/world/entity/player/Player;getArmorValue()I"), to = @At(value = "FIELD", target = "Lnet/minecraft/world/effect/MobEffects;REGENERATION:Lnet/minecraft/world/effect/MobEffect;")))
     private int replaceArmor(int armorValue, GuiGraphics guiGraphics) {
         Player player = this.minecraft.player;
-        if (AllConfigs.client().disableDefaultArmor.get()) {
+        if (ModConfigManager.getClient().disableDefaultArmor.get()) {
             armorValue = 0;
         }
         //    ArmorBarRenderer.render(guiGraphics, player);

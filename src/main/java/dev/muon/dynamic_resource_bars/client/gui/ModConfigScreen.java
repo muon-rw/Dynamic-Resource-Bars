@@ -53,24 +53,6 @@ public class ModConfigScreen extends Screen {
 
         currentY += buttonHeight + 5;
 
-        // Optional: Button to open ToniLib's default config screen (if it provides one directly)
-        // This requires knowing how ToniLib would normally open its screen.
-        // For example, if it registers its own screen factory with a specific ID or uses Forge's ConfigurationScreen.
-        // If AllConfigs.getScreenFactory() existed and returned a BiFunction<Minecraft, Screen, Screen>:
-        /*
-        java.util.function.BiFunction<Minecraft, Screen, Screen> toniLibScreenFactory = AllConfigs.getToniLibScreenFactory();
-        if (toniLibScreenFactory != null) {
-            this.addRenderableWidget(Button.builder(
-                Component.literal("Advanced Settings (ToniLib)"),
-                (button) -> {
-                    this.minecraft.setScreen(toniLibScreenFactory.apply(this.minecraft, this));
-                })
-                .bounds(centerX - buttonWidth / 2, currentY, buttonWidth, buttonHeight)
-                .build());
-            currentY += buttonHeight + 5;
-        }
-        */
-
         // Done Button
         this.addRenderableWidget(Button.builder(
                 Component.translatable("gui.done"),
@@ -86,9 +68,12 @@ public class ModConfigScreen extends Screen {
         #else
             this.renderBackground(graphics);
         #endif
-        graphics.drawCenteredString(this.font, this.title, this.width / 2, 20, 0xFFFFFF);
-        // Render widgets (buttons)
+        
+        // Render widgets (buttons) and their tooltips first
         super.render(graphics, mouseX, mouseY, partialTicks);
+
+        // Draw title text AFTER super.render() to ensure it's on top
+        graphics.drawCenteredString(this.font, this.title, this.width / 2, 20, 0xFFFFFF);
     }
 
     @Override

@@ -2,7 +2,7 @@ package dev.muon.dynamic_resource_bars.render;
 
 import com.mojang.blaze3d.systems.RenderSystem;
 import dev.muon.dynamic_resource_bars.DynamicResourceBars;
-import dev.muon.dynamic_resource_bars.foundation.config.AllConfigs;
+import dev.muon.dynamic_resource_bars.foundation.config.ModConfigManager;
 import dev.muon.dynamic_resource_bars.util.HUDPositioning;
 import dev.muon.dynamic_resource_bars.util.ManaProvider;
 import dev.muon.dynamic_resource_bars.util.Position;
@@ -34,10 +34,10 @@ public class ManaBarRenderer {
     public static ScreenRect getScreenRect(Player player) {
         if (player == null && Minecraft.getInstance().player == null) return new ScreenRect(0,0,0,0);
 
-        Position manaPosBase = HUDPositioning.getPositionFromAnchor(AllConfigs.client().manaBarAnchor.get());
-        Position manaPos = manaPosBase.offset(AllConfigs.client().manaTotalXOffset.get(), AllConfigs.client().manaTotalYOffset.get());
-        int backgroundWidth = AllConfigs.client().manaBackgroundWidth.get();
-        int backgroundHeight = AllConfigs.client().manaBackgroundHeight.get();
+        Position manaPosBase = HUDPositioning.getPositionFromAnchor(ModConfigManager.getClient().manaBarAnchor.get());
+        Position manaPos = manaPosBase.offset(ModConfigManager.getClient().manaTotalXOffset.get(), ModConfigManager.getClient().manaTotalYOffset.get());
+        int backgroundWidth = ModConfigManager.getClient().manaBackgroundWidth.get();
+        int backgroundHeight = ModConfigManager.getClient().manaBackgroundHeight.get();
         
         return new ScreenRect(manaPos.x(), manaPos.y(), backgroundWidth, backgroundHeight);
     }
@@ -52,18 +52,18 @@ public class ManaBarRenderer {
         switch (type) {
             case BACKGROUND:
                 return new ScreenRect(x, y, 
-                                      AllConfigs.client().manaBackgroundWidth.get(), 
-                                      AllConfigs.client().manaBackgroundHeight.get());
+                                      ModConfigManager.getClient().manaBackgroundWidth.get(), 
+                                      ModConfigManager.getClient().manaBackgroundHeight.get());
             case BAR_MAIN:
-                return new ScreenRect(x + AllConfigs.client().manaBarXOffset.get(), 
-                                      y + AllConfigs.client().manaBarYOffset.get(), 
-                                      AllConfigs.client().manaBarWidth.get(), 
-                                      AllConfigs.client().manaBarHeight.get());
+                return new ScreenRect(x + ModConfigManager.getClient().manaBarXOffset.get(), 
+                                      y + ModConfigManager.getClient().manaBarYOffset.get(), 
+                                      ModConfigManager.getClient().manaBarWidth.get(), 
+                                      ModConfigManager.getClient().manaBarHeight.get());
             case FOREGROUND_DETAIL:
-                return new ScreenRect(x + AllConfigs.client().manaOverlayXOffset.get(), 
-                                      y + AllConfigs.client().manaOverlayYOffset.get(), 
-                                      AllConfigs.client().manaOverlayWidth.get(),
-                                      AllConfigs.client().manaOverlayHeight.get());
+                return new ScreenRect(x + ModConfigManager.getClient().manaOverlayXOffset.get(), 
+                                      y + ModConfigManager.getClient().manaOverlayYOffset.get(), 
+                                      ModConfigManager.getClient().manaOverlayWidth.get(),
+                                      ModConfigManager.getClient().manaOverlayHeight.get());
             default:
                 return new ScreenRect(0,0,0,0); 
         }
@@ -74,7 +74,7 @@ public class ManaBarRenderer {
             return;
         }
 
-        if (AllConfigs.client().fadeManaWhenFull.get() && manaProvider.getCurrentMana() >= manaProvider.getMaxMana()) {
+        if (ModConfigManager.getClient().fadeManaWhenFull.get() && manaProvider.getCurrentMana() >= manaProvider.getMaxMana()) {
             setBarVisibility(false);
         } else {
             setBarVisibility(true);
@@ -98,12 +98,12 @@ public class ManaBarRenderer {
 
         int backgroundWidth = complexRect.width();
         int backgroundHeight = complexRect.height();
-        int animationCycles = AllConfigs.client().manaBarAnimationCycles.get();
-        int frameHeight = AllConfigs.client().manaBarFrameHeight.get();
+        int animationCycles = ModConfigManager.getClient().manaBarAnimationCycles.get();
+        int frameHeight = ModConfigManager.getClient().manaBarFrameHeight.get();
         int animOffset = (int) (((player.tickCount + #if NEWER_THAN_20_1 deltaTracker.getGameTimeDeltaTicks() #else partialTicks #endif) / 3) % animationCycles) * frameHeight;
-        boolean isRightAnchored = AllConfigs.client().manaBarAnchor.get().getSide() == HUDPositioning.AnchorSide.RIGHT;
+        boolean isRightAnchored = ModConfigManager.getClient().manaBarAnchor.get().getSide() == HUDPositioning.AnchorSide.RIGHT;
 
-        if (AllConfigs.client().enableManaBackground.get()) {
+        if (ModConfigManager.getClient().enableManaBackground.get()) {
              ScreenRect bgRect = getSubElementRect(SubElementType.BACKGROUND, player); 
              graphics.blit(DynamicResourceBars.loc("textures/gui/mana_background.png"),
                      bgRect.x(), bgRect.y(), 0, 0, bgRect.width(), bgRect.height(), 256, 256);
@@ -114,7 +114,7 @@ public class ManaBarRenderer {
 
         renderReservedOverlay(graphics, manaProvider, animOffset, barRect);
 
-        if (AllConfigs.client().enableManaForeground.get()) {
+        if (ModConfigManager.getClient().enableManaForeground.get()) {
             ScreenRect fgRect = getSubElementRect(SubElementType.FOREGROUND_DETAIL, player);
             graphics.blit(DynamicResourceBars.loc("textures/gui/detail_overlay.png"),
                     fgRect.x(), fgRect.y(),
@@ -124,7 +124,7 @@ public class ManaBarRenderer {
         // Text Rendering
         if (shouldRenderManaText(manaProvider.getCurrentMana(), manaProvider.getMaxMana())) {
             int color = getManaTextColor(manaProvider.getCurrentMana(), manaProvider.getMaxMana(), currentAlphaForRender);
-            HorizontalAlignment alignment = AllConfigs.client().manaTextAlign.get();
+            HorizontalAlignment alignment = ModConfigManager.getClient().manaTextAlign.get();
 
             int baseX = barRect.x();
             if (alignment == HorizontalAlignment.CENTER) {
@@ -147,14 +147,14 @@ public class ManaBarRenderer {
             if (EditModeManager.getFocusedElement() == currentBarType) {
                 int focusedBorderColor = 0xA0FFFF00;
                 ScreenRect bgRect = getSubElementRect(SubElementType.BACKGROUND, player);
-                if (AllConfigs.client().enableManaBackground.get()) {
+                if (ModConfigManager.getClient().enableManaBackground.get()) {
                      graphics.renderOutline(bgRect.x()-1, bgRect.y()-1, bgRect.width()+2, bgRect.height()+2, focusedBorderColor);
                 }
                 
                 ScreenRect barRectOutline = getSubElementRect(SubElementType.BAR_MAIN, player);
                 graphics.renderOutline(barRectOutline.x()-1, barRectOutline.y()-1, barRectOutline.width()+2, barRectOutline.height()+2, 0xA000FFFF);
                 
-                if (AllConfigs.client().enableManaForeground.get()) {
+                if (ModConfigManager.getClient().enableManaForeground.get()) {
                     ScreenRect fgRect = getSubElementRect(SubElementType.FOREGROUND_DETAIL, player);
                     graphics.renderOutline(fgRect.x()-1, fgRect.y()-1, fgRect.width()+2, fgRect.height()+2, 0xA0FF00FF);
                 }
@@ -255,20 +255,22 @@ public class ManaBarRenderer {
     }
 
     private static int getManaTextColor(double currentMana, float maxMana, float barRenderAlpha) {
-        long timeSinceFullMana = fullManaStartTime > 0 ?
-                System.currentTimeMillis() - fullManaStartTime : 0;
-        int alpha = RenderUtil.BASE_TEXT_ALPHA;
-        TextBehavior textBehavior = AllConfigs.client().showManaText.get();
-        if (textBehavior == TextBehavior.WHEN_NOT_FULL) {
-            if (currentMana >= maxMana) { 
-                alpha = RenderUtil.calculateTextAlpha(timeSinceFullMana);
+        TextBehavior textBehavior = ModConfigManager.getClient().showManaText.get();
+        int baseColor = 0xFFFFFF; // White
+        int alpha = (int) (barRenderAlpha * 255);
+
+        if (textBehavior == TextBehavior.WHEN_NOT_FULL && currentMana >= maxMana) {
+            long timeSinceFull = Minecraft.getInstance().level.getGameTime() - fullManaStartTime;
+            if (timeSinceFull >= RenderUtil.TEXT_DISPLAY_DURATION) {
+                alpha = 0; // Fade out text completely after duration if bar itself isn't fading
+            } else if (!barSetVisible) { // If bar is fading, text alpha is already handled by barRenderAlpha
+                 // If bar is NOT fading (i.e. fadeManaWhenFull is false), but text is WHEN_NOT_FULL,
+                 // then text should fade independently after becoming full.
+                 alpha = RenderUtil.calculateTextAlpha(timeSinceFull);
             }
-        } else if (textBehavior == TextBehavior.NEVER) {
-            alpha = 0; 
         }
-        alpha = (int)(alpha * barRenderAlpha);
-        alpha = Math.max(10, alpha);
-        return (alpha << 24) | 0xFFFFFF;
+        alpha = Math.min(255, Math.max(0, alpha)); // Clamp alpha
+        return (alpha << 24) | baseColor;
     }
 
     private static int getManaTextColor(double currentMana, float maxMana) {
@@ -276,28 +278,25 @@ public class ManaBarRenderer {
     }
 
     private static boolean shouldRenderManaText(double currentMana, float maxMana) {
-        if (currentMana >= maxMana) {
-            if (lastMana < maxMana) {
-                fullManaStartTime = System.currentTimeMillis();
-            }
-        } else {
-            fullManaStartTime = 0;
+        TextBehavior behavior = ModConfigManager.getClient().showManaText.get();
+        if (behavior == TextBehavior.NEVER) {
+            return false;
         }
-        lastMana = (float) currentMana;
-
-        dev.muon.dynamic_resource_bars.util.TextBehavior textBehavior = AllConfigs.client().showManaText.get();
-        switch (textBehavior) {
-            case ALWAYS:
-                return getCurrentAlpha() > 0.05f;
-            case NEVER:
-                return false;
-            case WHEN_NOT_FULL:
-                long timeSinceFullMana = fullManaStartTime > 0 ?
-                        System.currentTimeMillis() - fullManaStartTime : 0;
-                return (currentMana < maxMana || (fullManaStartTime > 0 && timeSinceFullMana < RenderUtil.TEXT_DISPLAY_DURATION))
-                        && getCurrentAlpha() > 0.05f;
-            default:
-                return false;
+        if (behavior == TextBehavior.ALWAYS) {
+            return true;
+        }
+        // WHEN_NOT_FULL logic
+        boolean isFull = currentMana >= maxMana;
+        if (isFull) {
+            if (lastMana < maxMana || lastMana == -1) { // Just became full or first check
+                fullManaStartTime = Minecraft.getInstance().level.getGameTime();
+            }
+            lastMana = (float)currentMana;
+            // Show for a short duration after becoming full
+            return (Minecraft.getInstance().level.getGameTime() - fullManaStartTime) < RenderUtil.TEXT_DISPLAY_DURATION;
+        } else {
+            lastMana = (float)currentMana;
+            return true; // Not full, so show
         }
     }
 }

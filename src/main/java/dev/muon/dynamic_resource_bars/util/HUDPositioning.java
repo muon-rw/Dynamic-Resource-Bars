@@ -1,7 +1,7 @@
 package dev.muon.dynamic_resource_bars.util;
 
-import dev.muon.dynamic_resource_bars.foundation.config.AllConfigs;
 import net.minecraft.client.Minecraft;
+import dev.muon.dynamic_resource_bars.foundation.config.ModConfigManager;
 
 public class HUDPositioning {
     public enum BarPlacement {
@@ -49,9 +49,10 @@ public class HUDPositioning {
     public static Position getArmorAnchor() {
         int screenWidth = Minecraft.getInstance().getWindow().getGuiScaledWidth();
         int screenHeight = Minecraft.getInstance().getWindow().getGuiScaledHeight();
+        int healthBarHeight = ModConfigManager.getClient().enableHealthBar.get() ? ModConfigManager.getClient().healthBackgroundHeight.get() : 0;
         return new Position(
                 (screenWidth / 2) - 91,
-                getHealthAnchor().y() - AllConfigs.client().healthBackgroundHeight.get() - 1
+                getHealthAnchor().y() - healthBarHeight - 1
         );
     }
 
@@ -67,9 +68,10 @@ public class HUDPositioning {
     public static Position getAirAnchor() {
         int screenWidth = Minecraft.getInstance().getWindow().getGuiScaledWidth();
         int screenHeight = Minecraft.getInstance().getWindow().getGuiScaledHeight();
+        int staminaBarHeight = ModConfigManager.getClient().enableStaminaBar.get() ? ModConfigManager.getClient().staminaBackgroundHeight.get() : 0;
         return new Position(
                 (screenWidth / 2) + 91,
-                getHungerAnchor().y() - AllConfigs.client().staminaBackgroundHeight.get() - 1
+                getHungerAnchor().y() - staminaBarHeight - 1
         );
     }
 

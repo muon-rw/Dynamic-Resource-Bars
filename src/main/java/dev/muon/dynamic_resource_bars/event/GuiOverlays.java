@@ -1,6 +1,6 @@
 package dev.muon.dynamic_resource_bars.event;
 
-import dev.muon.dynamic_resource_bars.foundation.config.AllConfigs;
+import dev.muon.dynamic_resource_bars.foundation.config.ModConfigManager;
 import dev.muon.dynamic_resource_bars.render.ArmorBarRenderer;
 import dev.muon.dynamic_resource_bars.render.HealthBarRenderer;
 import dev.muon.dynamic_resource_bars.render.StaminaBarRenderer;
@@ -18,18 +18,23 @@ public class GuiOverlays {
         var player = minecraft.player;
         if (player == null) return;
 
-        if (AllConfigs.client().enableHealthBar.get()) {
+        if (ModConfigManager.getClient().enableHealthBar.get()) {
             HealthBarRenderer.render(graphics, player, player.getMaxHealth(), player.getHealth(), (int) player.getAbsorptionAmount(), partialTick);
-            gui.leftHeight += AllConfigs.client().healthBackgroundHeight.get() + 1;
+            gui.leftHeight += ModConfigManager.getClient().healthBackgroundHeight.get() + 1;
         }
-        if (AllConfigs.client().enableStaminaBar.get()) {
+        if (ModConfigManager.getClient().enableStaminaBar.get()) {
             StaminaBarRenderer.render(graphics, player, partialTick);
-            gui.rightHeight += AllConfigs.client().staminaBackgroundHeight.get() + 1;
+            gui.rightHeight += ModConfigManager.getClient().staminaBackgroundHeight.get() + 1;
         }
 
-        if (AllConfigs.client().enableArmorBar.get()) {
-            ArmorBarRenderer.render(graphics, player);
-            gui.leftHeight += AllConfigs.client().armorBackgroundHeight.get() + 1;
+        if (ModConfigManager.getClient().enableArmorBar.get()) {
+            // ArmorBarRenderer.render(graphics, player); // Omitted as not implemented
+            
+            // Only adjust height if we are not completely hiding the bar
+            // (i.e., if enableArmorBar is true, and hideArmorBar is false)
+            if (!ModConfigManager.getClient().hideArmorBar.get()) {
+                gui.leftHeight += ModConfigManager.getClient().armorBackgroundHeight.get() + 1;
+            }
         }
 
     };

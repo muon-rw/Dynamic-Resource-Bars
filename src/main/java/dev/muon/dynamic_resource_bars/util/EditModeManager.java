@@ -1,7 +1,6 @@
 package dev.muon.dynamic_resource_bars.util;
 
 import dev.muon.dynamic_resource_bars.DynamicResourceBars;
-import dev.muon.dynamic_resource_bars.foundation.config.AllConfigs;
 
 public class EditModeManager {
     private static boolean editModeEnabled = false;

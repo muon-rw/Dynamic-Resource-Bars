@@ -56,10 +56,10 @@ public class ConfirmResetScreen extends Screen {
             this.renderBackground(graphics);
         #endif
 
+        super.render(graphics, mouseX, mouseY, partialTicks);
+
         graphics.drawCenteredString(this.font, this.title, this.width / 2, this.height / 2 - 20, 0xFFFFFF);
         graphics.drawCenteredString(this.font, this.explanation, this.width / 2, this.height / 2 - 5, 0xFFFFFF);
-
-        super.render(graphics, mouseX, mouseY, partialTicks);
     }
 
     @Override

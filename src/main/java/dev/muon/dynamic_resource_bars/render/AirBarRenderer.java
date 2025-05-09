@@ -1,7 +1,7 @@
 package dev.muon.dynamic_resource_bars.render;
 
 import dev.muon.dynamic_resource_bars.DynamicResourceBars;
-import dev.muon.dynamic_resource_bars.foundation.config.AllConfigs;
+import dev.muon.dynamic_resource_bars.foundation.config.ModConfigManager;
 import dev.muon.dynamic_resource_bars.util.HUDPositioning;
 import dev.muon.dynamic_resource_bars.util.Position;
 import dev.muon.dynamic_resource_bars.util.RenderUtil;
@@ -40,28 +40,28 @@ public class AirBarRenderer {
     }
 
     public static void render(GuiGraphics graphics, Player player) {
-        if (AllConfigs.client().hideAirBar.get()) return;
+        if (ModConfigManager.getClient().hideAirBar.get()) return;
 
         int maxAir = player.getMaxAirSupply();
         int currentAir = player.getAirSupply();
         if (currentAir >= maxAir && !player.isUnderWater()) return;
 
-        Position airPos = HUDPositioning.getPositionFromAnchor(AllConfigs.client().airBarAnchor.get());
-        boolean isRightAnchored = AllConfigs.client().airBarAnchor.get().getSide() == HUDPositioning.AnchorSide.RIGHT;
+        Position airPos = HUDPositioning.getPositionFromAnchor(ModConfigManager.getClient().airBarAnchor.get());
+        boolean isRightAnchored = ModConfigManager.getClient().airBarAnchor.get().getSide() == HUDPositioning.AnchorSide.RIGHT;
 
         if (isRightAnchored) {
-            airPos = airPos.offset(-AllConfigs.client().airBackgroundWidth.get(), 0);
+            airPos = airPos.offset(-ModConfigManager.getClient().airBackgroundWidth.get(), 0);
         }
 
-        airPos = airPos.offset(AllConfigs.client().airTotalXOffset.get(), AllConfigs.client().airTotalYOffset.get());
+        airPos = airPos.offset(ModConfigManager.getClient().airTotalXOffset.get(), ModConfigManager.getClient().airTotalYOffset.get());
 
-        int backgroundWidth = AllConfigs.client().airBackgroundWidth.get();
-        int backgroundHeight = AllConfigs.client().airBackgroundHeight.get();
-        int barWidth = AllConfigs.client().airBarWidth.get();
-        int barHeight = AllConfigs.client().airBarHeight.get();
-        int barOnlyXOffset = AllConfigs.client().airBarXOffset.get();
-        int barOnlyYOffset = AllConfigs.client().airBarYOffset.get();
-        int iconSize = AllConfigs.client().airIconSize.get();
+        int backgroundWidth = ModConfigManager.getClient().airBackgroundWidth.get();
+        int backgroundHeight = ModConfigManager.getClient().airBackgroundHeight.get();
+        int barWidth = ModConfigManager.getClient().airBarWidth.get();
+        int barHeight = ModConfigManager.getClient().airBarHeight.get();
+        int barOnlyXOffset = ModConfigManager.getClient().airBarXOffset.get();
+        int barOnlyYOffset = ModConfigManager.getClient().airBarYOffset.get();
+        int iconSize = ModConfigManager.getClient().airIconSize.get();
 
         int xPos = airPos.x();
         int yPos = airPos.y();
@@ -75,10 +75,10 @@ public class AirBarRenderer {
         int filledWidth = Math.round((barWidth - (float) iconSize / 2) * airPercent);
 
         if (filledWidth > 0) {
-            int barX = xPos + (AllConfigs.client().enableAirIcon.get() ? barOnlyXOffset + iconSize / 2 : barOnlyXOffset);
+            int barX = xPos + (ModConfigManager.getClient().enableAirIcon.get() ? barOnlyXOffset + iconSize / 2 : barOnlyXOffset);
             if (isRightAnchored) {
                 barX = xPos + backgroundWidth - barOnlyXOffset - filledWidth;
-                if (AllConfigs.client().enableAirIcon.get()) {
+                if (ModConfigManager.getClient().enableAirIcon.get()) {
                     barX -= iconSize / 2;
                 }
             }
@@ -103,16 +103,16 @@ public class AirBarRenderer {
                     graphics, textX, textY, color);
         }
 
-        if (AllConfigs.client().enableAirIcon.get()) {
+        if (ModConfigManager.getClient().enableAirIcon.get()) {
             AirIcon icon = AirIcon.fromAirValue(currentAir);
             int iconX = isRightAnchored ?
-                    xPos + backgroundWidth - iconSize + AllConfigs.client().airIconXOffset.get() :
-                    xPos - 1 + AllConfigs.client().airIconXOffset.get();
+                    xPos + backgroundWidth - iconSize + ModConfigManager.getClient().airIconXOffset.get() :
+                    xPos - 1 + ModConfigManager.getClient().airIconXOffset.get();
 
             graphics.blit(
                     DynamicResourceBars.loc("textures/gui/air/" + icon.getTexture() + ".png"),
                     iconX,
-                    yPos + (backgroundHeight - iconSize) / 2 - 2 + AllConfigs.client().airIconYOffset.get(),
+                    yPos + (backgroundHeight - iconSize) / 2 - 2 + ModConfigManager.getClient().airIconYOffset.get(),
                     0, 0,
                     iconSize, iconSize,
                     iconSize, iconSize

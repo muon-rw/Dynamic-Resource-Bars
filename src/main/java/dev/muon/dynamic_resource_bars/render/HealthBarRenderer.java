@@ -3,7 +3,7 @@ package dev.muon.dynamic_resource_bars.render;
 
 import com.mojang.blaze3d.systems.RenderSystem;
 import dev.muon.dynamic_resource_bars.DynamicResourceBars;
-import dev.muon.dynamic_resource_bars.foundation.config.AllConfigs;
+import dev.muon.dynamic_resource_bars.foundation.config.ModConfigManager;
 import dev.muon.dynamic_resource_bars.util.HUDPositioning;
 import dev.muon.dynamic_resource_bars.util.Position;
 import dev.muon.dynamic_resource_bars.util.RenderUtil;
@@ -30,6 +30,8 @@ public class HealthBarRenderer {
 
     private static float lastHealth = -1;
     private static long fullHealthStartTime = 0;
+    private static boolean healthBarSetVisible = true; // Default to visible
+    private static long healthBarDisabledStartTime = 0L;
 
     private enum BarType {
         NORMAL("health_bar"),
@@ -63,10 +65,10 @@ public class HealthBarRenderer {
 
     public static ScreenRect getScreenRect(Player player) {
         if (player == null) return new ScreenRect(0,0,0,0);
-        Position healthPos = HUDPositioning.getPositionFromAnchor(AllConfigs.client().healthBarAnchor.get())
-                .offset(AllConfigs.client().healthTotalXOffset.get(), AllConfigs.client().healthTotalYOffset.get());
-        int backgroundWidth = AllConfigs.client().healthBackgroundWidth.get();
-        int backgroundHeight = AllConfigs.client().healthBackgroundHeight.get();
+        Position healthPos = HUDPositioning.getPositionFromAnchor(ModConfigManager.getClient().healthBarAnchor.get())
+                .offset(ModConfigManager.getClient().healthTotalXOffset.get(), ModConfigManager.getClient().healthTotalYOffset.get());
+        int backgroundWidth = ModConfigManager.getClient().healthBackgroundWidth.get();
+        int backgroundHeight = ModConfigManager.getClient().healthBackgroundHeight.get();
         return new ScreenRect(healthPos.x(), healthPos.y(), backgroundWidth, backgroundHeight);
     }
 
@@ -80,18 +82,18 @@ public class HealthBarRenderer {
         switch (type) {
             case BACKGROUND:
                 return new ScreenRect(x, y, 
-                                      AllConfigs.client().healthBackgroundWidth.get(), 
-                                      AllConfigs.client().healthBackgroundHeight.get());
+                                      ModConfigManager.getClient().healthBackgroundWidth.get(), 
+                                      ModConfigManager.getClient().healthBackgroundHeight.get());
             case BAR_MAIN:
-                return new ScreenRect(x + AllConfigs.client().healthBarXOffset.get(), 
-                                      y + AllConfigs.client().healthBarYOffset.get(), 
-                                      AllConfigs.client().healthBarWidth.get(), 
-                                      AllConfigs.client().healthBarHeight.get());
+                return new ScreenRect(x + ModConfigManager.getClient().healthBarXOffset.get(), 
+                                      y + ModConfigManager.getClient().healthBarYOffset.get(), 
+                                      ModConfigManager.getClient().healthBarWidth.get(), 
+                                      ModConfigManager.getClient().healthBarHeight.get());
             case FOREGROUND_DETAIL:
-                return new ScreenRect(x + AllConfigs.client().healthOverlayXOffset.get(), 
-                                      y + AllConfigs.client().healthOverlayYOffset.get(), 
-                                      AllConfigs.client().healthOverlayWidth.get(),
-                                      AllConfigs.client().healthOverlayHeight.get());
+                return new ScreenRect(x + ModConfigManager.getClient().healthOverlayXOffset.get(), 
+                                      y + ModConfigManager.getClient().healthOverlayYOffset.get(), 
+                                      ModConfigManager.getClient().healthOverlayWidth.get(),
+                                      ModConfigManager.getClient().healthOverlayHeight.get());
             default:
                 return new ScreenRect(0,0,0,0);
         }
@@ -100,27 +102,39 @@ public class HealthBarRenderer {
     public static void render(GuiGraphics graphics, Player player, float maxHealth, float actualHealth, int absorptionAmount,
             #if NEWER_THAN_20_1 DeltaTracker deltaTracker #else float partialTicks #endif) {
 
-        if (AllConfigs.client().fadeHealthWhenFull.get() && actualHealth >= maxHealth && absorptionAmount == 0 && !EditModeManager.isEditModeEnabled()) {
+        boolean shouldFade = ModConfigManager.getClient().fadeHealthWhenFull.get() && actualHealth >= maxHealth && absorptionAmount == 0;
+        setHealthBarVisibility(!shouldFade || EditModeManager.isEditModeEnabled());
+
+        if (!isHealthBarVisible() && !EditModeManager.isEditModeEnabled() && (System.currentTimeMillis() - healthBarDisabledStartTime) > RenderUtil.BAR_FADEOUT_DURATION) {
             return;
         }
 
         if (!Minecraft.getInstance().gameMode.canHurtPlayer() && !EditModeManager.isEditModeEnabled()) {
             return;
         }
+
+        float currentAlphaForRender = getHealthBarAlpha();
+        if (EditModeManager.isEditModeEnabled() && !isHealthBarVisible()) {
+            currentAlphaForRender = 1.0f; // Show fully if in edit mode, even if normally faded
+        }
+
+        RenderSystem.enableBlend();
+        RenderSystem.setShaderColor(1.0f, 1.0f, 1.0f, currentAlphaForRender);
+
         ScreenRect complexRect = getScreenRect(player);
         int xPos = complexRect.x();
         int yPos = complexRect.y();
 
-        int backgroundWidth = AllConfigs.client().healthBackgroundWidth.get();
-        int backgroundHeight = AllConfigs.client().healthBackgroundHeight.get();
-        int barWidth = AllConfigs.client().healthBarWidth.get();
-        int barHeight = AllConfigs.client().healthBarHeight.get();
-        int barOnlyXOffset = AllConfigs.client().healthBarXOffset.get();
-        int barOnlyYOffset = AllConfigs.client().healthBarYOffset.get();
-        int animationCycles = AllConfigs.client().healthBarAnimationCycles.get();
-        int frameHeight = AllConfigs.client().healthBarFrameHeight.get();
+        int backgroundWidth = ModConfigManager.getClient().healthBackgroundWidth.get();
+        int backgroundHeight = ModConfigManager.getClient().healthBackgroundHeight.get();
+        int barWidth = ModConfigManager.getClient().healthBarWidth.get();
+        int barHeight = ModConfigManager.getClient().healthBarHeight.get();
+        int barOnlyXOffset = ModConfigManager.getClient().healthBarXOffset.get();
+        int barOnlyYOffset = ModConfigManager.getClient().healthBarYOffset.get();
+        int animationCycles = ModConfigManager.getClient().healthBarAnimationCycles.get();
+        int frameHeight = ModConfigManager.getClient().healthBarFrameHeight.get();
 
-        if (AllConfigs.client().enableHealthBackground.get()) {
+        if (ModConfigManager.getClient().enableHealthBackground.get()) {
             ScreenRect bgRect = getSubElementRect(SubElementType.BACKGROUND, player);
             graphics.blit(
                     DynamicResourceBars.loc("textures/gui/health_background.png"), 
@@ -149,7 +163,7 @@ public class HealthBarRenderer {
 
         if (shouldRenderHealthText(actualHealth, maxHealth, player)) {
             int color = getHealthTextColor(actualHealth, maxHealth);
-            HorizontalAlignment alignment = AllConfigs.client().healthTextAlign.get();
+            HorizontalAlignment alignment = ModConfigManager.getClient().healthTextAlign.get();
 
             int baseX = mainBarRect.x();
             if (alignment == HorizontalAlignment.CENTER) {
@@ -168,7 +182,7 @@ public class HealthBarRenderer {
         if (absorptionAmount > 0) {
             String absorptionText = "+" + absorptionAmount;
             Minecraft mc = Minecraft.getInstance();
-            float scalingFactor = AllConfigs.client().textScalingFactor.getF();
+            float scalingFactor = ModConfigManager.getClient().textScalingFactor.get().floatValue();
             // Width of the text *before* our utility scales it
             int unscaledTextWidth = mc.font.width(absorptionText);
 
@@ -177,7 +191,7 @@ public class HealthBarRenderer {
             int absorptionTextX = complexRect.x() + backgroundWidth - (int)(unscaledTextWidth * scalingFactor) - 2; // 2px padding from the right edge
             int absorptionTextY = mainBarRect.y() + (mainBarRect.height() / 2); // Vertically centered with the main bar
 
-            RenderUtil.renderAdditionText(absorptionText, graphics, absorptionTextX, absorptionTextY, (RenderUtil.BASE_TEXT_ALPHA << 24) | 0xFFFFFF);
+            RenderUtil.renderAdditionText(absorptionText, graphics, absorptionTextX, absorptionTextY, ((int)(RenderUtil.BASE_TEXT_ALPHA * currentAlphaForRender) << 24) | 0xFFFFFF);
         }
 
         if (EditModeManager.isEditModeEnabled()) {
@@ -190,7 +204,7 @@ public class HealthBarRenderer {
                 ScreenRect barRect = getSubElementRect(SubElementType.BAR_MAIN, player);
                 graphics.renderOutline(barRect.x()-1, barRect.y()-1, barRect.width()+2, barRect.height()+2, 0xA000FF00);
                 
-                if (AllConfigs.client().enableHealthForeground.get()) {
+                if (ModConfigManager.getClient().enableHealthForeground.get()) {
                     ScreenRect fgRect = getSubElementRect(SubElementType.FOREGROUND_DETAIL, player);
                     graphics.renderOutline(fgRect.x()-1, fgRect.y()-1, fgRect.width()+2, fgRect.height()+2, 0xA0FF00FF);
                 }
@@ -200,6 +214,8 @@ public class HealthBarRenderer {
                 graphics.renderOutline(complexRect.x()-1, complexRect.y()-1, complexRect.width()+2, complexRect.height()+2, borderColor);
             }
         }
+        RenderSystem.setShaderColor(1.0f, 1.0f, 1.0f, 1.0f); // Reset shader color
+        RenderSystem.disableBlend(); // Ensure blend is disabled after rendering this bar
     }
 
     private static void renderBaseBar(GuiGraphics graphics, Player player, float maxHealth, float actualHealth,
@@ -269,7 +285,7 @@ public class HealthBarRenderer {
             RenderSystem.disableBlend();
         }
 
-        if (AllConfigs.client().enableHealthForeground.get()) {
+        if (ModConfigManager.getClient().enableHealthForeground.get()) {
             ScreenRect fgRect = getSubElementRect(SubElementType.FOREGROUND_DETAIL, player);
             graphics.blit(
                     DynamicResourceBars.loc("textures/gui/detail_overlay.png"),
@@ -284,6 +300,7 @@ public class HealthBarRenderer {
                                                  int xPos, int yPos, int barWidth, int barHeight,
                                                  int barXOffset, int barYOffset) {
         if (tempScale > 0) {
+            RenderSystem.setShaderColor(1.0f, 1.0f, 1.0f, getHealthBarAlpha()); // Apply alpha to heat overlay
             int heatWidth = (int) (barWidth * tempScale);
             graphics.blit(
                     DynamicResourceBars.loc("textures/gui/heat_overlay.png"),
@@ -291,7 +308,9 @@ public class HealthBarRenderer {
                     0, 0, heatWidth, barHeight,
                     256, 256
             );
+            RenderSystem.setShaderColor(1.0f, 1.0f, 1.0f, 1.0f); // Reset after heat overlay
         } else if (tempScale < 0) {
+            RenderSystem.setShaderColor(1.0f, 1.0f, 1.0f, getHealthBarAlpha()); // Apply alpha to cold overlay
             int coldWidth = (int) (barWidth * -tempScale);
             graphics.blit(
                     DynamicResourceBars.loc("textures/gui/cold_overlay.png"),
@@ -299,6 +318,7 @@ public class HealthBarRenderer {
                     0, 0, coldWidth, barHeight,
                     256, 256
             );
+            RenderSystem.setShaderColor(1.0f, 1.0f, 1.0f, 1.0f); // Reset after cold overlay
         }
     }
 
@@ -356,46 +376,66 @@ public class HealthBarRenderer {
     }
 
     private static int getHealthTextColor(float currentHealth, float maxHealth) {
-        long timeSinceFullHealth = fullHealthStartTime > 0 ?
-                System.currentTimeMillis() - fullHealthStartTime : 0;
+        TextBehavior behavior = ModConfigManager.getClient().showHealthText.get();
+        // Alpha will be combined with the color later. Here we just get the base color.
+        int baseColor = 0xFFFFFF; // White
 
         int alpha = RenderUtil.BASE_TEXT_ALPHA;
-
-        dev.muon.dynamic_resource_bars.util.TextBehavior textBehavior = AllConfigs.client().showHealthText.get();
-        if (textBehavior == dev.muon.dynamic_resource_bars.util.TextBehavior.WHEN_NOT_FULL) {
-            if (currentHealth >= maxHealth) {
-                alpha = RenderUtil.calculateTextAlpha(timeSinceFullHealth);
-            }
-        } else if (textBehavior == dev.muon.dynamic_resource_bars.util.TextBehavior.ALWAYS) {
-            // Potentially, if we wanted text to fade with the bar when fadeHealthWhenFull is true,
-            // we might need more complex alpha calculation here, but for now, keep it simple.
-            // The bar itself will disappear if fadeHealthWhenFull is active.
+        if (behavior == TextBehavior.WHEN_NOT_FULL && currentHealth >= maxHealth) {
+            long timeSinceFull = System.currentTimeMillis() - fullHealthStartTime;
+            alpha = RenderUtil.calculateTextAlpha(timeSinceFull);
         }
-
+        alpha = (int) (alpha * getHealthBarAlpha()); // Modulate with bar alpha
         alpha = Math.max(10, alpha);
-        return (alpha << 24) | 0xFFFFFF;
+
+        return (alpha << 24) | baseColor;
     }
 
     private static boolean shouldRenderHealthText(float currentHealth, float maxHealth, Player player) {
-        if (currentHealth >= maxHealth) {
-            if (lastHealth < maxHealth) {
-                fullHealthStartTime = System.currentTimeMillis();
+        TextBehavior behavior = ModConfigManager.getClient().showHealthText.get();
+        if (behavior == TextBehavior.NEVER) {
+            return false;
+        }
+        if (behavior == TextBehavior.ALWAYS) {
+            return true;
+        }
+        // WHEN_NOT_FULL logic
+        boolean isFull = currentHealth >= maxHealth;
+        if (isFull) {
+            if (lastHealth < maxHealth || lastHealth == -1) { // Just became full or first check
+                fullHealthStartTime = System.currentTimeMillis(); // Use System.currentTimeMillis()
             }
+            lastHealth = currentHealth;
+            // Show for a short duration after becoming full
+            return (System.currentTimeMillis() - fullHealthStartTime) < RenderUtil.TEXT_DISPLAY_DURATION;
         } else {
-            fullHealthStartTime = 0;
+            lastHealth = currentHealth;
+            return true; // Not full, so show
         }
-        lastHealth = currentHealth;
-        dev.muon.dynamic_resource_bars.util.TextBehavior textBehavior = AllConfigs.client().showHealthText.get();
-        switch (textBehavior) {
-            case ALWAYS:
-                return true;
-            case NEVER:
-                return false;
-            case WHEN_NOT_FULL:
-                long timeSinceFullHealth = fullHealthStartTime > 0 ? System.currentTimeMillis() - fullHealthStartTime : 0;
-                return currentHealth < maxHealth || (fullHealthStartTime > 0 && timeSinceFullHealth < TEXT_DISPLAY_DURATION);
-            default:
-                return false;
+    }
+
+    // New helper methods for bar visibility and alpha
+    private static void setHealthBarVisibility(boolean visible) {
+        if (healthBarSetVisible != visible) {
+            if (!visible) {
+                healthBarDisabledStartTime = System.currentTimeMillis();
+            }
+            healthBarSetVisible = visible;
         }
+    }
+
+    private static boolean isHealthBarVisible() {
+        return healthBarSetVisible;
+    }
+
+    private static float getHealthBarAlpha() {
+        if (isHealthBarVisible()) {
+            return 1.0f;
+        }
+        long timeSinceDisabled = System.currentTimeMillis() - healthBarDisabledStartTime;
+        if (timeSinceDisabled >= RenderUtil.BAR_FADEOUT_DURATION) {
+            return 0.0f;
+        }
+        return Math.max(0.0f, 1.0f - (timeSinceDisabled / (float) RenderUtil.BAR_FADEOUT_DURATION));
     }
 }

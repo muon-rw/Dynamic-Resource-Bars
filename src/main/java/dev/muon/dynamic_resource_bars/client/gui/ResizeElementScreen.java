@@ -1,17 +1,24 @@
 package dev.muon.dynamic_resource_bars.client.gui;
 
-import dev.muon.dynamic_resource_bars.foundation.config.AllConfigs;
+import dev.muon.dynamic_resource_bars.foundation.config.ModConfigManager;
 import dev.muon.dynamic_resource_bars.foundation.config.CClient;
 import dev.muon.dynamic_resource_bars.util.DraggableElement;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.components.EditBox;
+import net.minecraft.client.gui.navigation.ScreenRectangle;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.network.chat.Component;
-import toni.lib.config.ConfigBase; // Import ConfigBase
-import toni.lib.config.ConfigBase.ConfigInt; // Try importing inner class
 
-import java.util.Optional;
+#if NEWER_THAN_20_1
+    import net.neoforged.neoforge.common.ModConfigSpec.IntValue;
+#else
+    import net.minecraftforge.common.ForgeConfigSpec.IntValue;
+#endif
+
+#if (!NEWER_THAN_20_1)
+    import dev.muon.dynamic_resource_bars.util.ScreenRect;
+#endif
 
 public class ResizeElementScreen extends Screen {
 
@@ -34,8 +41,8 @@ public class ResizeElementScreen extends Screen {
     @Override
     protected void init() {
         super.init();
-        CClient config = AllConfigs.client();
-        ConfigBase.ConfigInt bgWidthConf, bgHeightConf, barWidthConf, barHeightConf, overlayWidthConf, overlayHeightConf; // Use full type
+        CClient config = ModConfigManager.getClient();
+        IntValue bgWidthConf, bgHeightConf, barWidthConf, barHeightConf, overlayWidthConf, overlayHeightConf;
 
         switch (elementToResize) {
             case HEALTH_BAR:
@@ -63,37 +70,36 @@ public class ResizeElementScreen extends Screen {
                 overlayHeightConf = config.manaOverlayHeight;
                 break;
             default:
-                return; // Should not happen
+                if (this.minecraft != null) this.minecraft.setScreen(parentScreen);
+                return;
         }
 
         int boxWidth = 50;
         int boxHeight = 20;
-        int labelWidth = 100; // Width allocated for labels
-        int startX = (this.width / 2) - (labelWidth + boxWidth + 5) / 2; // Center the label+box pair
-        int currentY = 40; // Start below title
+        int labelWidth = 100;
+        // Recalculate startX to center the entire block of label + edit box
+        int componentBlockWidth = labelWidth + 5 + boxWidth;
+        int startX = (this.width / 2) - componentBlockWidth / 2;
+        int editBoxX = startX + labelWidth + 5;
+        int currentY = 40;
         int rowSpacing = 5;
 
-        // Background Width/Height
-        // Use empty Component for EditBox label, we draw it manually
-        bgWidthBox = createIntEditBox(startX + labelWidth + 5, currentY, boxWidth, boxHeight, bgWidthConf);
-        bgHeightBox = createIntEditBox(startX + labelWidth + 5, currentY + boxHeight + rowSpacing, boxWidth, boxHeight, bgHeightConf);
+        bgWidthBox = createIntEditBox(editBoxX, currentY, boxWidth, boxHeight, bgWidthConf);
+        bgHeightBox = createIntEditBox(editBoxX, currentY + boxHeight + rowSpacing, boxWidth, boxHeight, bgHeightConf);
         this.addRenderableWidget(bgWidthBox);
         this.addRenderableWidget(bgHeightBox);
-        currentY += 2 * (boxHeight + rowSpacing);
+        currentY += 2 * (boxHeight + rowSpacing) + rowSpacing; // Add extra spacing between groups
 
-        // Bar Width/Height
-        barWidthBox = createIntEditBox(startX + labelWidth + 5, currentY, boxWidth, boxHeight, barWidthConf);
-        barHeightBox = createIntEditBox(startX + labelWidth + 5, currentY + boxHeight + rowSpacing, boxWidth, boxHeight, barHeightConf, 6); // Max 6
+        barWidthBox = createIntEditBox(editBoxX, currentY, boxWidth, boxHeight, barWidthConf);
+        barHeightBox = createIntEditBox(editBoxX, currentY + boxHeight + rowSpacing, boxWidth, boxHeight, barHeightConf, 0, Integer.MAX_VALUE);
         this.addRenderableWidget(barWidthBox);
         this.addRenderableWidget(barHeightBox);
-        currentY += 2 * (boxHeight + rowSpacing);
+        currentY += 2 * (boxHeight + rowSpacing) + rowSpacing;
 
-        // Overlay Width/Height
-        overlayWidthBox = createIntEditBox(startX + labelWidth + 5, currentY, boxWidth, boxHeight, overlayWidthConf);
-        overlayHeightBox = createIntEditBox(startX + labelWidth + 5, currentY + boxHeight + rowSpacing, boxWidth, boxHeight, overlayHeightConf);
+        overlayWidthBox = createIntEditBox(editBoxX, currentY, boxWidth, boxHeight, overlayWidthConf);
+        overlayHeightBox = createIntEditBox(editBoxX, currentY + boxHeight + rowSpacing, boxWidth, boxHeight, overlayHeightConf);
         this.addRenderableWidget(overlayWidthBox);
         this.addRenderableWidget(overlayHeightBox);
-        // currentY += 2 * (boxHeight + rowSpacing);
 
         int doneButtonWidth = 100;
         this.addRenderableWidget(Button.builder(
@@ -103,27 +109,25 @@ public class ResizeElementScreen extends Screen {
                 .build());
     }
 
-    // Helper uses ConfigBase.ConfigInt
-    private EditBox createIntEditBox(int x, int y, int width, int height, ConfigBase.ConfigInt configInt) {
-        return createIntEditBox(x, y, width, height, configInt, Integer.MAX_VALUE);
+    private EditBox createIntEditBox(int x, int y, int width, int height, IntValue configIntValue) {
+        // Default min value for sizes should be 0, or 1 if 0 is problematic for rendering.
+        return createIntEditBox(x, y, width, height, configIntValue, 0, Integer.MAX_VALUE);
     }
 
-    // Helper uses ConfigBase.ConfigInt
-    private EditBox createIntEditBox(int x, int y, int width, int height, ConfigBase.ConfigInt configInt, int maxValue) {
-        // Pass empty component to EditBox constructor, we draw labels manually
+    private EditBox createIntEditBox(int x, int y, int width, int height, IntValue configIntValue, int minValue, int maxValue) {
         EditBox editBox = new EditBox(this.font, x, y, width, height, Component.empty());
-        editBox.setValue(String.valueOf(configInt.get()));
+        editBox.setValue(String.valueOf(configIntValue.get()));
         editBox.setResponder((text) -> {
             try {
                 int value = Integer.parseInt(text);
-                if (value >= 0 && value <= maxValue) {
-                    configInt.set(value);
-                    editBox.setTextColor(0xE0E0E0);
+                if (value >= minValue && value <= maxValue) { // Check against min and max
+                    configIntValue.set(value);
+                    editBox.setTextColor(0xE0E0E0); // Default color
                 } else {
-                    editBox.setTextColor(0xFF5555);
+                    editBox.setTextColor(0xFF5555); // Red for out of bounds
                 }
             } catch (NumberFormatException e) {
-                editBox.setTextColor(0xFF5555);
+                editBox.setTextColor(0xFF5555); // Red for invalid number
             }
         });
         return editBox;
@@ -136,11 +140,13 @@ public class ResizeElementScreen extends Screen {
         #else
             this.renderBackground(graphics);
         #endif
+        
+        super.render(graphics, mouseX, mouseY, partialTicks);
+
         graphics.drawCenteredString(this.font, this.title, this.width / 2, 20, 0xFFFFFF);
 
-        // Draw labels - Use translatable keys
-        if (bgWidthBox != null) { // Check if init completed
-            int labelX = bgWidthBox.getX() - 105; // Position label left of the boxes
+        if (bgWidthBox != null) { 
+            int labelX = bgWidthBox.getX() - 5 - 100; 
             graphics.drawString(this.font, Component.translatable("gui.dynamic_resource_bars.resize.label.background_width"), labelX, bgWidthBox.getY() + (bgWidthBox.getHeight() - this.font.lineHeight) / 2, 0xFFFFFF);
             graphics.drawString(this.font, Component.translatable("gui.dynamic_resource_bars.resize.label.background_height"), labelX, bgHeightBox.getY() + (bgHeightBox.getHeight() - this.font.lineHeight) / 2, 0xFFFFFF);
             graphics.drawString(this.font, Component.translatable("gui.dynamic_resource_bars.resize.label.bar_width"), labelX, barWidthBox.getY() + (barWidthBox.getHeight() - this.font.lineHeight) / 2, 0xFFFFFF);
@@ -148,30 +154,43 @@ public class ResizeElementScreen extends Screen {
             graphics.drawString(this.font, Component.translatable("gui.dynamic_resource_bars.resize.label.overlay_width"), labelX, overlayWidthBox.getY() + (overlayWidthBox.getHeight() - this.font.lineHeight) / 2, 0xFFFFFF);
             graphics.drawString(this.font, Component.translatable("gui.dynamic_resource_bars.resize.label.overlay_height"), labelX, overlayHeightBox.getY() + (overlayHeightBox.getHeight() - this.font.lineHeight) / 2, 0xFFFFFF);
         }
-
-        super.render(graphics, mouseX, mouseY, partialTicks); // Render EditBoxes + Done button
     }
 
-    // Override mouseClicked to ensure focus changes correctly
     @Override
     public boolean mouseClicked(double mouseX, double mouseY, int button) {
-        // First, let children (EditBoxes, Buttons) handle the click
         if (super.mouseClicked(mouseX, mouseY, button)) {
             return true;
         }
-        // If click wasn't on a child, unfocus any focused EditBox
-        // This logic might need refinement based on specific EditBox behavior
-        this.children().stream()
-                .filter(c -> c instanceof EditBox)
-                .forEach(c -> ((EditBox) c).setFocused(false));
-        return false;
+        boolean unfocusedAny = false;
+        for (net.minecraft.client.gui.components.events.GuiEventListener listener : this.children()) {
+            if (listener instanceof EditBox) {
+                EditBox box = (EditBox) listener;
+                #if NEWER_THAN_20_1 // For 1.21.1+ which has containsPoint
+                    ScreenRectangle vanillaRect = box.getRectangle();
+                    if (box.isFocused() && !vanillaRect.containsPoint((int)mouseX, (int)mouseY)) {
+                        box.setFocused(false);
+                        unfocusedAny = true;
+                    }
+                #else // For 1.20.1 (Fabric or Forge)
+                    // Vanilla ScreenRectangle exists in 1.20.1 but lacks containsPoint.
+                    // We use its getters to construct our custom ScreenRect for the contains check.
+                    ScreenRectangle vanillaRect = box.getRectangle();
+                    ScreenRect customRect = 
+                        new ScreenRect(vanillaRect.left(), vanillaRect.top(), 
+                                       vanillaRect.width(), vanillaRect.height());
+                    if (box.isFocused() && !customRect.contains((int)mouseX, (int)mouseY)) {
+                        box.setFocused(false);
+                        unfocusedAny = true;
+                    }
+                #endif
+            }
+        }
+        return unfocusedAny; 
     }
 
     @Override
     public boolean keyPressed(int keyCode, int scanCode, int modifiers) {
-        // TODO: Implement Tab/Shift+Tab navigation between EditBoxes
-        // TODO: Maybe handle Enter key to confirm/close?
-        // Let focused EditBox handle typing first
+        // Prioritize focused element for key presses (e.g., typing in EditBox)
         if (this.getFocused() != null && this.getFocused().keyPressed(keyCode, scanCode, modifiers)) {
             return true;
         }

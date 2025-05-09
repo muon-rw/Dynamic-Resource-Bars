@@ -1,7 +1,7 @@
 package dev.muon.dynamic_resource_bars.util;
 
 import com.mojang.blaze3d.vertex.PoseStack;
-import dev.muon.dynamic_resource_bars.foundation.config.AllConfigs;
+import dev.muon.dynamic_resource_bars.foundation.config.ModConfigManager;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.network.chat.Component;
@@ -17,7 +17,7 @@ public class RenderUtil {
         Minecraft minecraft = Minecraft.getInstance();
         PoseStack poseStack = graphics.pose();
         poseStack.pushPose();
-        float scalingFactor = AllConfigs.client().textScalingFactor.getF();
+        float scalingFactor = ModConfigManager.getClient().textScalingFactor.get().floatValue();
 
         // Apply scaling
         poseStack.scale(scalingFactor, scalingFactor, 1.0f);
@@ -58,7 +58,7 @@ public class RenderUtil {
         Minecraft minecraft = Minecraft.getInstance();
         PoseStack poseStack = graphics.pose();
         poseStack.pushPose();
-        float scalingFactor = AllConfigs.client().textScalingFactor.getF();
+        float scalingFactor = ModConfigManager.getClient().textScalingFactor.get().floatValue();
 
         int xPos = (int) (baseX / scalingFactor);
         int yPos = (int) (baseY / scalingFactor);
@@ -73,7 +73,7 @@ public class RenderUtil {
         Minecraft minecraft = Minecraft.getInstance();
         PoseStack poseStack = graphics.pose();
         poseStack.pushPose();
-        float scalingFactor = AllConfigs.client().textScalingFactor.getF();
+        float scalingFactor = ModConfigManager.getClient().textScalingFactor.get().floatValue();
 
         int xPos = (int) (baseX / scalingFactor);
         int yPos = (int) (baseY / scalingFactor) - (minecraft.font.lineHeight / 2); // Added vertical centering
