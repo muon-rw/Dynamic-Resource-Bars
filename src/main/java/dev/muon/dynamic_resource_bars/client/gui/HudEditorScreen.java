@@ -6,7 +6,7 @@ import dev.muon.dynamic_resource_bars.foundation.config.CClient;
 import dev.muon.dynamic_resource_bars.render.HealthBarRenderer;
 import dev.muon.dynamic_resource_bars.render.ManaBarRenderer;
 import dev.muon.dynamic_resource_bars.render.StaminaBarRenderer;
-import dev.muon.dynamic_resource_bars.util.*; // Includes DraggableElement, EditModeManager, ScreenRect, SubElementType, TextBehavior
+import dev.muon.dynamic_resource_bars.util.*;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.AbstractWidget;
@@ -19,7 +19,7 @@ import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.components.Renderable;
 import toni.lib.config.ConfigBase.ConfigInt;
 import toni.lib.config.ConfigBase.ConfigEnum;
-import net.minecraft.client.gui.components.Tooltip; // Import Tooltip
+import net.minecraft.client.gui.components.Tooltip;
 
 import java.util.function.Supplier;
 
@@ -44,7 +44,7 @@ public class HudEditorScreen extends Screen {
 
     // Buttons for Non-Focus Mode (Grid)
     private Button toggleHealthBarButton;
-    private Button toggleStaminaBarButton; // Swapped order for visual balance
+    private Button toggleStaminaBarButton;
     private Button toggleManaBarButton;
     private Button openHealthSettingsButton; 
     private Button openStaminaSettingsButton;
@@ -605,19 +605,9 @@ public class HudEditorScreen extends Screen {
         return super.keyPressed(keyCode, scanCode, modifiers);
     }
 
-    @Override
-    public void renderBackground(GuiGraphics graphics) {
-        // Do nothing to keep the background transparent, allowing the game world to be visible.
-        // Ensure we don't draw the default Screen background.
-    }
-
-    // Add clearWidgets helper if it doesn't exist, or ensure it clears correctly
     protected void clearWidgets() {
-        // Ensure all buttons are removed. Standard way is to clear renderables and children.
-        // Depending on Screen implementation details, one or both might be needed.
         this.renderables.clear();
-        this.children().clear(); // This usually includes renderables
-        // If using NeoForge/Fabric specific widget management, adjust accordingly.
+        this.children().clear();
     }
 
     // --- Reset Logic Helpers ---
@@ -729,7 +719,6 @@ public class HudEditorScreen extends Screen {
 
     private String getFriendlyElementName(DraggableElement element) {
         if (element == null) return "";
-        // These will be translated via their own keys for the header
         return switch (element) {
             case HEALTH_BAR -> Component.translatable("gui.dynamic_resource_bars.element.health_bar").getString();
             case MANA_BAR -> Component.translatable("gui.dynamic_resource_bars.element.mana_bar").getString();

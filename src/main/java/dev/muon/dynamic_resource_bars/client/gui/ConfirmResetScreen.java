@@ -32,7 +32,7 @@ public class ConfirmResetScreen extends Screen {
 
         // Confirm Button
         this.addRenderableWidget(Button.builder(
-                Component.translatable("gui.yes"), // Use standard "Yes" translation key
+                Component.translatable("gui.yes"),
                 (button) -> {
                     this.confirmAction.run();
                     this.onClose();
@@ -42,7 +42,7 @@ public class ConfirmResetScreen extends Screen {
 
         // Cancel Button
         this.addRenderableWidget(Button.builder(
-                Component.translatable("gui.no"), // Use standard "No" translation key
+                Component.translatable("gui.no"),
                 (button) -> this.onClose())
                 .bounds(startX + buttonWidth + spacing, buttonY, buttonWidth, buttonHeight)
                 .build());
@@ -50,14 +50,15 @@ public class ConfirmResetScreen extends Screen {
 
     @Override
     public void render(@NotNull GuiGraphics graphics, int mouseX, int mouseY, float partialTicks) {
-        // Dark background
-        this.renderBackground(graphics);
+        #if NEWER_THAN_20_1
+            this.renderBackground(graphics, mouseX, mouseY, partialTicks);
+        #else
+            this.renderBackground(graphics);
+        #endif
 
-        // Title and Explanation (centered)
         graphics.drawCenteredString(this.font, this.title, this.width / 2, this.height / 2 - 20, 0xFFFFFF);
         graphics.drawCenteredString(this.font, this.explanation, this.width / 2, this.height / 2 - 5, 0xFFFFFF);
 
-        // Render widgets (buttons)
         super.render(graphics, mouseX, mouseY, partialTicks);
     }
 
@@ -70,11 +71,11 @@ public class ConfirmResetScreen extends Screen {
 
     @Override
     public boolean shouldCloseOnEsc() {
-        return true; // Allow closing with Esc
+        return true;
     }
 
     @Override
     public boolean isPauseScreen() {
-        return false; // Doesn't pause
+        return false;
     }
 } 

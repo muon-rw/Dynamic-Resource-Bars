@@ -18,17 +18,15 @@ public class ResizeElementScreen extends Screen {
     private final Screen parentScreen;
     private final DraggableElement elementToResize;
 
-    // Edit Boxes
     private EditBox bgWidthBox;
     private EditBox bgHeightBox;
     private EditBox barWidthBox;
-    private EditBox barHeightBox; // Max 6
+    private EditBox barHeightBox;
     private EditBox overlayWidthBox;
     private EditBox overlayHeightBox;
 
     public ResizeElementScreen(Screen parent, DraggableElement element) {
-        // I18N for title - uses format string
-        super(Component.translatable("gui.dynamic_resource_bars.resize.title_format", getFriendlyElementName(element))); 
+        super(Component.translatable("gui.dynamic_resource_bars.resize.title_format", getFriendlyElementName(element)));
         this.parentScreen = parent;
         this.elementToResize = element;
     }
@@ -39,24 +37,33 @@ public class ResizeElementScreen extends Screen {
         CClient config = AllConfigs.client();
         ConfigBase.ConfigInt bgWidthConf, bgHeightConf, barWidthConf, barHeightConf, overlayWidthConf, overlayHeightConf; // Use full type
 
-        // Get the correct config fields based on the element
         switch (elementToResize) {
-            case HEALTH_BAR: 
-                bgWidthConf = config.healthBackgroundWidth; bgHeightConf = config.healthBackgroundHeight;
-                barWidthConf = config.healthBarWidth; barHeightConf = config.healthBarHeight;
-                overlayWidthConf = config.healthOverlayWidth; overlayHeightConf = config.healthOverlayHeight;
+            case HEALTH_BAR:
+                bgWidthConf = config.healthBackgroundWidth;
+                bgHeightConf = config.healthBackgroundHeight;
+                barWidthConf = config.healthBarWidth;
+                barHeightConf = config.healthBarHeight;
+                overlayWidthConf = config.healthOverlayWidth;
+                overlayHeightConf = config.healthOverlayHeight;
                 break;
             case STAMINA_BAR:
-                bgWidthConf = config.staminaBackgroundWidth; bgHeightConf = config.staminaBackgroundHeight;
-                barWidthConf = config.staminaBarWidth; barHeightConf = config.staminaBarHeight;
-                overlayWidthConf = config.staminaOverlayWidth; overlayHeightConf = config.staminaOverlayHeight;
+                bgWidthConf = config.staminaBackgroundWidth;
+                bgHeightConf = config.staminaBackgroundHeight;
+                barWidthConf = config.staminaBarWidth;
+                barHeightConf = config.staminaBarHeight;
+                overlayWidthConf = config.staminaOverlayWidth;
+                overlayHeightConf = config.staminaOverlayHeight;
                 break;
             case MANA_BAR:
-                bgWidthConf = config.manaBackgroundWidth; bgHeightConf = config.manaBackgroundHeight;
-                barWidthConf = config.manaBarWidth; barHeightConf = config.manaBarHeight;
-                overlayWidthConf = config.manaOverlayWidth; overlayHeightConf = config.manaOverlayHeight;
+                bgWidthConf = config.manaBackgroundWidth;
+                bgHeightConf = config.manaBackgroundHeight;
+                barWidthConf = config.manaBarWidth;
+                barHeightConf = config.manaBarHeight;
+                overlayWidthConf = config.manaOverlayWidth;
+                overlayHeightConf = config.manaOverlayHeight;
                 break;
-            default: return; // Should not happen
+            default:
+                return; // Should not happen
         }
 
         int boxWidth = 50;
@@ -89,10 +96,9 @@ public class ResizeElementScreen extends Screen {
         // currentY += 2 * (boxHeight + rowSpacing);
 
         int doneButtonWidth = 100;
-        // Done Button (Uses standard MC key)
         this.addRenderableWidget(Button.builder(
-                Component.translatable("gui.done"),
-                (button) -> this.onClose())
+                        Component.translatable("gui.done"),
+                        (button) -> this.onClose())
                 .bounds((this.width / 2) - (doneButtonWidth / 2), this.height - boxHeight - 20, doneButtonWidth, boxHeight)
                 .build());
     }
@@ -105,7 +111,7 @@ public class ResizeElementScreen extends Screen {
     // Helper uses ConfigBase.ConfigInt
     private EditBox createIntEditBox(int x, int y, int width, int height, ConfigBase.ConfigInt configInt, int maxValue) {
         // Pass empty component to EditBox constructor, we draw labels manually
-        EditBox editBox = new EditBox(this.font, x, y, width, height, Component.empty()); 
+        EditBox editBox = new EditBox(this.font, x, y, width, height, Component.empty());
         editBox.setValue(String.valueOf(configInt.get()));
         editBox.setResponder((text) -> {
             try {
@@ -117,7 +123,7 @@ public class ResizeElementScreen extends Screen {
                     editBox.setTextColor(0xFF5555);
                 }
             } catch (NumberFormatException e) {
-                 editBox.setTextColor(0xFF5555);
+                editBox.setTextColor(0xFF5555);
             }
         });
         return editBox;
@@ -125,9 +131,13 @@ public class ResizeElementScreen extends Screen {
 
     @Override
     public void render(GuiGraphics graphics, int mouseX, int mouseY, float partialTicks) {
-        this.renderBackground(graphics); 
+        #if NEWER_THAN_20_1
+            this.renderBackground(graphics, mouseX, mouseY, partialTicks);
+        #else
+            this.renderBackground(graphics);
+        #endif
         graphics.drawCenteredString(this.font, this.title, this.width / 2, 20, 0xFFFFFF);
-        
+
         // Draw labels - Use translatable keys
         if (bgWidthBox != null) { // Check if init completed
             int labelX = bgWidthBox.getX() - 105; // Position label left of the boxes
@@ -152,12 +162,11 @@ public class ResizeElementScreen extends Screen {
         // If click wasn't on a child, unfocus any focused EditBox
         // This logic might need refinement based on specific EditBox behavior
         this.children().stream()
-            .filter(c -> c instanceof EditBox)
-            .forEach(c -> ((EditBox)c).setFocused(false));
-        return false; 
+                .filter(c -> c instanceof EditBox)
+                .forEach(c -> ((EditBox) c).setFocused(false));
+        return false;
     }
 
-    // Basic keyboard handling (Tab navigation, maybe Enter)
     @Override
     public boolean keyPressed(int keyCode, int scanCode, int modifiers) {
         // TODO: Implement Tab/Shift+Tab navigation between EditBoxes
@@ -171,19 +180,18 @@ public class ResizeElementScreen extends Screen {
 
     @Override
     public void onClose() {
-        // Values should be saved by EditBox responders already
-        this.minecraft.setScreen(this.parentScreen);
+        if (this.minecraft != null) {
+            this.minecraft.setScreen(this.parentScreen);
+        }
     }
 
     @Override
     public boolean isPauseScreen() {
-        return false; 
+        return false;
     }
 
-    // Helper to get friendly element name (similar to HudEditorScreen)
     private static String getFriendlyElementName(DraggableElement element) {
         if (element == null) return "";
-        // These should match the keys used in HudEditorScreen for consistency
         return switch (element) {
             case HEALTH_BAR -> Component.translatable("gui.dynamic_resource_bars.element.health_bar").getString();
             case MANA_BAR -> Component.translatable("gui.dynamic_resource_bars.element.mana_bar").getString();

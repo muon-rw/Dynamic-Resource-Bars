@@ -1,7 +1,6 @@
 package dev.muon.dynamic_resource_bars.client.gui;
 
 import dev.muon.dynamic_resource_bars.DynamicResourceBars;
-import dev.muon.dynamic_resource_bars.foundation.config.AllConfigs;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.Button;
@@ -82,21 +81,18 @@ public class ModConfigScreen extends Screen {
 
     @Override
     public void render(GuiGraphics graphics, int mouseX, int mouseY, float partialTicks) {
-        // Render the default dark background
-        this.renderBackground(graphics); 
-        // Render title
+        #if NEWER_THAN_20_1
+            this.renderBackground(graphics, mouseX, mouseY, partialTicks);
+        #else
+            this.renderBackground(graphics);
+        #endif
         graphics.drawCenteredString(this.font, this.title, this.width / 2, 20, 0xFFFFFF);
         // Render widgets (buttons)
         super.render(graphics, mouseX, mouseY, partialTicks);
     }
 
     @Override
-    public void onClose() {
-        // This is where you would typically save configs if changes were made on *this* screen.
-        // Since this screen only opens other screens or closes, direct config saving might not be needed here.
-        // ToniLib configs are likely saved when their values are set or when their own screen closes.
-        // if (AllConfigs.client() != null) AllConfigs.client().save(); // Example if explicit save needed
-        if (this.minecraft != null) {
+    public void onClose() {    if (this.minecraft != null) {
             this.minecraft.setScreen(this.parentScreen);
         }
     }

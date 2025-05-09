@@ -51,7 +51,7 @@
   "gui.dynamic_resource_bars.resize.title_format": "Resize: %s",
   "gui.dynamic_resource_bars.resize.label.background_width": "Background Width:",
   "gui.dynamic_resource_bars.resize.label.background_height": "Background Height:",
-  "gui.dynamic_resource_bars.resize.label.bar_width": "Bar Width:",
+  "gui.dynamic_resource_bars.resize.label.bar_width": "Bar Width (Max 96):",
   "gui.dynamic_resource_bars.resize.label.bar_height": "Bar Height (Max 6):",
   "gui.dynamic_resource_bars.resize.label.overlay_width": "Overlay Width:",
   "gui.dynamic_resource_bars.resize.label.overlay_height": "Overlay Height:"

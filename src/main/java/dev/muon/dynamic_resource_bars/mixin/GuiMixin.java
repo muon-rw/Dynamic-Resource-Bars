@@ -104,16 +104,4 @@ public class GuiMixin {
     }
     #endif
 
-    @Inject(method = "Lnet/minecraft/client/gui/Gui;tick()V", at = @At("TAIL"))
-    private void checkSelectedItem(CallbackInfo ci) {
-        Player player = this.minecraft.player;
-        if (player != null) {
-            ItemStack selectedStack = player.getInventory().getSelected();
-            if (ArmorBarRenderer.isArmorRelevantItem(selectedStack)) {
-                ArmorBarRenderer.triggerTextDisplay();
-            } else {
-                ArmorBarRenderer.stopTextDisplay();
-            }
-        }
-    }
 }

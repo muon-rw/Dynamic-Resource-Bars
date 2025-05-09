@@ -40,7 +40,6 @@ public class CClient extends ConfigBase {
     public static final int DEFAULT_HEALTH_OVERLAY_Y_OFFSET = -3;
 
 
-    public final ConfigGroup health = group(0, "health", "Customize hearts / the health bar");
     public final ConfigBool enableHealthBar = b(DEFAULT_ENABLE_HEALTH_BAR, "enableHealthBar", "Whether to render a custom bar instead of hearts.");
     public final ConfigEnum<HUDPositioning.BarPlacement> healthBarAnchor = e(DEFAULT_HEALTH_BAR_ANCHOR, "healthBarAnchor", "Anchor point for the health bar.");
     public final ConfigBool fadeHealthWhenFull = b(DEFAULT_FADE_HEALTH_WHEN_FULL, "fadeHealthWhenFull", "Whether to dynamically hide the health bar when the player is at full health");
@@ -148,7 +147,6 @@ public class CClient extends ConfigBase {
     public static final int DEFAULT_MANA_OVERLAY_Y_OFFSET = -3;
 
 
-    public final ConfigGroup mana = group(0, "mana", "Customize the mana bar");
     public final ConfigBool enableManaBar = b(DEFAULT_ENABLE_MANA_BAR, "enableManaBar", "Whether to render a custom bar instead of supported mods' built-in mana bars.");
     public final ConfigEnum<HUDPositioning.BarPlacement> manaBarAnchor = e(DEFAULT_MANA_BAR_ANCHOR, "manaBarAnchor", "Anchor point for the mana bar.");
     public final ConfigBool fadeManaWhenFull = b(DEFAULT_FADE_MANA_WHEN_FULL, "fadeManaWhenFull", "Whether to dynamically hide the mana bar when mana is full. ");
