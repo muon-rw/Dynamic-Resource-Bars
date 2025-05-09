@@ -1,5 +1,6 @@
 package dev.muon.dynamic_resource_bars.config;
 
+import dev.muon.dynamic_resource_bars.DynamicResourceBars;
 #if FABRIC
     #if AFTER_21_1
         import fuzs.forgeconfigapiport.fabric.api.neoforge.v4.NeoForgeConfigRegistry;

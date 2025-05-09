@@ -1,7 +1,7 @@
 package dev.muon.dynamic_resource_bars.event;
 
 #if NEWER_THAN_20_1
-import dev.muon.dynamic_resource_bars.foundation.config.ModConfigManager;
+import dev.muon.dynamic_resource_bars.config.ModConfigManager;
 import dev.muon.dynamic_resource_bars.render.AirBarRenderer;
 import dev.muon.dynamic_resource_bars.render.ArmorBarRenderer;
 import dev.muon.dynamic_resource_bars.render.HealthBarRenderer;
