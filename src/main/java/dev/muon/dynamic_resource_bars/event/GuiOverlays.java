@@ -12,7 +12,7 @@ import net.minecraft.client.gui.GuiGraphics;
 import net.minecraftforge.client.gui.overlay.ForgeGui;
 import net.minecraftforge.client.gui.overlay.IGuiOverlay;
 
-// For 1.20.1 Forge
+// 1.20.1 Forge Only. See CommonEvents for 1.21.1, GuiMixin for 1.20.1 Fabric
 public class GuiOverlays {
     public static final IGuiOverlay RESOURCE_BARS = (ForgeGui gui, GuiGraphics graphics, float partialTick, int screenWidth, int screenHeight) -> {
         Minecraft minecraft = gui.getMinecraft();
