@@ -3,22 +3,25 @@ package dev.muon.dynamic_resource_bars.mixin;
 import com.llamalad7.mixinextras.injector.ModifyExpressionValue;
 import com.llamalad7.mixinextras.injector.wrapoperation.Operation;
 import com.llamalad7.mixinextras.injector.wrapoperation.WrapOperation;
+import com.llamalad7.mixinextras.sugar.Local;
 import dev.muon.dynamic_resource_bars.config.ClientConfig;
 import dev.muon.dynamic_resource_bars.config.ModConfigManager;
 import dev.muon.dynamic_resource_bars.render.AirBarRenderer;
 import dev.muon.dynamic_resource_bars.render.HealthBarRenderer;
 import dev.muon.dynamic_resource_bars.render.StaminaBarRenderer;
+import dev.muon.dynamic_resource_bars.render.ArmorBarRenderer;
 import dev.muon.dynamic_resource_bars.util.BarRenderBehavior;
 import dev.muon.dynamic_resource_bars.util.HUDPositioning;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Gui;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.entity.LivingEntity;
+import net.minecraft.resources.ResourceLocation;
+
 import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
-import org.spongepowered.asm.mixin.Unique;
-import org.spongepowered.asm.mixin.injection.ModifyArg;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
@@ -28,7 +31,8 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 #endif
 
 @Mixin(value = Gui.class, priority = 499)
-public class GuiMixin {
+public abstract class GuiMixin {
+
     #if NEWER_THAN_20_1
     @Shadow
     @Final
@@ -60,9 +64,22 @@ public class GuiMixin {
     #endif
 
     #if UPTO_20_1 && FABRIC
-    @Shadow
-    @Final
-    private Minecraft minecraft;
+    @Shadow @Final public Minecraft minecraft;
+    @Shadow @Final private static ResourceLocation GUI_ICONS_LOCATION;
+    @Shadow private int screenWidth;
+    @Shadow private int screenHeight;
+    @Shadow protected abstract Player getCameraPlayer();
+    @Shadow protected abstract LivingEntity getPlayerVehicleWithHealth();
+    @Shadow protected abstract int getVehicleMaxHearts(LivingEntity vehicle);
+    @Shadow protected abstract int getVisibleVehicleHeartRows(int vehicleHearts);
+
+    @Inject(
+            method = "renderPlayerHealth",
+            at = @At(value = "INVOKE", target = "Lnet/minecraft/client/gui/Gui;renderHearts(Lnet/minecraft/client/gui/GuiGraphics;Lnet/minecraft/world/entity/player/Player;IIIIFIIIZ)V")
+    )
+    private void captureHealthHeight(GuiGraphics guiGraphics, CallbackInfo ci, @Local(ordinal = 8) int r) {
+        HUDPositioning.setVanillaHealthHeight(r - 1); // This value has 1 pixel padding built-in, so we subtract it
+    }
 
     @WrapOperation(
             method = "renderPlayerHealth",
@@ -74,6 +91,9 @@ public class GuiMixin {
         } else {
             original.call(instance, guiGraphics, player, x, y, height, offsetHeartIndex, maxHealth, currentHealth, displayHealth, absorptionAmount, renderHighlight);
         }
+        if (ModConfigManager.getClient().armorBarBehavior.get() == BarRenderBehavior.CUSTOM) {
+            ArmorBarRenderer.render(guiGraphics, player);
+        }
     }
 
     @Inject(
@@ -84,27 +104,21 @@ public class GuiMixin {
     private void replaceFoodAndAir(GuiGraphics guiGraphics, CallbackInfo ci) {
         Player player = this.minecraft.player;
         ClientConfig config = ModConfigManager.getClient();
-        boolean customStaminaEnabled = config.enableStaminaBar.get();
-        BarRenderBehavior airBehavior = config.airBarBehavior.get();
 
-        if (customStaminaEnabled && player != null) {
+        // On Fabric 1.20.1, this toggle will be combined into one config value
+        if (player != null && config.enableStaminaBar.get()) {
             StaminaBarRenderer.render(guiGraphics, player, this.minecraft.getFrameTime());
-        }
-        if (player != null) { 
             AirBarRenderer.render(guiGraphics, player);
+            ci.cancel();
         }
-        
-        boolean shouldCancelForAir = (airBehavior == BarRenderBehavior.CUSTOM || airBehavior == BarRenderBehavior.HIDDEN);
-        if (customStaminaEnabled || shouldCancelForAir) {
-             ci.cancel(); 
-        }
+
     }
 
     @ModifyExpressionValue(
         method = "renderPlayerHealth(Lnet/minecraft/client/gui/GuiGraphics;)V",
         at = @At(value = "INVOKE", target = "Lnet/minecraft/world/entity/player/Player;getArmorValue()I")
     )
-    private int dynamicbars$modifyArmorValue(int originalArmorValue) {
+    private int hideOriginalArmor(int originalArmorValue) {
         ClientConfig config = ModConfigManager.getClient();
         BarRenderBehavior armorBehavior = config.armorBarBehavior.get();
         if (armorBehavior == BarRenderBehavior.CUSTOM || armorBehavior == BarRenderBehavior.HIDDEN) {
@@ -113,5 +127,4 @@ public class GuiMixin {
         return originalArmorValue;
     }
     #endif
-
 }

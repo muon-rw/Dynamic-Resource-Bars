@@ -67,7 +67,8 @@
   "gui.dynamic_resource_bars.config.button.open_hud_editor": "Open HUD Editor",
   "gui.dynamic_resource_bars.config.tooltip.hud_editor_disabled": "HUD Settings can only be modified in-game (join a world!)",
 
-  "gui.dynamic_resource_bars.hud_editor.tooltip.no_mana_provider": "No compatible mana-providing mods are currently loaded",
+  "gui.dynamic_resource_bars.hud_editor.tooltip.no_mana_provider": "No compatible mana-providing mods are currently installed",
+  "gui.dynamic_resource_bars.hud_editor.tooltip.air_tied_to_stamina": "Air behavior is linked to Stamina on Fabric 1.20.1",
 
   "text_behavior.always": "Always",
   "text_behavior.never": "Never",
@@ -77,15 +78,11 @@
   "horizontal_alignment.center": "Center",
   "horizontal_alignment.right": "Right",
 
-  "bar_placement.top_left": "Top Left",
-  "bar_placement.top_center": "Top Center",
-  "bar_placement.top_right": "Top Right",
-  "bar_placement.middle_left": "Middle Left",
-  "bar_placement.middle_center": "Middle Center",
-  "bar_placement.middle_right": "Middle Right",
-  "bar_placement.bottom_left": "Bottom Left",
-  "bar_placement.bottom_center": "Bottom Center",
-  "bar_placement.bottom_right": "Bottom Right",
+  "bar_placement.health": "Health",
+  "bar_placement.hunger": "Hunger",
+  "bar_placement.armor": "Armor",
+  "bar_placement.air": "Air",
+  "bar_placement.above_utilities": "Top Center",
 
   "gui.dynamic_resource_bars.resize.title_format": "Resize: %s",
   "gui.dynamic_resource_bars.resize.label.background_width": "Background Width:",

@@ -90,6 +90,7 @@ public class ArmorBarRenderer {
         int barOnlyXOffset = config.armorBarXOffset.get();
         int barOnlyYOffset = config.armorBarYOffset.get();
         int iconSize = config.armorIconSize.get();
+        boolean isRightAnchored = config.armorBarAnchor.get().getSide() == HUDPositioning.AnchorSide.RIGHT;
 
         int xPos = armorPos.x();
         int yPos = armorPos.y();
@@ -103,9 +104,18 @@ public class ArmorBarRenderer {
 
         int filledWidth = Math.round((barWidth - (float) iconSize / 2) * armorPercent);
         if (filledWidth > 0) {
+            int barX = xPos + barOnlyXOffset;
+            if (config.enableArmorIcon.get()) {
+                if (isRightAnchored) {
+                    barX += barWidth - filledWidth - iconSize / 2;
+                } else {
+                    barX += iconSize / 2;
+                }
+            }
+
             graphics.blit(
                     DynamicResourceBars.loc("textures/gui/armor_bar.png"),
-                    xPos + (config.enableArmorIcon.get() ? barOnlyXOffset + iconSize / 2 : barOnlyXOffset),
+                    barX,
                     yPos + barOnlyYOffset,
                     0, 0,
                     filledWidth,
@@ -126,9 +136,13 @@ public class ArmorBarRenderer {
 
         if (config.enableArmorIcon.get()) {
             ArmorIcon icon = ArmorIcon.fromArmorValue(armorValue);
+            int iconX = isRightAnchored ?
+                    xPos + backgroundWidth - iconSize + config.armorIconXOffset.get() :
+                    xPos - 1 + config.armorIconXOffset.get();
+
             graphics.blit(
                     DynamicResourceBars.loc("textures/gui/armors/" + icon.getTexture() + ".png"),
-                    xPos - 1 + config.armorIconXOffset.get(),
+                    iconX,
                     yPos + (backgroundHeight - iconSize) / 2 - 2 + config.armorIconYOffset.get(),
                     0, 0,
                     iconSize, iconSize,

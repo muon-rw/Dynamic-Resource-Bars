@@ -33,13 +33,13 @@ public class GuiOverlays {
             gui.rightHeight += config.staminaBackgroundHeight.get() + 1;
         }
 
-        ArmorBarRenderer.render(graphics, player);
         if (config.armorBarBehavior.get() == BarRenderBehavior.CUSTOM) {
+            ArmorBarRenderer.render(graphics, player);
             gui.leftHeight += config.armorBackgroundHeight.get() + 1;
         }
 
-        AirBarRenderer.render(graphics, player);
         if (config.airBarBehavior.get() == BarRenderBehavior.CUSTOM) {
+            AirBarRenderer.render(graphics, player);
             gui.rightHeight += config.airBackgroundHeight.get() + 1;
         }
 

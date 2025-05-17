@@ -55,9 +55,6 @@ public class AirBarRenderer {
 
     public static void render(GuiGraphics graphics, Player player) {
         ClientConfig config = ModConfigManager.getClient();
-        if (config.airBarBehavior.get() != BarRenderBehavior.CUSTOM) {
-            return;
-        }
 
         int maxAir = player.getMaxAirSupply();
         int currentAir = player.getAirSupply();
@@ -65,10 +62,6 @@ public class AirBarRenderer {
 
         Position airPos = HUDPositioning.getPositionFromAnchor(config.airBarAnchor.get());
         boolean isRightAnchored = config.airBarAnchor.get().getSide() == HUDPositioning.AnchorSide.RIGHT;
-
-        if (isRightAnchored) {
-            airPos = airPos.offset(-config.airBackgroundWidth.get(), 0);
-        }
 
         airPos = airPos.offset(config.airTotalXOffset.get(), config.airTotalYOffset.get());
 
@@ -89,16 +82,10 @@ public class AirBarRenderer {
         );
 
         float airPercent = Math.min(1.0f, (float) currentAir / maxAir);
-        int filledWidth = Math.round((barWidth - (float) iconSize / 2) * airPercent);
+        int filledWidth = Math.round(barWidth * airPercent);
 
         if (filledWidth > 0) {
-            int barX = xPos + (config.enableAirIcon.get() ? barOnlyXOffset + iconSize / 2 : barOnlyXOffset);
-            if (isRightAnchored) {
-                barX = xPos + backgroundWidth - barOnlyXOffset - filledWidth;
-                if (config.enableAirIcon.get()) {
-                    barX -= iconSize / 2;
-                }
-            }
+            int barX = xPos + barOnlyXOffset;
 
             graphics.blit(
                     DynamicResourceBars.loc("textures/gui/air_bar.png"),

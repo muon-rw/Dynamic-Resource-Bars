@@ -205,11 +205,21 @@ public class HudEditorScreen extends Screen {
             addRenderableWidget(cycleArmorBehaviorButton);
             currentX += twoColButtonWidth + colSpacing;
 
+            #if !(UPTO_20_1 && FABRIC)
             cycleAirBehaviorButton = Button.builder(getBarBehaviorComponent(config.airBarBehavior.get(), "air"), (b) -> {
                 config.airBarBehavior.set(getNextBarBehavior(config.airBarBehavior.get()));
                 rebuildEditorWidgets();
             }).bounds(currentX, currentY, twoColButtonWidth, gridButtonHeight).build();
             addRenderableWidget(cycleAirBehaviorButton);
+            #else
+            // On Fabric 1.20.1, air is tied to stamina
+            cycleAirBehaviorButton = Button.builder(getBarBehaviorComponent(config.airBarBehavior.get(), "air"), (b) -> {
+                // No-op since air is tied to stamina
+            }).bounds(currentX, currentY, twoColButtonWidth, gridButtonHeight).build();
+            cycleAirBehaviorButton.active = false;
+            cycleAirBehaviorButton.setTooltip(Tooltip.create(Component.translatable("gui.dynamic_resource_bars.hud_editor.tooltip.air_tied_to_stamina")));
+            addRenderableWidget(cycleAirBehaviorButton);
+            #endif
 
             // Row 4: Armor, Air Settings
             currentY += gridButtonHeight + rowSpacing;
@@ -225,7 +235,12 @@ public class HudEditorScreen extends Screen {
             openAirSettingsButton = Button.builder(Component.translatable("gui.dynamic_resource_bars.hud_editor.button.air_settings"), (b) -> {
                 if (b.active) { EditModeManager.setFocusedElement(DraggableElement.AIR_BAR); rebuildEditorWidgets(); }
             }).bounds(currentX, currentY, twoColButtonWidth, gridButtonHeight).build();
+            #if !(UPTO_20_1 && FABRIC)
             openAirSettingsButton.active = config.airBarBehavior.get() == BarRenderBehavior.CUSTOM;
+            #else
+            // On Fabric 1.20.1, air settings are tied to stamina toggle
+            openAirSettingsButton.active = config.enableStaminaBar.get();
+            #endif
             addRenderableWidget(openAirSettingsButton);
             
             // Reset All Button - Positioned below all sections

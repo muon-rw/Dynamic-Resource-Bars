@@ -1,5 +1,7 @@
 package dev.muon.dynamic_resource_bars.util;
 
+import lombok.Getter;
+import lombok.Setter;
 import net.minecraft.client.Minecraft;
 import dev.muon.dynamic_resource_bars.config.ModConfigManager;
 
@@ -27,6 +29,14 @@ public class HUDPositioning {
         RIGHT
     }
 
+    @Setter
+    @Getter
+    private static int vanillaHealthHeight = 9; // Default fallback
+
+    @Setter
+    @Getter
+    private static int vanillaHungerHeight = 9; // Default fallback
+
     public static Position getPositionFromAnchor(BarPlacement anchor) {
         return switch (anchor) {
             case HEALTH -> getHealthAnchor();
@@ -49,10 +59,12 @@ public class HUDPositioning {
     public static Position getArmorAnchor() {
         int screenWidth = Minecraft.getInstance().getWindow().getGuiScaledWidth();
         int screenHeight = Minecraft.getInstance().getWindow().getGuiScaledHeight();
-        int healthBarHeight = ModConfigManager.getClient().enableHealthBar.get() ? ModConfigManager.getClient().healthBackgroundHeight.get() : 0;
+        int healthHeight = ModConfigManager.getClient().enableHealthBar.get() ?
+            ModConfigManager.getClient().healthBackgroundHeight.get() :
+                getVanillaHealthHeight();
         return new Position(
                 (screenWidth / 2) - 91,
-                getHealthAnchor().y() - healthBarHeight - 1
+                getHealthAnchor().y() - healthHeight - 1
         );
     }
 
@@ -68,10 +80,12 @@ public class HUDPositioning {
     public static Position getAirAnchor() {
         int screenWidth = Minecraft.getInstance().getWindow().getGuiScaledWidth();
         int screenHeight = Minecraft.getInstance().getWindow().getGuiScaledHeight();
-        int staminaBarHeight = ModConfigManager.getClient().enableStaminaBar.get() ? ModConfigManager.getClient().staminaBackgroundHeight.get() : 0;
+        int staminaHeight = ModConfigManager.getClient().enableStaminaBar.get() ?
+            ModConfigManager.getClient().staminaBackgroundHeight.get() : 
+            getVanillaHungerHeight();
         return new Position(
                 (screenWidth / 2) + 91,
-                getHungerAnchor().y() - staminaBarHeight - 1
+                getHungerAnchor().y() - staminaHeight - 1
         );
     }
 

@@ -105,7 +105,7 @@ public class ClientConfig {
     public static final int DEFAULT_STAMINA_OVERLAY_Y_OFFSET = -3;
     public static final int DEFAULT_STAMINA_BAR_X_OFFSET = 3;
     public static final int DEFAULT_STAMINA_BAR_Y_OFFSET = 3;
-    public static final int DEFAULT_STAMINA_TOTAL_X_OFFSET = -74; // Recalculated based on anchor
+    public static final int DEFAULT_STAMINA_TOTAL_X_OFFSET = -80;
     public static final int DEFAULT_STAMINA_TOTAL_Y_OFFSET = 0;
 
     public final BooleanValue enableStaminaBar;

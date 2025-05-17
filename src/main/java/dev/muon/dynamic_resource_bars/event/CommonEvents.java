@@ -38,7 +38,7 @@ public class CommonEvents {
     public static EventResult onRenderHunger(Minecraft minecraft, GuiGraphics guiGraphics, DeltaTracker deltaTracker) {
         var config = ModConfigManager.getClient();
         if (!config.enableStaminaBar.get()) {
-            return EventResult.PASS; // Let vanilla render
+            return EventResult.PASS;
         }
 
         Player player = minecraft.player;
@@ -57,14 +57,11 @@ public class CommonEvents {
         BarRenderBehavior armorBehavior = config.armorBarBehavior.get();
 
         if (armorBehavior == BarRenderBehavior.VANILLA) {
-            return EventResult.PASS; // Let vanilla render
+            return EventResult.PASS;
         }
 
-        // If behavior is CUSTOM or HIDDEN, we intend to take control.
         Player player = minecraft.player;
         if (player == null || minecraft.options.hideGui) {
-            // If GUI is hidden or player is null, and behavior is not VANILLA,
-            // we should interrupt vanilla rendering. Our custom renderers will handle null player gracefully.
             return EventResult.INTERRUPT;
         }
 
@@ -72,7 +69,6 @@ public class CommonEvents {
             ArmorBarRenderer.render(guiGraphics, player);
             ClientAbstractions.INSTANCE.addGuiLeftHeight(minecraft.gui, config.armorBackgroundHeight.get() + 1);
         }
-        // This interrupt covers both CUSTOM (after rendering) and HIDDEN (skipping render).
         return EventResult.INTERRUPT;
     }
 
@@ -81,14 +77,11 @@ public class CommonEvents {
         BarRenderBehavior airBehavior = config.airBarBehavior.get();
 
         if (airBehavior == BarRenderBehavior.VANILLA) {
-            return EventResult.PASS; // Let vanilla render
+            return EventResult.PASS;
         }
 
-        // If behavior is CUSTOM or HIDDEN, we intend to take control.
         Player player = minecraft.player;
         if (player == null || minecraft.options.hideGui) {
-            // If GUI is hidden or player is null, and behavior is not VANILLA,
-            // we should interrupt vanilla rendering. Our custom renderers will handle null player gracefully.
             return EventResult.INTERRUPT;
         }
 
@@ -96,7 +89,6 @@ public class CommonEvents {
             AirBarRenderer.render(guiGraphics, player);
             ClientAbstractions.INSTANCE.addGuiRightHeight(minecraft.gui, config.airBackgroundHeight.get() + 1);
         }
-        // This interrupt covers both CUSTOM (after rendering) and HIDDEN (skipping render).
         return EventResult.INTERRUPT;
     }
 }

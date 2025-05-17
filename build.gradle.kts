@@ -36,11 +36,16 @@ blahaj {
 		// Required
 		deps.modImplementation("fuzs.puzzleslib:puzzleslib-$loader:${property("puzzleslib")}")
 
-		// Optional / Compats
-		// TODO: Appleskin, Ars Nouveau, Iron's Spellbooks, RPGMana, Mana Attributes
-		//if (project.hasProperty("overflowingbars")) { deps.modImplementation("maven.modrinth:overflowing-bars:v${property("overflowingbars")}-$mc-$loader") }
+		// Integrations
+		// TODO: Appleskin, Farmer's Delight
+		// TODO: Mana: Ars Nouveau, Iron's Spellbooks, RPGMana, Mana Attributes
 
-		// Publishing, required deps
+		// Maybe at some point, low prio, Overflowing Bars compat:
+		// if (project.hasProperty("overflowingbars")) { deps.modImplementation("maven.modrinth:overflowing-bars:v${property("overflowingbars")}-$mc-$loader") }
+
+
+
+		// Publishing
 		addRequiredMod("puzzleslib")
 			.modrinth("puzzles-lib") // override with Modrinth URL slug
 			.addPlatform("1.21.1-neoforge", "v21.1.36-1.21.1-NeoForge") { required() }

@@ -3,4 +3,4 @@ plugins {
     id("toni.blahaj")
 }
 
-stonecutter active "1.20.1-forge" /* [SC] DO NOT EDIT */
+stonecutter active "1.20.1-fabric" /* [SC] DO NOT EDIT */
