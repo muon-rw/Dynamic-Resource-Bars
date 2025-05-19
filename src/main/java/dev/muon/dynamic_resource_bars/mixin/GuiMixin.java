@@ -22,8 +22,10 @@ import net.minecraft.resources.ResourceLocation;
 import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
+import org.spongepowered.asm.mixin.Unique;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
+import org.spongepowered.asm.mixin.injection.ModifyArg;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
 #if NEWER_THAN_20_1
@@ -52,8 +54,8 @@ public abstract class GuiMixin {
             index = 2
     )
     private static int shiftOnlyByBarHeight(int originalY) {
-        if (ModConfigManager.getClient().enableHealthBar.get()) {
-            return Minecraft.getInstance().getWindow().getGuiScaledHeight() - HUDPositioning.getHealthAnchor().y() - ModConfigManager.getClient().healthBackgroundHeight.get();
+        if (ModConfigManager.getClient().enableHealthBar) {
+            return Minecraft.getInstance().getWindow().getGuiScaledHeight() - HUDPositioning.getHealthAnchor().y() - ModConfigManager.getClient().healthBackgroundHeight;
         }
         return originalY;
     }
@@ -86,12 +88,12 @@ public abstract class GuiMixin {
             at = @At(value = "INVOKE", target = "Lnet/minecraft/client/gui/Gui;renderHearts(Lnet/minecraft/client/gui/GuiGraphics;Lnet/minecraft/world/entity/player/Player;IIIIFIIIZ)V")
     )
     private void replaceHearts(Gui instance, GuiGraphics guiGraphics, Player player, int x, int y, int height, int offsetHeartIndex, float maxHealth, int currentHealth, int displayHealth, int absorptionAmount, boolean renderHighlight, Operation<Void> original) {
-        if (ModConfigManager.getClient().enableHealthBar.get()) {
+        if (ModConfigManager.getClient().enableHealthBar) {
             HealthBarRenderer.render(guiGraphics, player, maxHealth, currentHealth, absorptionAmount, this.minecraft.getFrameTime());
         } else {
             original.call(instance, guiGraphics, player, x, y, height, offsetHeartIndex, maxHealth, currentHealth, displayHealth, absorptionAmount, renderHighlight);
         }
-        if (ModConfigManager.getClient().armorBarBehavior.get() == BarRenderBehavior.CUSTOM) {
+        if (ModConfigManager.getClient().armorBarBehavior == BarRenderBehavior.CUSTOM) {
             ArmorBarRenderer.render(guiGraphics, player);
         }
     }
@@ -106,7 +108,7 @@ public abstract class GuiMixin {
         ClientConfig config = ModConfigManager.getClient();
 
         // On Fabric 1.20.1, this toggle will be combined into one config value
-        if (player != null && config.enableStaminaBar.get()) {
+        if (player != null && config.enableStaminaBar) {
             StaminaBarRenderer.render(guiGraphics, player, this.minecraft.getFrameTime());
             AirBarRenderer.render(guiGraphics, player);
             ci.cancel();
@@ -120,7 +122,7 @@ public abstract class GuiMixin {
     )
     private int hideOriginalArmor(int originalArmorValue) {
         ClientConfig config = ModConfigManager.getClient();
-        BarRenderBehavior armorBehavior = config.armorBarBehavior.get();
+        BarRenderBehavior armorBehavior = config.armorBarBehavior;
         if (armorBehavior == BarRenderBehavior.CUSTOM || armorBehavior == BarRenderBehavior.HIDDEN) {
             return 0;
         }

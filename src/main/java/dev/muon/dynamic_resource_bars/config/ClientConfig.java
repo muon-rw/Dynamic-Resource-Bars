@@ -1,36 +1,34 @@
 package dev.muon.dynamic_resource_bars.config;
 
+import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
+import dev.muon.dynamic_resource_bars.DynamicResourceBars; // For logging
 import dev.muon.dynamic_resource_bars.util.HUDPositioning;
 import dev.muon.dynamic_resource_bars.util.HorizontalAlignment;
 import dev.muon.dynamic_resource_bars.util.TextBehavior;
 import dev.muon.dynamic_resource_bars.util.BarRenderBehavior;
 
-#if FABRIC
-    #if AFTER_21_1
-        import net.neoforged.neoforge.common.ModConfigSpec;
-        import net.neoforged.neoforge.common.ModConfigSpec.*;
-    #else
-        import net.minecraftforge.common.ForgeConfigSpec;
-        import net.minecraftforge.common.ForgeConfigSpec.*;
-    #endif
-#elif FORGE
-    import net.minecraftforge.common.ForgeConfigSpec;
-    import net.minecraftforge.common.ForgeConfigSpec.*;
-#elif NEO
-    import net.neoforged.neoforge.common.ModConfigSpec;
-    import net.neoforged.neoforge.common.ModConfigSpec.*;
-#endif
-
+import java.io.Reader;
+import java.io.Writer;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.StandardOpenOption;
 
 public class ClientConfig {
 
-    public static final float DEFAULT_TEXT_SCALING_FACTOR = 0.5f;
-    public final DoubleValue textScalingFactor;
+    private static Path CONFIG_FILE_PATH;
+    private static final Gson GSON = new GsonBuilder()
+            .setPrettyPrinting()
+            .serializeNulls() // Optional: good for ensuring all fields are present in JSON
+            .enableComplexMapKeySerialization() // Good practice
+            // .registerTypeAdapter(Path.class, new PathTypeAdapter()) // Example if complex types need adapters
+            .create();
 
-    /**
-     * Health
-     */
-    // --- Health Defaults ---
+    // General
+    public static final float DEFAULT_TEXT_SCALING_FACTOR = 0.5f;
+    public double textScalingFactor = DEFAULT_TEXT_SCALING_FACTOR;
+
+    // Health Defaults & Fields
     public static final boolean DEFAULT_ENABLE_HEALTH_BAR = true;
     public static final HUDPositioning.BarPlacement DEFAULT_HEALTH_BAR_ANCHOR = HUDPositioning.BarPlacement.HEALTH;
     public static final boolean DEFAULT_FADE_HEALTH_WHEN_FULL = false;
@@ -42,47 +40,40 @@ public class ClientConfig {
     public static final int DEFAULT_HEALTH_BACKGROUND_HEIGHT = 10;
     public static final int DEFAULT_HEALTH_BAR_WIDTH = 74;
     public static final int DEFAULT_HEALTH_BAR_HEIGHT = 4;
+    public static final int DEFAULT_HEALTH_BAR_ANIMATION_CYCLES = 32;
+    public static final int DEFAULT_HEALTH_BAR_FRAME_HEIGHT = 32;
     public static final int DEFAULT_HEALTH_OVERLAY_WIDTH = 80;
     public static final int DEFAULT_HEALTH_OVERLAY_HEIGHT = 10;
     public static final int DEFAULT_HEALTH_BAR_X_OFFSET = 3;
     public static final int DEFAULT_HEALTH_BAR_Y_OFFSET = 3;
-    public static final int DEFAULT_HEALTH_TOTAL_X_OFFSET = 0; // Recalculated based on anchor
+    public static final int DEFAULT_HEALTH_TOTAL_X_OFFSET = 0;
     public static final int DEFAULT_HEALTH_TOTAL_Y_OFFSET = 0;
     public static final int DEFAULT_HEALTH_OVERLAY_X_OFFSET = 0;
     public static final int DEFAULT_HEALTH_OVERLAY_Y_OFFSET = -3;
 
-    public final BooleanValue enableHealthBar;
-    public final EnumValue<HUDPositioning.BarPlacement> healthBarAnchor;
-    public final BooleanValue fadeHealthWhenFull;
-    public final EnumValue<TextBehavior> showHealthText;
-    public final EnumValue<HorizontalAlignment> healthTextAlign;
-    public final BooleanValue enableHealthForeground;
-    public final BooleanValue enableHealthBackground;
+    public boolean enableHealthBar;
+    public HUDPositioning.BarPlacement healthBarAnchor;
+    public boolean fadeHealthWhenFull;
+    public TextBehavior showHealthText;
+    public HorizontalAlignment healthTextAlign;
+    public boolean enableHealthForeground;
+    public boolean enableHealthBackground;
+    public int healthBackgroundWidth;
+    public int healthBackgroundHeight;
+    public int healthBarWidth;
+    public int healthBarHeight;
+    public int healthBarAnimationCycles;
+    public int healthBarFrameHeight;
+    public int healthOverlayWidth;
+    public int healthOverlayHeight;
+    public int healthBarXOffset;
+    public int healthBarYOffset;
+    public int healthTotalXOffset;
+    public int healthTotalYOffset;
+    public int healthOverlayXOffset;
+    public int healthOverlayYOffset;
 
-    // --- Sizing ---
-    public final IntValue healthBackgroundWidth;
-    public final IntValue healthBackgroundHeight;
-    public final IntValue healthBarWidth;
-    public final IntValue healthBarHeight;
-    public final IntValue healthBarAnimationCycles;
-    public final IntValue healthBarFrameHeight;
-
-    // --- New Foreground Sizing ---
-    public final IntValue healthOverlayWidth;
-    public final IntValue healthOverlayHeight;
-
-    // --- Positioning ---
-    public final IntValue healthBarXOffset;
-    public final IntValue healthBarYOffset;
-    public final IntValue healthTotalXOffset;
-    public final IntValue healthTotalYOffset;
-    public final IntValue healthOverlayXOffset;
-    public final IntValue healthOverlayYOffset;
-
-    /**
-     * Stamina
-     */
-    // --- Stamina Defaults ---
+    // Stamina Defaults & Fields
     public static final boolean DEFAULT_ENABLE_STAMINA_BAR = true;
     public static final HUDPositioning.BarPlacement DEFAULT_STAMINA_BAR_ANCHOR = HUDPositioning.BarPlacement.HUNGER;
     public static final boolean DEFAULT_FADE_STAMINA_WHEN_FULL = false;
@@ -94,6 +85,8 @@ public class ClientConfig {
     public static final int DEFAULT_STAMINA_BACKGROUND_HEIGHT = 10;
     public static final int DEFAULT_STAMINA_BAR_WIDTH = 74;
     public static final int DEFAULT_STAMINA_BAR_HEIGHT = 4;
+    public static final int DEFAULT_STAMINA_BAR_ANIMATION_CYCLES = 32;
+    public static final int DEFAULT_STAMINA_BAR_FRAME_HEIGHT = 32;
     public static final int DEFAULT_STAMINA_OVERLAY_WIDTH = 80;
     public static final int DEFAULT_STAMINA_OVERLAY_HEIGHT = 10;
     public static final int DEFAULT_STAMINA_OVERLAY_X_OFFSET = 0;
@@ -103,32 +96,29 @@ public class ClientConfig {
     public static final int DEFAULT_STAMINA_TOTAL_X_OFFSET = -80;
     public static final int DEFAULT_STAMINA_TOTAL_Y_OFFSET = 0;
 
-    public final BooleanValue enableStaminaBar;
-    public final EnumValue<HUDPositioning.BarPlacement> staminaBarAnchor;
-    public final BooleanValue fadeStaminaWhenFull;
-    public final EnumValue<TextBehavior> showStaminaText;
-    public final EnumValue<HorizontalAlignment> staminaTextAlign;
-    public final BooleanValue enableStaminaForeground;
-    public final BooleanValue enableStaminaBackground;
-    public final IntValue staminaBackgroundWidth;
-    public final IntValue staminaBackgroundHeight;
-    public final IntValue staminaBarWidth;
-    public final IntValue staminaBarHeight;
-    public final IntValue staminaBarAnimationCycles;
-    public final IntValue staminaBarFrameHeight;
-    public final IntValue staminaOverlayWidth;
-    public final IntValue staminaOverlayHeight;
-    public final IntValue staminaOverlayXOffset;
-    public final IntValue staminaOverlayYOffset;
-    public final IntValue staminaBarXOffset;
-    public final IntValue staminaBarYOffset;
-    public final IntValue staminaTotalXOffset;
-    public final IntValue staminaTotalYOffset;
+    public boolean enableStaminaBar;
+    public HUDPositioning.BarPlacement staminaBarAnchor;
+    public boolean fadeStaminaWhenFull;
+    public TextBehavior showStaminaText;
+    public HorizontalAlignment staminaTextAlign;
+    public boolean enableStaminaForeground;
+    public boolean enableStaminaBackground;
+    public int staminaBackgroundWidth;
+    public int staminaBackgroundHeight;
+    public int staminaBarWidth;
+    public int staminaBarHeight;
+    public int staminaBarAnimationCycles;
+    public int staminaBarFrameHeight;
+    public int staminaOverlayWidth;
+    public int staminaOverlayHeight;
+    public int staminaOverlayXOffset;
+    public int staminaOverlayYOffset;
+    public int staminaBarXOffset;
+    public int staminaBarYOffset;
+    public int staminaTotalXOffset;
+    public int staminaTotalYOffset;
 
-    /**
-     * Mana
-     */
-    // --- Mana Defaults ---
+    // Mana Defaults & Fields
     public static final boolean DEFAULT_ENABLE_MANA_BAR = true;
     public static final HUDPositioning.BarPlacement DEFAULT_MANA_BAR_ANCHOR = HUDPositioning.BarPlacement.ABOVE_UTILITIES;
     public static final boolean DEFAULT_FADE_MANA_WHEN_FULL = true;
@@ -140,6 +130,8 @@ public class ClientConfig {
     public static final int DEFAULT_MANA_BACKGROUND_HEIGHT = 10;
     public static final int DEFAULT_MANA_BAR_WIDTH = 74;
     public static final int DEFAULT_MANA_BAR_HEIGHT = 4;
+    public static final int DEFAULT_MANA_BAR_ANIMATION_CYCLES = 32;
+    public static final int DEFAULT_MANA_BAR_FRAME_HEIGHT = 32;
     public static final int DEFAULT_MANA_OVERLAY_WIDTH = 80;
     public static final int DEFAULT_MANA_OVERLAY_HEIGHT = 10;
     public static final int DEFAULT_MANA_BAR_X_OFFSET = 3;
@@ -149,31 +141,29 @@ public class ClientConfig {
     public static final int DEFAULT_MANA_OVERLAY_X_OFFSET = 0;
     public static final int DEFAULT_MANA_OVERLAY_Y_OFFSET = -3;
 
-    public final BooleanValue enableManaBar;
-    public final EnumValue<HUDPositioning.BarPlacement> manaBarAnchor;
-    public final BooleanValue fadeManaWhenFull;
-    public final EnumValue<TextBehavior> showManaText;
-    public final EnumValue<HorizontalAlignment> manaTextAlign;
-    public final BooleanValue enableManaForeground;
-    public final BooleanValue enableManaBackground;
-    public final IntValue manaBackgroundWidth;
-    public final IntValue manaBackgroundHeight;
-    public final IntValue manaBarWidth;
-    public final IntValue manaBarHeight;
-    public final IntValue manaBarAnimationCycles;
-    public final IntValue manaBarFrameHeight;
-    public final IntValue manaOverlayWidth;
-    public final IntValue manaOverlayHeight;
-    public final IntValue manaBarXOffset;
-    public final IntValue manaBarYOffset;
-    public final IntValue manaTotalXOffset;
-    public final IntValue manaTotalYOffset;
-    public final IntValue manaOverlayXOffset;
-    public final IntValue manaOverlayYOffset;
+    public boolean enableManaBar;
+    public HUDPositioning.BarPlacement manaBarAnchor;
+    public boolean fadeManaWhenFull;
+    public TextBehavior showManaText;
+    public HorizontalAlignment manaTextAlign;
+    public boolean enableManaForeground;
+    public boolean enableManaBackground;
+    public int manaBackgroundWidth;
+    public int manaBackgroundHeight;
+    public int manaBarWidth;
+    public int manaBarHeight;
+    public int manaBarAnimationCycles;
+    public int manaBarFrameHeight;
+    public int manaOverlayWidth;
+    public int manaOverlayHeight;
+    public int manaBarXOffset;
+    public int manaBarYOffset;
+    public int manaTotalXOffset;
+    public int manaTotalYOffset;
+    public int manaOverlayXOffset;
+    public int manaOverlayYOffset;
 
-    /**
-     * Armor
-     */
+    // Armor Defaults & Fields
     public static final BarRenderBehavior DEFAULT_ARMOR_BAR_BEHAVIOR = BarRenderBehavior.HIDDEN;
     public static final HUDPositioning.BarPlacement DEFAULT_ARMOR_BAR_ANCHOR = HUDPositioning.BarPlacement.ARMOR;
     public static final int DEFAULT_MAX_EXPECTED_ARMOR = 20;
@@ -193,28 +183,26 @@ public class ClientConfig {
     public static final int DEFAULT_ARMOR_ICON_X_OFFSET = 0;
     public static final int DEFAULT_ARMOR_ICON_Y_OFFSET = 0;
 
-    public final EnumValue<BarRenderBehavior> armorBarBehavior;
-    public final EnumValue<HUDPositioning.BarPlacement> armorBarAnchor;
-    public final IntValue maxExpectedArmor;
-    public final IntValue maxExpectedProt;
-    public final IntValue armorBackgroundWidth;
-    public final IntValue armorBackgroundHeight;
-    public final IntValue armorBarWidth;
-    public final IntValue armorBarHeight;
-    public final IntValue armorBarXOffset;
-    public final IntValue armorBarYOffset;
-    public final IntValue armorTotalXOffset;
-    public final IntValue armorTotalYOffset;
-    public final BooleanValue enableArmorIcon;
-    public final IntValue armorIconSize;
-    public final IntValue protOverlayAnimationCycles;
-    public final IntValue protOverlayFrameHeight;
-    public final IntValue armorIconXOffset;
-    public final IntValue armorIconYOffset;
+    public BarRenderBehavior armorBarBehavior;
+    public HUDPositioning.BarPlacement armorBarAnchor;
+    public int maxExpectedArmor;
+    public int maxExpectedProt;
+    public int armorBackgroundWidth;
+    public int armorBackgroundHeight;
+    public int armorBarWidth;
+    public int armorBarHeight;
+    public int armorBarXOffset;
+    public int armorBarYOffset;
+    public int armorTotalXOffset;
+    public int armorTotalYOffset;
+    public boolean enableArmorIcon;
+    public int armorIconSize;
+    public int protOverlayAnimationCycles;
+    public int protOverlayFrameHeight;
+    public int armorIconXOffset;
+    public int armorIconYOffset;
 
-    /**
-     * Air
-     */
+    // Air Defaults & Fields
     public static final BarRenderBehavior DEFAULT_AIR_BAR_BEHAVIOR = BarRenderBehavior.VANILLA;
     public static final HUDPositioning.BarPlacement DEFAULT_AIR_BAR_ANCHOR = HUDPositioning.BarPlacement.AIR;
     public static final int DEFAULT_AIR_BACKGROUND_WIDTH = 80;
@@ -230,227 +218,239 @@ public class ClientConfig {
     public static final int DEFAULT_AIR_ICON_X_OFFSET = 0;
     public static final int DEFAULT_AIR_ICON_Y_OFFSET = 0;
 
-    public final EnumValue<BarRenderBehavior> airBarBehavior;
-    public final EnumValue<HUDPositioning.BarPlacement> airBarAnchor;
-    public final IntValue airBackgroundWidth;
-    public final IntValue airBackgroundHeight;
-    public final IntValue airBarWidth;
-    public final IntValue airBarHeight;
-    public final IntValue airBarXOffset;
-    public final IntValue airBarYOffset;
-    public final IntValue airTotalXOffset;
-    public final IntValue airTotalYOffset;
-    public final BooleanValue enableAirIcon;
-    public final IntValue airIconSize;
-    public final IntValue airIconXOffset;
-    public final IntValue airIconYOffset;
+    public BarRenderBehavior airBarBehavior;
+    public HUDPositioning.BarPlacement airBarAnchor;
+    public int airBackgroundWidth;
+    public int airBackgroundHeight;
+    public int airBarWidth;
+    public int airBarHeight;
+    public int airBarXOffset;
+    public int airBarYOffset;
+    public int airTotalXOffset;
+    public int airTotalYOffset;
+    public boolean enableAirIcon;
+    public int airIconSize;
+    public int airIconXOffset;
+    public int airIconYOffset;
+
+    private static transient ClientConfig instance; // Marked transient so GSON doesn't try to save it
+
+    // Private constructor to enforce singleton via getInstance and initialize defaults
+    private ClientConfig() {
+        this.textScalingFactor = DEFAULT_TEXT_SCALING_FACTOR;
+
+        this.enableHealthBar = DEFAULT_ENABLE_HEALTH_BAR;
+        this.healthBarAnchor = DEFAULT_HEALTH_BAR_ANCHOR;
+        this.fadeHealthWhenFull = DEFAULT_FADE_HEALTH_WHEN_FULL;
+        this.showHealthText = DEFAULT_SHOW_HEALTH_TEXT;
+        this.healthTextAlign = DEFAULT_HEALTH_TEXT_ALIGN;
+        this.enableHealthForeground = DEFAULT_ENABLE_HEALTH_FOREGROUND;
+        this.enableHealthBackground = DEFAULT_ENABLE_HEALTH_BACKGROUND;
+        this.healthBackgroundWidth = DEFAULT_HEALTH_BACKGROUND_WIDTH;
+        this.healthBackgroundHeight = DEFAULT_HEALTH_BACKGROUND_HEIGHT;
+        this.healthBarWidth = DEFAULT_HEALTH_BAR_WIDTH;
+        this.healthBarHeight = DEFAULT_HEALTH_BAR_HEIGHT;
+        this.healthBarAnimationCycles = DEFAULT_HEALTH_BAR_ANIMATION_CYCLES;
+        this.healthBarFrameHeight = DEFAULT_HEALTH_BAR_FRAME_HEIGHT;
+        this.healthOverlayWidth = DEFAULT_HEALTH_OVERLAY_WIDTH;
+        this.healthOverlayHeight = DEFAULT_HEALTH_OVERLAY_HEIGHT;
+        this.healthBarXOffset = DEFAULT_HEALTH_BAR_X_OFFSET;
+        this.healthBarYOffset = DEFAULT_HEALTH_BAR_Y_OFFSET;
+        this.healthTotalXOffset = DEFAULT_HEALTH_TOTAL_X_OFFSET;
+        this.healthTotalYOffset = DEFAULT_HEALTH_TOTAL_Y_OFFSET;
+        this.healthOverlayXOffset = DEFAULT_HEALTH_OVERLAY_X_OFFSET;
+        this.healthOverlayYOffset = DEFAULT_HEALTH_OVERLAY_Y_OFFSET;
+
+        this.enableStaminaBar = DEFAULT_ENABLE_STAMINA_BAR;
+        this.staminaBarAnchor = DEFAULT_STAMINA_BAR_ANCHOR;
+        this.fadeStaminaWhenFull = DEFAULT_FADE_STAMINA_WHEN_FULL;
+        this.showStaminaText = DEFAULT_SHOW_STAMINA_TEXT;
+        this.staminaTextAlign = DEFAULT_STAMINA_TEXT_ALIGN;
+        this.enableStaminaForeground = DEFAULT_ENABLE_STAMINA_FOREGROUND;
+        this.enableStaminaBackground = DEFAULT_ENABLE_STAMINA_BACKGROUND;
+        this.staminaBackgroundWidth = DEFAULT_STAMINA_BACKGROUND_WIDTH;
+        this.staminaBackgroundHeight = DEFAULT_STAMINA_BACKGROUND_HEIGHT;
+        this.staminaBarWidth = DEFAULT_STAMINA_BAR_WIDTH;
+        this.staminaBarHeight = DEFAULT_STAMINA_BAR_HEIGHT;
+        this.staminaBarAnimationCycles = DEFAULT_STAMINA_BAR_ANIMATION_CYCLES;
+        this.staminaBarFrameHeight = DEFAULT_STAMINA_BAR_FRAME_HEIGHT;
+        this.staminaOverlayWidth = DEFAULT_STAMINA_OVERLAY_WIDTH;
+        this.staminaOverlayHeight = DEFAULT_STAMINA_OVERLAY_HEIGHT;
+        this.staminaOverlayXOffset = DEFAULT_STAMINA_OVERLAY_X_OFFSET;
+        this.staminaOverlayYOffset = DEFAULT_STAMINA_OVERLAY_Y_OFFSET;
+        this.staminaBarXOffset = DEFAULT_STAMINA_BAR_X_OFFSET;
+        this.staminaBarYOffset = DEFAULT_STAMINA_BAR_Y_OFFSET;
+        this.staminaTotalXOffset = DEFAULT_STAMINA_TOTAL_X_OFFSET;
+        this.staminaTotalYOffset = DEFAULT_STAMINA_TOTAL_Y_OFFSET;
+
+        this.enableManaBar = DEFAULT_ENABLE_MANA_BAR;
+        this.manaBarAnchor = DEFAULT_MANA_BAR_ANCHOR;
+        this.fadeManaWhenFull = DEFAULT_FADE_MANA_WHEN_FULL;
+        this.showManaText = DEFAULT_SHOW_MANA_TEXT;
+        this.manaTextAlign = DEFAULT_MANA_TEXT_ALIGN;
+        this.enableManaForeground = DEFAULT_ENABLE_MANA_FOREGROUND;
+        this.enableManaBackground = DEFAULT_ENABLE_MANA_BACKGROUND;
+        this.manaBackgroundWidth = DEFAULT_MANA_BACKGROUND_WIDTH;
+        this.manaBackgroundHeight = DEFAULT_MANA_BACKGROUND_HEIGHT;
+        this.manaBarWidth = DEFAULT_MANA_BAR_WIDTH;
+        this.manaBarHeight = DEFAULT_MANA_BAR_HEIGHT;
+        this.manaBarAnimationCycles = DEFAULT_MANA_BAR_ANIMATION_CYCLES;
+        this.manaBarFrameHeight = DEFAULT_MANA_BAR_FRAME_HEIGHT;
+        this.manaOverlayWidth = DEFAULT_MANA_OVERLAY_WIDTH;
+        this.manaOverlayHeight = DEFAULT_MANA_OVERLAY_HEIGHT;
+        this.manaBarXOffset = DEFAULT_MANA_BAR_X_OFFSET;
+        this.manaBarYOffset = DEFAULT_MANA_BAR_Y_OFFSET;
+        this.manaTotalXOffset = DEFAULT_MANA_TOTAL_X_OFFSET;
+        this.manaTotalYOffset = DEFAULT_MANA_TOTAL_Y_OFFSET;
+        this.manaOverlayXOffset = DEFAULT_MANA_OVERLAY_X_OFFSET;
+        this.manaOverlayYOffset = DEFAULT_MANA_OVERLAY_Y_OFFSET;
+
+        this.armorBarBehavior = DEFAULT_ARMOR_BAR_BEHAVIOR;
+        this.armorBarAnchor = DEFAULT_ARMOR_BAR_ANCHOR;
+        this.maxExpectedArmor = DEFAULT_MAX_EXPECTED_ARMOR;
+        this.maxExpectedProt = DEFAULT_MAX_EXPECTED_PROT;
+        this.armorBackgroundWidth = DEFAULT_ARMOR_BACKGROUND_WIDTH;
+        this.armorBackgroundHeight = DEFAULT_ARMOR_BACKGROUND_HEIGHT;
+        this.armorBarWidth = DEFAULT_ARMOR_BAR_WIDTH;
+        this.armorBarHeight = DEFAULT_ARMOR_BAR_HEIGHT;
+        this.armorBarXOffset = DEFAULT_ARMOR_BAR_X_OFFSET;
+        this.armorBarYOffset = DEFAULT_ARMOR_BAR_Y_OFFSET;
+        this.armorTotalXOffset = DEFAULT_ARMOR_TOTAL_X_OFFSET;
+        this.armorTotalYOffset = DEFAULT_ARMOR_TOTAL_Y_OFFSET;
+        this.enableArmorIcon = DEFAULT_ENABLE_ARMOR_ICON;
+        this.armorIconSize = DEFAULT_ARMOR_ICON_SIZE;
+        this.protOverlayAnimationCycles = DEFAULT_PROT_OVERLAY_ANIMATION_CYCLES;
+        this.protOverlayFrameHeight = DEFAULT_PROT_OVERLAY_FRAME_HEIGHT;
+        this.armorIconXOffset = DEFAULT_ARMOR_ICON_X_OFFSET;
+        this.armorIconYOffset = DEFAULT_ARMOR_ICON_Y_OFFSET;
+
+        this.airBarBehavior = DEFAULT_AIR_BAR_BEHAVIOR;
+        this.airBarAnchor = DEFAULT_AIR_BAR_ANCHOR;
+        this.airBackgroundWidth = DEFAULT_AIR_BACKGROUND_WIDTH;
+        this.airBackgroundHeight = DEFAULT_AIR_BACKGROUND_HEIGHT;
+        this.airBarWidth = DEFAULT_AIR_BAR_WIDTH;
+        this.airBarHeight = DEFAULT_AIR_BAR_HEIGHT;
+        this.airBarXOffset = DEFAULT_AIR_BAR_X_OFFSET;
+        this.airBarYOffset = DEFAULT_AIR_BAR_Y_OFFSET;
+        this.airTotalXOffset = DEFAULT_AIR_TOTAL_X_OFFSET;
+        this.airTotalYOffset = DEFAULT_AIR_TOTAL_Y_OFFSET;
+        this.enableAirIcon = DEFAULT_ENABLE_AIR_ICON;
+        this.airIconSize = DEFAULT_AIR_ICON_SIZE;
+        this.airIconXOffset = DEFAULT_AIR_ICON_X_OFFSET;
+        this.airIconYOffset = DEFAULT_AIR_ICON_Y_OFFSET;
+    }
+
+    public static void setConfigPath(Path path) {
+        if (CONFIG_FILE_PATH != null && !CONFIG_FILE_PATH.equals(path)) {
+            DynamicResourceBars.LOGGER.warn("ClientConfig path is being changed after initial setup. This might indicate an issue.");
+        }
+        CONFIG_FILE_PATH = path;
+    }
+
+    public static ClientConfig getInstance() {
+        if (instance == null) {
+            if (CONFIG_FILE_PATH == null) {
+                DynamicResourceBars.LOGGER.error("CRITICAL: ClientConfig.CONFIG_FILE_PATH was not initialized before getInstance() was called. Config will not be saved or loaded correctly.");
+                throw new IllegalStateException("ClientConfig.CONFIG_FILE_PATH must be set before getInstance() is called.");
+            }
+            instance = load();
+        }
+        return instance;
+    }
+
+    private static ClientConfig load() {
+        ClientConfig loadedConfig = null;
+        boolean newConfigCreated = false;
+
+        if (Files.exists(CONFIG_FILE_PATH)) {
+            try (Reader reader = Files.newBufferedReader(CONFIG_FILE_PATH)) {
+                loadedConfig = GSON.fromJson(reader, ClientConfig.class);
+                if (loadedConfig == null) { // GSON might return null for empty or malformed JSON
+                    DynamicResourceBars.LOGGER.warn("Config file {} was empty or malformed. Creating new default config.", CONFIG_FILE_PATH);
+                    loadedConfig = new ClientConfig(); // Create a new instance with defaults
+                    newConfigCreated = true;
+                }
+            } catch (Exception e) {
+                DynamicResourceBars.LOGGER.error("Failed to load client config from {}. A new default config will be created. Error: ", CONFIG_FILE_PATH, e);
+                loadedConfig = new ClientConfig(); // Create a new instance with defaults
+                newConfigCreated = true;
+            }
+        } else {
+            DynamicResourceBars.LOGGER.info("No config file found at {}. Creating new default config.", CONFIG_FILE_PATH);
+            loadedConfig = new ClientConfig(); // Create a new instance with defaults
+            newConfigCreated = true;
+        }
+
+        // Ensure all fields are present, applying defaults for any missing ones
+        // This is a simple way to handle upgrades where new config options are added
+        // A more sophisticated approach might involve version numbers and explicit migration
+        boolean modifiedByDefaults = ensureDefaults(loadedConfig);
 
 
-    // Constructor takes a Builder
-    public ClientConfig(#if (FABRIC && !AFTER_21_1) || FORGE ForgeConfigSpec.Builder builder #else ModConfigSpec.Builder builder #endif) {
-        builder.push("general"); // Corresponds to group("general", ...)
-        builder.comment("Customize shared settings");
+        if (newConfigCreated || modifiedByDefaults) {
+            DynamicResourceBars.LOGGER.info("Saving new or updated default config to {}.", CONFIG_FILE_PATH);
+            loadedConfig.save(); // Save if it's new or if defaults were applied
+        }
 
-        textScalingFactor = builder
-                .comment("The amount to adjust the size of text rendered on resource bars")
-                .defineInRange("textScalingFactor", DEFAULT_TEXT_SCALING_FACTOR, 0.0f, 2.0f); // Assuming a range for float
+        return loadedConfig;
+    }
+    
+    // Helper to ensure all fields have values, applying defaults if necessary
+    // This makes the config resilient to being manually edited with missing fields
+    private static boolean ensureDefaults(ClientConfig cfg) {
+        boolean modified = false;
+        // For each field, check if it's null (GSON might leave it null if not in JSON)
+        // or if it's a value that indicates it needs a default (e.g. enums being null)
+        // This is verbose but clear. A more reflection-based approach is possible but complex.
 
-        builder.push("health"); // Group for health settings
-        builder.comment("Customize the health bar"); // Comment for the group
+        // General - textScalingFactor is double, defaults are handled by constructor/GSON field init.
 
-        enableHealthBar = builder
-                .comment("Whether to render a custom bar instead of hearts.")
-                .define("enableHealthBar", DEFAULT_ENABLE_HEALTH_BAR);
+        // Health
+        if (cfg.healthBarAnchor == null) { cfg.healthBarAnchor = DEFAULT_HEALTH_BAR_ANCHOR; modified = true; }
+        if (cfg.showHealthText == null) { cfg.showHealthText = DEFAULT_SHOW_HEALTH_TEXT; modified = true; }
+        if (cfg.healthTextAlign == null) { cfg.healthTextAlign = DEFAULT_HEALTH_TEXT_ALIGN; modified = true; }
 
-        healthBarAnchor = builder
-                .comment("Anchor point for the health bar.")
-                .defineEnum("healthBarAnchor", DEFAULT_HEALTH_BAR_ANCHOR);
+        // Stamina
+        if (cfg.staminaBarAnchor == null) { cfg.staminaBarAnchor = DEFAULT_STAMINA_BAR_ANCHOR; modified = true; }
+        if (cfg.showStaminaText == null) { cfg.showStaminaText = DEFAULT_SHOW_STAMINA_TEXT; modified = true; }
+        if (cfg.staminaTextAlign == null) { cfg.staminaTextAlign = DEFAULT_STAMINA_TEXT_ALIGN; modified = true; }
 
-        fadeHealthWhenFull = builder
-                .comment("Whether to dynamically hide the health bar when the player is at full health")
-                .define("fadeHealthWhenFull", DEFAULT_FADE_HEALTH_WHEN_FULL);
+        // Mana
+        if (cfg.manaBarAnchor == null) { cfg.manaBarAnchor = DEFAULT_MANA_BAR_ANCHOR; modified = true; }
+        if (cfg.showManaText == null) { cfg.showManaText = DEFAULT_SHOW_MANA_TEXT; modified = true; }
+        if (cfg.manaTextAlign == null) { cfg.manaTextAlign = DEFAULT_MANA_TEXT_ALIGN; modified = true; }
 
-        showHealthText = builder
-                .comment("When health current/maximum values should be rendered as a text overlay. Always hidden when the bar is invisible, even if set to ALWAYS")
-                .defineEnum("showHealthText", DEFAULT_SHOW_HEALTH_TEXT);
-
-        healthTextAlign = builder
-                .comment("Horizontal alignment for the health value text.")
-                .defineEnum("healthTextAlign", DEFAULT_HEALTH_TEXT_ALIGN);
-
-        enableHealthForeground = builder
-                .comment("Render an extra layer on top of the health bar. Can be toggled in HUD editor.")
-                .define("enableHealthForeground", DEFAULT_ENABLE_HEALTH_FOREGROUND);
-
-        enableHealthBackground = builder
-                .comment("Render an extra layer behind the health bar. Can be toggled in HUD editor.")
-                .define("enableHealthBackground", DEFAULT_ENABLE_HEALTH_BACKGROUND);
-
-        // --- Sizing ---
-        healthBackgroundWidth = builder
-                .comment("Width of the health bar's background sprite, in pixels.")
-                .defineInRange("healthBackgroundWidth", DEFAULT_HEALTH_BACKGROUND_WIDTH, 0, Integer.MAX_VALUE);
-
-        healthBackgroundHeight = builder
-                .comment("Height of the health bar's background sprite, in pixels.")
-                .defineInRange("healthBackgroundHeight", DEFAULT_HEALTH_BACKGROUND_HEIGHT, 0, Integer.MAX_VALUE);
-
-        healthBarWidth = builder
-                .comment("Width of the actual animated bar, in pixels.")
-                .defineInRange("healthBarWidth", DEFAULT_HEALTH_BAR_WIDTH, 0, 256);
-
-        healthBarHeight = builder
-                .comment("Height of the actual animated bar, in pixels.")
-                .defineInRange("healthBarHeight", DEFAULT_HEALTH_BAR_HEIGHT, 0, 32);
-
-        healthBarAnimationCycles = builder
-                .comment("Number of animation frames in the bar animation.")
-                .defineInRange("healthBarAnimationCycles", 32, 0, Integer.MAX_VALUE);
-
-        healthBarFrameHeight = builder
-                .comment("Height of each frame in the health bar animation.")
-                .defineInRange("healthBarFrameHeight", 32, 0, Integer.MAX_VALUE);
-
-        // --- New Foreground Sizing ---
-        healthOverlayWidth = builder
-                .comment("Width of the health bar's foreground sprite, in pixels.")
-                .defineInRange("healthOverlayWidth", DEFAULT_HEALTH_OVERLAY_WIDTH, 0, Integer.MAX_VALUE);
-
-        healthOverlayHeight = builder
-                .comment("Height of the health bar's foreground sprite, in pixels.")
-                .defineInRange("healthOverlayHeight", DEFAULT_HEALTH_OVERLAY_HEIGHT, 0, Integer.MAX_VALUE);
-
-        // --- Positioning ---
-        // For offsets, providing a wide range like -1000 to 1000, or simply not using defineInRange if any int is valid.
-        // Using define() for simplicity here, but defineInRange can be used for stricter control.
-        healthBarXOffset = builder
-                .comment("Bar X offset relative to background. Adjusted via HUD editor focus mode.")
-                .defineInRange("healthBarXOffset", DEFAULT_HEALTH_BAR_X_OFFSET, Integer.MIN_VALUE, Integer.MAX_VALUE);
-
-        healthBarYOffset = builder
-                .comment("Bar Y offset relative to background. Adjusted via HUD editor focus mode.")
-                .defineInRange("healthBarYOffset", DEFAULT_HEALTH_BAR_Y_OFFSET, Integer.MIN_VALUE, Integer.MAX_VALUE);
-
-        healthTotalXOffset = builder
-                .comment("Overall bar complex X offset relative to anchor. Adjusted via HUD editor.")
-                .defineInRange("healthTotalXOffset", DEFAULT_HEALTH_TOTAL_X_OFFSET, Integer.MIN_VALUE, Integer.MAX_VALUE);
-
-        healthTotalYOffset = builder
-                .comment("Overall bar complex Y offset relative to anchor. Adjusted via HUD editor.")
-                .defineInRange("healthTotalYOffset", DEFAULT_HEALTH_TOTAL_Y_OFFSET, Integer.MIN_VALUE, Integer.MAX_VALUE);
-
-        healthOverlayXOffset = builder
-                .comment("Foreground overlay X offset. Adjusted via HUD editor focus mode.")
-                .defineInRange("healthOverlayXOffset", DEFAULT_HEALTH_OVERLAY_X_OFFSET, Integer.MIN_VALUE, Integer.MAX_VALUE);
-
-        healthOverlayYOffset = builder
-                .comment("Foreground overlay Y offset. Adjusted via HUD editor focus mode.")
-                .defineInRange("healthOverlayYOffset", DEFAULT_HEALTH_OVERLAY_Y_OFFSET, Integer.MIN_VALUE, Integer.MAX_VALUE);
-        builder.pop(); // Pop "health" group
-
-        // --- Stamina --- 
-        builder.push("stamina");
-        builder.comment("Customize hunger / the stamina bar");
-        enableStaminaBar = builder.comment("Whether to render a custom bar instead of hunger.").define("enableStaminaBar", DEFAULT_ENABLE_STAMINA_BAR);
-        staminaBarAnchor = builder.comment("Anchor point for the stamina bar.").defineEnum("staminaBarAnchor", DEFAULT_STAMINA_BAR_ANCHOR);
-        fadeStaminaWhenFull = builder.comment("Whether to dynamically hide the stamina bar when the player is at full hunger/stamina").define("fadeStaminaWhenFull", DEFAULT_FADE_STAMINA_WHEN_FULL);
-        showStaminaText = builder.comment("When stamina current/maximum values should be rendered as a text overlay. Always hidden when the bar is invisible, even if set to ALWAYS").defineEnum("showStaminaText", DEFAULT_SHOW_STAMINA_TEXT);
-        staminaTextAlign = builder.comment("Horizontal alignment for the stamina value text.").defineEnum("staminaTextAlign", DEFAULT_STAMINA_TEXT_ALIGN);
-        enableStaminaForeground = builder.comment("Render an extra layer on top of the stamina bar. Can be toggled in HUD editor.").define("enableStaminaForeground", DEFAULT_ENABLE_STAMINA_FOREGROUND);
-        enableStaminaBackground = builder.comment("Render an extra layer behind the stamina bar. Can be toggled in HUD editor.").define("enableStaminaBackground", DEFAULT_ENABLE_STAMINA_BACKGROUND);
-        staminaBackgroundWidth = builder.comment("Width of the stamina bar's background sprite, in pixels.").defineInRange("staminaBackgroundWidth", DEFAULT_STAMINA_BACKGROUND_WIDTH, 0, Integer.MAX_VALUE);
-        staminaBackgroundHeight = builder.comment("Height of the stamina bar's background sprite, in pixels.").defineInRange("staminaBackgroundHeight", DEFAULT_STAMINA_BACKGROUND_HEIGHT, 0, Integer.MAX_VALUE);
-        staminaBarWidth = builder.comment("Width of the actual animated bar, in pixels.").defineInRange("staminaBarWidth", DEFAULT_STAMINA_BAR_WIDTH, 0, Integer.MAX_VALUE);
-        staminaBarHeight = builder.comment("Height of the actual animated bar, in pixels.").defineInRange("staminaBarHeight", DEFAULT_STAMINA_BAR_HEIGHT, 0, Integer.MAX_VALUE);
-        staminaBarAnimationCycles = builder.comment("Number of animation frames in the bar animation.").defineInRange("staminaBarAnimationCycles", 32, 0, Integer.MAX_VALUE);
-        staminaBarFrameHeight = builder.comment("Height of each frame in the stamina bar animation.").defineInRange("staminaBarFrameHeight", 32, 0, Integer.MAX_VALUE);
-        staminaOverlayWidth = builder.comment("Width of the stamina bar's foreground sprite, in pixels.").defineInRange("staminaOverlayWidth", DEFAULT_STAMINA_OVERLAY_WIDTH, 0, Integer.MAX_VALUE);
-        staminaOverlayHeight = builder.comment("Height of the stamina bar's foreground sprite, in pixels.").defineInRange("staminaOverlayHeight", DEFAULT_STAMINA_OVERLAY_HEIGHT, 0, Integer.MAX_VALUE);
-        staminaOverlayXOffset = builder.comment("Foreground overlay X offset. Adjusted via HUD editor focus mode.").defineInRange("staminaOverlayXOffset", DEFAULT_STAMINA_OVERLAY_X_OFFSET, Integer.MIN_VALUE, Integer.MAX_VALUE);
-        staminaOverlayYOffset = builder.comment("Foreground overlay Y offset. Adjusted via HUD editor focus mode.").defineInRange("staminaOverlayYOffset", DEFAULT_STAMINA_OVERLAY_Y_OFFSET, Integer.MIN_VALUE, Integer.MAX_VALUE);
-        staminaBarXOffset = builder.comment("Bar X offset relative to background. Adjusted via HUD editor focus mode.").defineInRange("staminaBarXOffset", DEFAULT_STAMINA_BAR_X_OFFSET, Integer.MIN_VALUE, Integer.MAX_VALUE);
-        staminaBarYOffset = builder.comment("Bar Y offset relative to background. Adjusted via HUD editor focus mode.").defineInRange("staminaBarYOffset", DEFAULT_STAMINA_BAR_Y_OFFSET, Integer.MIN_VALUE, Integer.MAX_VALUE);
-        staminaTotalXOffset = builder.comment("Overall bar complex X offset relative to anchor. Adjusted via HUD editor.").defineInRange("staminaTotalXOffset", DEFAULT_STAMINA_TOTAL_X_OFFSET, Integer.MIN_VALUE, Integer.MAX_VALUE);
-        staminaTotalYOffset = builder.comment("Overall bar complex Y offset relative to anchor. Adjusted via HUD editor.").defineInRange("staminaTotalYOffset", DEFAULT_STAMINA_TOTAL_Y_OFFSET, Integer.MIN_VALUE, Integer.MAX_VALUE);
-        builder.pop();
-
-        // --- Mana --- 
-        builder.push("mana");
-        builder.comment("Customize the mana bar");
-        enableManaBar = builder.comment("Whether to render a custom bar instead of supported mods' built-in mana bars.").define("enableManaBar", DEFAULT_ENABLE_MANA_BAR);
-        manaBarAnchor = builder.comment("Anchor point for the mana bar.").defineEnum("manaBarAnchor", DEFAULT_MANA_BAR_ANCHOR);
-        fadeManaWhenFull = builder.comment("Whether to dynamically hide the mana bar when mana is full.").define("fadeManaWhenFull", DEFAULT_FADE_MANA_WHEN_FULL);
-        showManaText = builder.comment("When mana current/maximum values should be rendered as a text overlay. Always hidden when the bar is invisible, even if set to ALWAYS").defineEnum("showManaText", DEFAULT_SHOW_MANA_TEXT);
-        manaTextAlign = builder.comment("Horizontal alignment for the mana value text.").defineEnum("manaTextAlign", DEFAULT_MANA_TEXT_ALIGN);
-        enableManaForeground = builder.comment("Render an extra layer on top of the resource bar. Can be toggled in HUD editor.").define("enableManaForeground", DEFAULT_ENABLE_MANA_FOREGROUND);
-        enableManaBackground = builder.comment("Render an extra layer behind the resource bar. Can be toggled in HUD editor.").define("enableManaBackground", DEFAULT_ENABLE_MANA_BACKGROUND);
-        manaBackgroundWidth = builder.comment("Width of the mana bar's background sprite, in pixels.").defineInRange("manaBackgroundWidth", DEFAULT_MANA_BACKGROUND_WIDTH, 0, Integer.MAX_VALUE);
-        manaBackgroundHeight = builder.comment("Height of the mana bar's background sprite, in pixels.").defineInRange("manaBackgroundHeight", DEFAULT_MANA_BACKGROUND_HEIGHT, 0, Integer.MAX_VALUE);
-        manaBarWidth = builder.comment("Width of the actual animated bar, in pixels.").defineInRange("manaBarWidth", DEFAULT_MANA_BAR_WIDTH, 0, Integer.MAX_VALUE);
-        manaBarHeight = builder.comment("Height of the actual animated bar, in pixels.").defineInRange("manaBarHeight", DEFAULT_MANA_BAR_HEIGHT, 0, Integer.MAX_VALUE);
-        manaBarAnimationCycles = builder.comment("Number of animation frames in the bar animation.").defineInRange("manaBarAnimationCycles", 32, 0, Integer.MAX_VALUE);
-        manaBarFrameHeight = builder.comment("Height of each frame in the mana bar animation.").defineInRange("manaBarFrameHeight", 32, 0, Integer.MAX_VALUE);
-        manaOverlayWidth = builder.comment("Width of the mana bar's foreground sprite, in pixels.").defineInRange("manaOverlayWidth", DEFAULT_MANA_OVERLAY_WIDTH, 0, Integer.MAX_VALUE);
-        manaOverlayHeight = builder.comment("Height of the mana bar's foreground sprite, in pixels.").defineInRange("manaOverlayHeight", DEFAULT_MANA_OVERLAY_HEIGHT, 0, Integer.MAX_VALUE);
-        manaBarXOffset = builder.comment("Bar X offset relative to background. Adjusted via HUD editor focus mode.").defineInRange("manaBarXOffset", DEFAULT_MANA_BAR_X_OFFSET, Integer.MIN_VALUE, Integer.MAX_VALUE);
-        manaBarYOffset = builder.comment("Bar Y offset relative to background. Adjusted via HUD editor focus mode.").defineInRange("manaBarYOffset", DEFAULT_MANA_BAR_Y_OFFSET, Integer.MIN_VALUE, Integer.MAX_VALUE);
-        manaTotalXOffset = builder.comment("Overall bar complex X offset relative to anchor. Adjusted via HUD editor.").defineInRange("manaTotalXOffset", DEFAULT_MANA_TOTAL_X_OFFSET, Integer.MIN_VALUE, Integer.MAX_VALUE);
-        manaTotalYOffset = builder.comment("Overall bar complex Y offset relative to anchor. Adjusted via HUD editor.").defineInRange("manaTotalYOffset", DEFAULT_MANA_TOTAL_Y_OFFSET, Integer.MIN_VALUE, Integer.MAX_VALUE);
-        manaOverlayXOffset = builder.comment("Foreground overlay X offset. Adjusted via HUD editor focus mode.").defineInRange("manaOverlayXOffset", DEFAULT_MANA_OVERLAY_X_OFFSET, Integer.MIN_VALUE, Integer.MAX_VALUE);
-        manaOverlayYOffset = builder.comment("Foreground overlay Y offset. Adjusted via HUD editor focus mode.").defineInRange("manaOverlayYOffset", DEFAULT_MANA_OVERLAY_Y_OFFSET, Integer.MIN_VALUE, Integer.MAX_VALUE);
-        builder.pop();
-
-        // --- Armor --- 
-        builder.push("armor");
-        builder.comment("Customize the armor bar");
-
-        armorBarBehavior = builder
-                .comment("Determines how the armor bar is rendered: VANILLA, CUSTOM, or HIDDEN.")
-                .defineEnum("armorBarBehavior", DEFAULT_ARMOR_BAR_BEHAVIOR);
+        // Armor
+        if (cfg.armorBarBehavior == null) { cfg.armorBarBehavior = DEFAULT_ARMOR_BAR_BEHAVIOR; modified = true; }
+        if (cfg.armorBarAnchor == null) { cfg.armorBarAnchor = DEFAULT_ARMOR_BAR_ANCHOR; modified = true; }
         
-        armorBarAnchor = builder
-                .comment("Anchor point for the custom armor bar (if behavior is CUSTOM).")
-                .defineEnum("armorBarAnchor", DEFAULT_ARMOR_BAR_ANCHOR);
-        maxExpectedArmor = builder.comment("The maximum obtainable armor value for your modpack, for the purpose of how much bar to render + the icon index").defineInRange("maxExpectedArmor", DEFAULT_MAX_EXPECTED_ARMOR, 0, Integer.MAX_VALUE);
-        maxExpectedProt = builder.comment("The maximum obtainable Protection value for your modpack, for the purpose of how much overlay to render").defineInRange("maxExpectedProt", DEFAULT_MAX_EXPECTED_PROT, 0, Integer.MAX_VALUE);
-        armorBackgroundWidth = builder.comment("Width of the armor bar's background sprite, in pixels.").defineInRange("armorBackgroundWidth", DEFAULT_ARMOR_BACKGROUND_WIDTH, 0, Integer.MAX_VALUE);
-        armorBackgroundHeight = builder.comment("Height of the armor bar's background sprite, in pixels.").defineInRange("armorBackgroundHeight", DEFAULT_ARMOR_BACKGROUND_HEIGHT, 0, Integer.MAX_VALUE);
-        armorBarWidth = builder.comment("Width of the actual filled bar, in pixels.").defineInRange("armorBarWidth", DEFAULT_ARMOR_BAR_WIDTH, 0, Integer.MAX_VALUE);
-        armorBarHeight = builder.comment("Height of the actual filled bar, in pixels.").defineInRange("armorBarHeight", DEFAULT_ARMOR_BAR_HEIGHT, 0, Integer.MAX_VALUE);
-        armorBarXOffset = builder.comment("How much to shift the filled bar to the right relative to the background. In other words, the thickness of the background's left border.").defineInRange("armorBarXOffset", DEFAULT_ARMOR_BAR_X_OFFSET, Integer.MIN_VALUE, Integer.MAX_VALUE);
-        armorBarYOffset = builder.comment("How much to shift the filled bar upward relative to the background. In other words, the thickness of the background's bottom border.").defineInRange("armorBarYOffset", DEFAULT_ARMOR_BAR_Y_OFFSET, Integer.MIN_VALUE, Integer.MAX_VALUE);
-        armorTotalXOffset = builder.comment("How much to shift the entire bar+background complex to the right").defineInRange("armorTotalXOffset", DEFAULT_ARMOR_TOTAL_X_OFFSET, Integer.MIN_VALUE, Integer.MAX_VALUE);
-        armorTotalYOffset = builder.comment("How much to shift the entire bar+background complex upward").defineInRange("armorTotalYOffset", DEFAULT_ARMOR_TOTAL_Y_OFFSET, Integer.MIN_VALUE, Integer.MAX_VALUE);
-        enableArmorIcon = builder.comment("Whether to render a sprite on the side of the armor bar, based on armor points").define("enableArmorIcon", DEFAULT_ENABLE_ARMOR_ICON);
-        armorIconSize = builder.comment("Sprite size for the armor overlay icons").defineInRange("armorIconSize", DEFAULT_ARMOR_ICON_SIZE, 0, Integer.MAX_VALUE);
-        protOverlayAnimationCycles = builder.comment("Number of animation frames in the protection overlay animation.").defineInRange("protOverlayAnimationCycles", DEFAULT_PROT_OVERLAY_ANIMATION_CYCLES, 0, Integer.MAX_VALUE);
-        protOverlayFrameHeight = builder.comment("Height of each frame in the protection overlay animation.").defineInRange("protOverlayFrameHeight", DEFAULT_PROT_OVERLAY_FRAME_HEIGHT, 0, Integer.MAX_VALUE);
-        armorIconXOffset = builder.comment("How much to shift the armor icon to the right.").defineInRange("armorIconXOffset", DEFAULT_ARMOR_ICON_X_OFFSET, Integer.MIN_VALUE, Integer.MAX_VALUE);
-        armorIconYOffset = builder.comment("How much to shift the armor icon upward.").defineInRange("armorIconYOffset", DEFAULT_ARMOR_ICON_Y_OFFSET, Integer.MIN_VALUE, Integer.MAX_VALUE);
-        builder.pop();
+        // Air
+        if (cfg.airBarBehavior == null) { cfg.airBarBehavior = DEFAULT_AIR_BAR_BEHAVIOR; modified = true; }
+        if (cfg.airBarAnchor == null) { cfg.airBarAnchor = DEFAULT_AIR_BAR_ANCHOR; modified = true; }
 
-        // --- Air --- 
-        builder.push("air");
-        builder.comment("Customize the air bar");
+        // Primitive types like int, boolean, double will have their Java defaults (0, false, 0.0)
+        // if not present in JSON and not initialized by GSON to the POJO's initialized values.
+        // GSON usually respects field initializers if the field is missing in JSON.
+        // The constructor already sets all defaults, so `new ClientConfig()` handles this for primitives.
+        // This `ensureDefaults` method is primarily for making sure enum (Object) fields are not null 
+        // if the JSON was incomplete or manually edited to remove them.
 
-        airBarBehavior = builder
-                .comment("Determines how the air bar is rendered: VANILLA, CUSTOM, or HIDDEN.")
-                .defineEnum("airBarBehavior", DEFAULT_AIR_BAR_BEHAVIOR);
+        return modified;
+    }
 
-        airBarAnchor = builder.comment("Anchor point for the custom air bar (if behavior is CUSTOM).").defineEnum("airBarAnchor", DEFAULT_AIR_BAR_ANCHOR);
-        airBackgroundWidth = builder.comment("Width of the air bar's background sprite, in pixels.").defineInRange("airBackgroundWidth", DEFAULT_AIR_BACKGROUND_WIDTH, 0, Integer.MAX_VALUE);
-        airBackgroundHeight = builder.comment("Height of the air bar's background sprite, in pixels.").defineInRange("airBackgroundHeight", DEFAULT_AIR_BACKGROUND_HEIGHT, 0, Integer.MAX_VALUE);
-        airBarWidth = builder.comment("Width of the actual filled bar, in pixels.").defineInRange("airBarWidth", DEFAULT_AIR_BAR_WIDTH, 0, Integer.MAX_VALUE);
-        airBarHeight = builder.comment("Height of the actual filled bar, in pixels.").defineInRange("airBarHeight", DEFAULT_AIR_BAR_HEIGHT, 0, Integer.MAX_VALUE);
-        airBarXOffset = builder.comment("How much to shift the filled bar to the right relative to the background. In other words, the thickness of the background's left border.").defineInRange("airBarXOffset", DEFAULT_AIR_BAR_X_OFFSET, Integer.MIN_VALUE, Integer.MAX_VALUE);
-        airBarYOffset = builder.comment("How much to shift the filled bar upward relative to the background. In other words, the thickness of the background's bottom border.").defineInRange("airBarYOffset", DEFAULT_AIR_BAR_Y_OFFSET, Integer.MIN_VALUE, Integer.MAX_VALUE);
-        airTotalXOffset = builder.comment("How much to shift the entire bar+background complex to the right").defineInRange("airTotalXOffset", DEFAULT_AIR_TOTAL_X_OFFSET, Integer.MIN_VALUE, Integer.MAX_VALUE);
-        airTotalYOffset = builder.comment("How much to shift the entire bar+background complex upward").defineInRange("airTotalYOffset", DEFAULT_AIR_TOTAL_Y_OFFSET, Integer.MIN_VALUE, Integer.MAX_VALUE);
-        enableAirIcon = builder.comment("Whether to render a sprite on the side of the air bar, based on air points").define("enableAirIcon", DEFAULT_ENABLE_AIR_ICON);
-        airIconSize = builder.comment("Sprite size for the air overlay icons").defineInRange("airIconSize", DEFAULT_AIR_ICON_SIZE, 0, Integer.MAX_VALUE);
-        airIconXOffset = builder.comment("How much to shift the air icon to the right.").defineInRange("airIconXOffset", DEFAULT_AIR_ICON_X_OFFSET, Integer.MIN_VALUE, Integer.MAX_VALUE);
-        airIconYOffset = builder.comment("How much to shift the air icon upward.").defineInRange("airIconYOffset", DEFAULT_AIR_ICON_Y_OFFSET, Integer.MIN_VALUE, Integer.MAX_VALUE);
-        builder.pop();
 
+    public void save() {
+        if (CONFIG_FILE_PATH == null) {
+            DynamicResourceBars.LOGGER.error("ClientConfig.CONFIG_FILE_PATH is null, cannot save config.");
+            return;
+        }
+        try {
+            Files.createDirectories(CONFIG_FILE_PATH.getParent());
+            try (Writer writer = Files.newBufferedWriter(CONFIG_FILE_PATH, StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING)) {
+                GSON.toJson(this, writer);
+            }
+        } catch (Exception e) {
+            DynamicResourceBars.LOGGER.error("Failed to save client config to {}:", CONFIG_FILE_PATH, e);
+        }
     }
 }

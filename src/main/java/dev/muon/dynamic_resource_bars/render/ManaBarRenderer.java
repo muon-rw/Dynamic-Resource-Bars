@@ -34,10 +34,10 @@ public class ManaBarRenderer {
     public static ScreenRect getScreenRect(Player player) {
         if (player == null && Minecraft.getInstance().player == null) return new ScreenRect(0,0,0,0);
 
-        Position manaPosBase = HUDPositioning.getPositionFromAnchor(ModConfigManager.getClient().manaBarAnchor.get());
-        Position manaPos = manaPosBase.offset(ModConfigManager.getClient().manaTotalXOffset.get(), ModConfigManager.getClient().manaTotalYOffset.get());
-        int backgroundWidth = ModConfigManager.getClient().manaBackgroundWidth.get();
-        int backgroundHeight = ModConfigManager.getClient().manaBackgroundHeight.get();
+        Position manaPosBase = HUDPositioning.getPositionFromAnchor(ModConfigManager.getClient().manaBarAnchor);
+        Position manaPos = manaPosBase.offset(ModConfigManager.getClient().manaTotalXOffset, ModConfigManager.getClient().manaTotalYOffset);
+        int backgroundWidth = ModConfigManager.getClient().manaBackgroundWidth;
+        int backgroundHeight = ModConfigManager.getClient().manaBackgroundHeight;
         
         return new ScreenRect(manaPos.x(), manaPos.y(), backgroundWidth, backgroundHeight);
     }
@@ -52,18 +52,18 @@ public class ManaBarRenderer {
         switch (type) {
             case BACKGROUND:
                 return new ScreenRect(x, y, 
-                                      ModConfigManager.getClient().manaBackgroundWidth.get(), 
-                                      ModConfigManager.getClient().manaBackgroundHeight.get());
+                                      ModConfigManager.getClient().manaBackgroundWidth, 
+                                      ModConfigManager.getClient().manaBackgroundHeight);
             case BAR_MAIN:
-                return new ScreenRect(x + ModConfigManager.getClient().manaBarXOffset.get(), 
-                                      y + ModConfigManager.getClient().manaBarYOffset.get(), 
-                                      ModConfigManager.getClient().manaBarWidth.get(), 
-                                      ModConfigManager.getClient().manaBarHeight.get());
+                return new ScreenRect(x + ModConfigManager.getClient().manaBarXOffset, 
+                                      y + ModConfigManager.getClient().manaBarYOffset, 
+                                      ModConfigManager.getClient().manaBarWidth, 
+                                      ModConfigManager.getClient().manaBarHeight);
             case FOREGROUND_DETAIL:
-                return new ScreenRect(x + ModConfigManager.getClient().manaOverlayXOffset.get(), 
-                                      y + ModConfigManager.getClient().manaOverlayYOffset.get(), 
-                                      ModConfigManager.getClient().manaOverlayWidth.get(),
-                                      ModConfigManager.getClient().manaOverlayHeight.get());
+                return new ScreenRect(x + ModConfigManager.getClient().manaOverlayXOffset, 
+                                      y + ModConfigManager.getClient().manaOverlayYOffset, 
+                                      ModConfigManager.getClient().manaOverlayWidth,
+                                      ModConfigManager.getClient().manaOverlayHeight);
             default:
                 return new ScreenRect(0,0,0,0); 
         }
@@ -74,7 +74,7 @@ public class ManaBarRenderer {
             return;
         }
 
-        if (ModConfigManager.getClient().fadeManaWhenFull.get() && manaProvider.getCurrentMana() >= manaProvider.getMaxMana()) {
+        if (ModConfigManager.getClient().fadeManaWhenFull && manaProvider.getCurrentMana() >= manaProvider.getMaxMana()) {
             setBarVisibility(false);
         } else {
             setBarVisibility(true);
@@ -94,12 +94,12 @@ public class ManaBarRenderer {
 
         ScreenRect complexRect = getScreenRect(player);
 
-        int animationCycles = ModConfigManager.getClient().manaBarAnimationCycles.get();
-        int frameHeight = ModConfigManager.getClient().manaBarFrameHeight.get();
+        int animationCycles = ModConfigManager.getClient().manaBarAnimationCycles;
+        int frameHeight = ModConfigManager.getClient().manaBarFrameHeight;
         int animOffset = (int) (((player.tickCount + #if NEWER_THAN_20_1 deltaTracker.getGameTimeDeltaTicks() #else partialTicks #endif) / 3) % animationCycles) * frameHeight;
-        boolean isRightAnchored = ModConfigManager.getClient().manaBarAnchor.get().getSide() == HUDPositioning.AnchorSide.RIGHT;
+        boolean isRightAnchored = ModConfigManager.getClient().manaBarAnchor.getSide() == HUDPositioning.AnchorSide.RIGHT;
 
-        if (ModConfigManager.getClient().enableManaBackground.get()) {
+        if (ModConfigManager.getClient().enableManaBackground) {
              ScreenRect bgRect = getSubElementRect(SubElementType.BACKGROUND, player); 
              graphics.blit(DynamicResourceBars.loc("textures/gui/mana_background.png"),
                      bgRect.x(), bgRect.y(), 0, 0, bgRect.width(), bgRect.height(), 256, 256);
@@ -110,7 +110,7 @@ public class ManaBarRenderer {
 
         renderReservedOverlay(graphics, manaProvider, animOffset, barRect);
 
-        if (ModConfigManager.getClient().enableManaForeground.get()) {
+        if (ModConfigManager.getClient().enableManaForeground) {
             ScreenRect fgRect = getSubElementRect(SubElementType.FOREGROUND_DETAIL, player);
             graphics.blit(DynamicResourceBars.loc("textures/gui/detail_overlay.png"),
                     fgRect.x(), fgRect.y(),
@@ -120,7 +120,7 @@ public class ManaBarRenderer {
         // Text Rendering
         if (shouldRenderManaText(manaProvider.getCurrentMana(), manaProvider.getMaxMana())) {
             int color = getManaTextColor(manaProvider.getCurrentMana(), manaProvider.getMaxMana(), currentAlphaForRender);
-            HorizontalAlignment alignment = ModConfigManager.getClient().manaTextAlign.get();
+            HorizontalAlignment alignment = ModConfigManager.getClient().manaTextAlign;
 
             int baseX = barRect.x();
             if (alignment == HorizontalAlignment.CENTER) {
@@ -143,14 +143,14 @@ public class ManaBarRenderer {
             if (EditModeManager.getFocusedElement() == currentBarType) {
                 int focusedBorderColor = 0xA0FFFF00;
                 ScreenRect bgRect = getSubElementRect(SubElementType.BACKGROUND, player);
-                if (ModConfigManager.getClient().enableManaBackground.get()) {
+                if (ModConfigManager.getClient().enableManaBackground) {
                      graphics.renderOutline(bgRect.x()-1, bgRect.y()-1, bgRect.width()+2, bgRect.height()+2, focusedBorderColor);
                 }
                 
                 ScreenRect barRectOutline = getSubElementRect(SubElementType.BAR_MAIN, player);
                 graphics.renderOutline(barRectOutline.x()-1, barRectOutline.y()-1, barRectOutline.width()+2, barRectOutline.height()+2, 0xA000FFFF);
                 
-                if (ModConfigManager.getClient().enableManaForeground.get()) {
+                if (ModConfigManager.getClient().enableManaForeground) {
                     ScreenRect fgRect = getSubElementRect(SubElementType.FOREGROUND_DETAIL, player);
                     graphics.renderOutline(fgRect.x()-1, fgRect.y()-1, fgRect.width()+2, fgRect.height()+2, 0xA0FF00FF);
                 }
@@ -251,7 +251,7 @@ public class ManaBarRenderer {
     }
 
     private static int getManaTextColor(double currentMana, float maxMana, float barRenderAlpha) {
-        TextBehavior textBehavior = ModConfigManager.getClient().showManaText.get();
+        TextBehavior textBehavior = ModConfigManager.getClient().showManaText;
         int baseColor = 0xFFFFFF; // White
         int alpha = (int) (barRenderAlpha * 255);
 
@@ -274,7 +274,7 @@ public class ManaBarRenderer {
     }
 
     private static boolean shouldRenderManaText(double currentMana, float maxMana) {
-        TextBehavior behavior = ModConfigManager.getClient().showManaText.get();
+        TextBehavior behavior = ModConfigManager.getClient().showManaText;
         if (behavior == TextBehavior.NEVER) {
             return false;
         }

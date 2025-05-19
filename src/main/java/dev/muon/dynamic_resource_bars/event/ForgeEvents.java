@@ -18,23 +18,23 @@ public class ForgeEvents {
     public static void cancelVanillaBars(RenderGuiOverlayEvent.Pre event) {
         ClientConfig config = ModConfigManager.getClient();
 
-        if (config.enableHealthBar.get() && event.getOverlay() == VanillaGuiOverlay.PLAYER_HEALTH.type()) {
+        if (config.enableHealthBar && event.getOverlay() == VanillaGuiOverlay.PLAYER_HEALTH.type()) {
             event.setCanceled(true);
         }
-        if (config.enableStaminaBar.get() && event.getOverlay() == VanillaGuiOverlay.FOOD_LEVEL.type()) {
+        if (config.enableStaminaBar && event.getOverlay() == VanillaGuiOverlay.FOOD_LEVEL.type()) {
             event.setCanceled(true);
         }
         
         if (event.getOverlay() == VanillaGuiOverlay.ARMOR_LEVEL.type()) {
-            if (config.armorBarBehavior.get() == BarRenderBehavior.CUSTOM || 
-                config.armorBarBehavior.get() == BarRenderBehavior.HIDDEN) {
+            if (config.armorBarBehavior == BarRenderBehavior.CUSTOM ||
+                config.armorBarBehavior == BarRenderBehavior.HIDDEN) {
                 event.setCanceled(true);
             }
         }
 
         if (event.getOverlay() == VanillaGuiOverlay.AIR_LEVEL.type()) {
-            if (config.airBarBehavior.get() == BarRenderBehavior.CUSTOM || 
-                config.airBarBehavior.get() == BarRenderBehavior.HIDDEN) {
+            if (config.airBarBehavior == BarRenderBehavior.CUSTOM ||
+                config.airBarBehavior == BarRenderBehavior.HIDDEN) {
                 event.setCanceled(true);
             }
         }

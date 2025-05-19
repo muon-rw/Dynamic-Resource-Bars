@@ -25,8 +25,8 @@ public class HealthBarRenderer {
 
     private enum BarType {
         NORMAL("health_bar"),
-        POISON("health_bar_poison"),
-        WITHER("health_bar_wither"),
+        POISON("health_bar_poisoned"),
+        WITHER("health_bar_withered"),
         FROZEN("health_bar_frozen"),
         SCORCHED("health_bar_scorched");
 
@@ -55,10 +55,10 @@ public class HealthBarRenderer {
 
     public static ScreenRect getScreenRect(Player player) {
         if (player == null) return new ScreenRect(0,0,0,0);
-        Position healthPos = HUDPositioning.getPositionFromAnchor(ModConfigManager.getClient().healthBarAnchor.get())
-                .offset(ModConfigManager.getClient().healthTotalXOffset.get(), ModConfigManager.getClient().healthTotalYOffset.get());
-        int backgroundWidth = ModConfigManager.getClient().healthBackgroundWidth.get();
-        int backgroundHeight = ModConfigManager.getClient().healthBackgroundHeight.get();
+        Position healthPos = HUDPositioning.getPositionFromAnchor(ModConfigManager.getClient().healthBarAnchor)
+                .offset(ModConfigManager.getClient().healthTotalXOffset, ModConfigManager.getClient().healthTotalYOffset);
+        int backgroundWidth = ModConfigManager.getClient().healthBackgroundWidth;
+        int backgroundHeight = ModConfigManager.getClient().healthBackgroundHeight;
         return new ScreenRect(healthPos.x(), healthPos.y(), backgroundWidth, backgroundHeight);
     }
 
@@ -72,18 +72,18 @@ public class HealthBarRenderer {
         switch (type) {
             case BACKGROUND:
                 return new ScreenRect(x, y, 
-                                      ModConfigManager.getClient().healthBackgroundWidth.get(), 
-                                      ModConfigManager.getClient().healthBackgroundHeight.get());
+                                      ModConfigManager.getClient().healthBackgroundWidth, 
+                                      ModConfigManager.getClient().healthBackgroundHeight);
             case BAR_MAIN:
-                return new ScreenRect(x + ModConfigManager.getClient().healthBarXOffset.get(), 
-                                      y + ModConfigManager.getClient().healthBarYOffset.get(), 
-                                      ModConfigManager.getClient().healthBarWidth.get(), 
-                                      ModConfigManager.getClient().healthBarHeight.get());
+                return new ScreenRect(x + ModConfigManager.getClient().healthBarXOffset, 
+                                      y + ModConfigManager.getClient().healthBarYOffset, 
+                                      ModConfigManager.getClient().healthBarWidth, 
+                                      ModConfigManager.getClient().healthBarHeight);
             case FOREGROUND_DETAIL:
-                return new ScreenRect(x + ModConfigManager.getClient().healthOverlayXOffset.get(), 
-                                      y + ModConfigManager.getClient().healthOverlayYOffset.get(), 
-                                      ModConfigManager.getClient().healthOverlayWidth.get(),
-                                      ModConfigManager.getClient().healthOverlayHeight.get());
+                return new ScreenRect(x + ModConfigManager.getClient().healthOverlayXOffset, 
+                                      y + ModConfigManager.getClient().healthOverlayYOffset, 
+                                      ModConfigManager.getClient().healthOverlayWidth,
+                                      ModConfigManager.getClient().healthOverlayHeight);
             default:
                 return new ScreenRect(0,0,0,0);
         }
@@ -92,7 +92,7 @@ public class HealthBarRenderer {
     public static void render(GuiGraphics graphics, Player player, float maxHealth, float actualHealth, int absorptionAmount,
             #if NEWER_THAN_20_1 DeltaTracker deltaTracker #else float partialTicks #endif) {
 
-        boolean shouldFade = ModConfigManager.getClient().fadeHealthWhenFull.get() && actualHealth >= maxHealth && absorptionAmount == 0;
+        boolean shouldFade = ModConfigManager.getClient().fadeHealthWhenFull && actualHealth >= maxHealth && absorptionAmount == 0;
         setHealthBarVisibility(!shouldFade || EditModeManager.isEditModeEnabled());
 
         if (!isHealthBarVisible() && !EditModeManager.isEditModeEnabled() && (System.currentTimeMillis() - healthBarDisabledStartTime) > RenderUtil.BAR_FADEOUT_DURATION) {
@@ -115,12 +115,12 @@ public class HealthBarRenderer {
         int xPos = complexRect.x();
         int yPos = complexRect.y();
 
-        int backgroundWidth = ModConfigManager.getClient().healthBackgroundWidth.get();
-        int backgroundHeight = ModConfigManager.getClient().healthBackgroundHeight.get();
-        int animationCycles = ModConfigManager.getClient().healthBarAnimationCycles.get();
-        int frameHeight = ModConfigManager.getClient().healthBarFrameHeight.get();
+        int backgroundWidth = ModConfigManager.getClient().healthBackgroundWidth;
+        int backgroundHeight = ModConfigManager.getClient().healthBackgroundHeight;
+        int animationCycles = ModConfigManager.getClient().healthBarAnimationCycles;
+        int frameHeight = ModConfigManager.getClient().healthBarFrameHeight;
 
-        if (ModConfigManager.getClient().enableHealthBackground.get()) {
+        if (ModConfigManager.getClient().enableHealthBackground) {
             ScreenRect bgRect = getSubElementRect(SubElementType.BACKGROUND, player);
             graphics.blit(
                     DynamicResourceBars.loc("textures/gui/health_background.png"), 
@@ -136,22 +136,20 @@ public class HealthBarRenderer {
                       0, 0,
                       animOffset);
 
-        renderBarOverlays(graphics, player, absorptionAmount, 
+
+        renderBarOverlays(graphics, player, absorptionAmount,
                           mainBarRect.x(), mainBarRect.y(), mainBarRect.width(), mainBarRect.height(), 
                           0,0);
 
         renderBackgroundOverlays(graphics, player, xPos, yPos, backgroundWidth, backgroundHeight);
-
         RenderSystem.setShaderColor(1.0f, 1.0f, 1.0f, 1.0f);
 
         int textX = mainBarRect.x() + (mainBarRect.width() / 2);
         int textY = mainBarRect.y() + (mainBarRect.height() / 2);
 
-        //int textY = mainBarRect.y() + (mainBarRect.height() / 2);
-
         if (shouldRenderHealthText(actualHealth, maxHealth, player)) {
             int color = getHealthTextColor(actualHealth, maxHealth);
-            HorizontalAlignment alignment = ModConfigManager.getClient().healthTextAlign.get();
+            HorizontalAlignment alignment = ModConfigManager.getClient().healthTextAlign;
 
             int baseX = mainBarRect.x();
             if (alignment == HorizontalAlignment.CENTER) {
@@ -167,7 +165,7 @@ public class HealthBarRenderer {
         if (absorptionAmount > 0) {
             String absorptionText = "+" + absorptionAmount;
             Minecraft mc = Minecraft.getInstance();
-            float scalingFactor = ModConfigManager.getClient().textScalingFactor.get().floatValue();
+            float scalingFactor = (float) ModConfigManager.getClient().textScalingFactor;
             int unscaledTextWidth = mc.font.width(absorptionText);
 
             int absorptionTextX = complexRect.x() + backgroundWidth - (int)(unscaledTextWidth * scalingFactor) - 2;
@@ -185,7 +183,7 @@ public class HealthBarRenderer {
                 ScreenRect barRect = getSubElementRect(SubElementType.BAR_MAIN, player);
                 graphics.renderOutline(barRect.x()-1, barRect.y()-1, barRect.width()+2, barRect.height()+2, 0xA000FF00);
                 
-                if (ModConfigManager.getClient().enableHealthForeground.get()) {
+                if (ModConfigManager.getClient().enableHealthForeground) {
                     ScreenRect fgRect = getSubElementRect(SubElementType.FOREGROUND_DETAIL, player);
                     graphics.renderOutline(fgRect.x()-1, fgRect.y()-1, fgRect.width()+2, fgRect.height()+2, 0xA0FF00FF);
                 }
@@ -208,7 +206,7 @@ public class HealthBarRenderer {
         if (partialBarWidth <= 0 && actualHealth > 0) partialBarWidth = 1;
         if (partialBarWidth > 0) {
             graphics.blit(
-                    DynamicResourceBars.loc("textures/gui/" + barType.getTexture() + "_large.png"),
+                    DynamicResourceBars.loc("textures/gui/" + barType.getTexture() + ".png"),
                     barAbsX, barAbsY,
                     barXOffsetWithinTexture, animOffset + barYOffsetWithinTexture,
                     partialBarWidth, barAbsHeight,
@@ -266,7 +264,7 @@ public class HealthBarRenderer {
             RenderSystem.disableBlend();
         }
 
-        if (ModConfigManager.getClient().enableHealthForeground.get()) {
+        if (ModConfigManager.getClient().enableHealthForeground) {
             ScreenRect fgRect = getSubElementRect(SubElementType.FOREGROUND_DETAIL, player);
             graphics.blit(
                     DynamicResourceBars.loc("textures/gui/detail_overlay.png"),
@@ -326,7 +324,7 @@ public class HealthBarRenderer {
                 int maxTemperature = (int) getMaxTemp.invoke(player);
                 int temperature = (int) getTemp.invoke(player);
 
-                return temperature >= maxTemperature - 1;
+                return temperature > 0.5 && temperature >= maxTemperature - 1;
             } catch (Exception e) {
                 return false;
             }
@@ -368,7 +366,7 @@ public class HealthBarRenderer {
     }
 
     private static int getHealthTextColor(float currentHealth, float maxHealth) {
-        TextBehavior behavior = ModConfigManager.getClient().showHealthText.get();
+        TextBehavior behavior = ModConfigManager.getClient().showHealthText;
         // Alpha will be combined with the color later. Here we just get the base color.
         int baseColor = 0xFFFFFF; // White
 
@@ -384,7 +382,7 @@ public class HealthBarRenderer {
     }
 
     private static boolean shouldRenderHealthText(float currentHealth, float maxHealth, Player player) {
-        TextBehavior behavior = ModConfigManager.getClient().showHealthText.get();
+        TextBehavior behavior = ModConfigManager.getClient().showHealthText;
         if (behavior == TextBehavior.NEVER) {
             return false;
         }

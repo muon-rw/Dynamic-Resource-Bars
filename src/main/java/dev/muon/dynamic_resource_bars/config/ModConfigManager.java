@@ -1,88 +1,64 @@
 package dev.muon.dynamic_resource_bars.config;
 
 import dev.muon.dynamic_resource_bars.DynamicResourceBars;
+import net.minecraft.client.Minecraft; // Needed for client-side checks, though platform specifics handle it better
+import java.nio.file.Path;
+
+// Platform specific imports for environment type and config path
 #if FABRIC
-    #if AFTER_21_1
-        import fuzs.forgeconfigapiport.fabric.api.neoforge.v4.NeoForgeConfigRegistry;
-        import net.neoforged.fml.config.ModConfig;
-        import net.neoforged.neoforge.common.ModConfigSpec;
-    #else
-        import fuzs.forgeconfigapiport.api.config.v2.ForgeConfigRegistry;
-        import net.minecraftforge.fml.config.ModConfig;
-        import net.minecraftforge.common.ForgeConfigSpec;
-    #endif
     import net.fabricmc.loader.api.FabricLoader;
     import net.fabricmc.api.EnvType;
 #elif FORGE
-import net.minecraftforge.fml.config.ModConfig;
-    import net.minecraftforge.common.ForgeConfigSpec;
-import net.minecraftforge.fml.javafmlmod.FMLJavaModLoadingContext;
-import net.minecraftforge.fml.loading.FMLEnvironment;
+    import net.minecraftforge.fml.loading.FMLPaths;
+    import net.minecraftforge.fml.loading.FMLEnvironment;
     import net.minecraftforge.api.distmarker.Dist;
 #elif NEO
-    // import net.neoforged.fml.ModLoadingContext; // For NeoForge, registration is usually via ModContainer
-    import net.neoforged.fml.config.ModConfig;
-    import net.neoforged.neoforge.common.ModConfigSpec;
+    import net.neoforged.fml.loading.FMLPaths;
     import net.neoforged.fml.loading.FMLEnvironment;
     import net.neoforged.api.distmarker.Dist;
-    import net.neoforged.fml.ModContainer;
 #endif
 
 public class ModConfigManager {
 
-    private static ClientConfig clientConfig;
-    #if FABRIC
-        #if AFTER_21_1
-            private static ModConfigSpec clientSpec;
-        #else
-            private static ForgeConfigSpec clientSpec;
-        #endif
-    #elif FORGE
-        private static ForgeConfigSpec clientSpec;
-    #elif NEO
-        private static ModConfigSpec clientSpec;
-    #endif
+    // No more ClientConfig field here, it's a singleton in ClientConfig itself.
+    // No more Spec fields.
 
     public static ClientConfig getClient() {
-        return clientConfig;
+        return ClientConfig.getInstance();
     }
 
-    public static void registerConfigs(#if NEO ModContainer modContainer #elif FORGE FMLJavaModLoadingContext context #endif) {
+    // The parameters for modContainer/context are removed as they were for spec registration.
+    public static void initializeConfig() {
+        boolean isClient = false;
+        Path configPath = null;
+
         #if FABRIC
-            if (FabricLoader.getInstance().getEnvironmentType() != EnvType.CLIENT) {
-                return;
+            isClient = FabricLoader.getInstance().getEnvironmentType() == EnvType.CLIENT;
+            if (isClient) {
+                configPath = FabricLoader.getInstance().getConfigDir().resolve(DynamicResourceBars.ID + "-client.json");
             }
-        #elif FORGELIKE
-            if (FMLEnvironment.dist != Dist.CLIENT) {
-                return;
+        #elif FORGELIKE // Covers both Forge and NeoForge with similar logic
+            isClient = FMLEnvironment.dist == Dist.CLIENT;
+            if (isClient) {
+                configPath = FMLPaths.CONFIGDIR.get().resolve(DynamicResourceBars.ID + "-client.json");
             }
         #endif
 
-        #if FABRIC
-            #if AFTER_21_1
-                ModConfigSpec.Builder clientBuilder = new ModConfigSpec.Builder();
-            #else
-                ForgeConfigSpec.Builder clientBuilder = new ForgeConfigSpec.Builder();
-            #endif
-        #elif FORGE
-            ForgeConfigSpec.Builder clientBuilder = new ForgeConfigSpec.Builder();
-        #elif NEO
-            ModConfigSpec.Builder clientBuilder = new ModConfigSpec.Builder();
-        #endif
+        if (!isClient) {
+            DynamicResourceBars.LOGGER.info("Not on the client, skipping client config initialization.");
+            return;
+        }
 
-        clientConfig = new ClientConfig(clientBuilder);
-        clientSpec = clientBuilder.build();
+        if (configPath == null) {
+            DynamicResourceBars.LOGGER.error("Could not determine config path for GSON client config. This is a critical error.");
+            // In this state, ClientConfig.getInstance() will also log an error and use a non-persistent default.
+            // We could throw an exception here, but allowing the game to load with a default (non-saving) config might be preferable.
+            ClientConfig.getInstance(); // Ensure it tries to init and logs its own path error
+            return;
+        }
 
-        #if FABRIC
-            #if AFTER_21_1
-                NeoForgeConfigRegistry.INSTANCE.register(DynamicResourceBars.ID, ModConfig.Type.CLIENT, clientSpec);
-            #else
-                ForgeConfigRegistry.INSTANCE.register(DynamicResourceBars.ID, ModConfig.Type.CLIENT, clientSpec);
-            #endif
-        #elif FORGE
-            context.registerConfig(ModConfig.Type.CLIENT, clientSpec);
-        #elif NEO
-            modContainer.registerConfig(ModConfig.Type.CLIENT, clientSpec);
-        #endif
+        ClientConfig.setConfigPath(configPath);
+        ClientConfig.getInstance(); // This triggers the first load or default creation & save
+        DynamicResourceBars.LOGGER.info("Client config initialized with GSON at: {}", configPath);
     }
 } 

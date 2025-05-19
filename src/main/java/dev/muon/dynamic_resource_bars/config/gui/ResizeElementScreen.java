@@ -10,12 +10,6 @@ import net.minecraft.client.gui.navigation.ScreenRectangle;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.network.chat.Component;
 
-#if NEWER_THAN_20_1
-    import net.neoforged.neoforge.common.ModConfigSpec.IntValue;
-#else
-    import net.minecraftforge.common.ForgeConfigSpec.IntValue;
-#endif
-
 #if (!NEWER_THAN_20_1)
     import dev.muon.dynamic_resource_bars.util.ScreenRect;
 #endif
@@ -42,7 +36,7 @@ public class ResizeElementScreen extends Screen {
     protected void init() {
         super.init();
         ClientConfig config = ModConfigManager.getClient();
-        IntValue bgWidthConf, bgHeightConf, barWidthConf, barHeightConf, overlayWidthConf, overlayHeightConf;
+        int bgWidthConf, bgHeightConf, barWidthConf, barHeightConf, overlayWidthConf, overlayHeightConf;
 
         switch (elementToResize) {
             case HEALTH_BAR:
@@ -109,19 +103,19 @@ public class ResizeElementScreen extends Screen {
                 .build());
     }
 
-    private EditBox createIntEditBox(int x, int y, int width, int height, IntValue configIntValue) {
+    private EditBox createIntEditBox(int x, int y, int width, int height, int configIntValue) {
         // Default min value for sizes should be 0, or 1 if 0 is problematic for rendering.
         return createIntEditBox(x, y, width, height, configIntValue, 0, Integer.MAX_VALUE);
     }
 
-    private EditBox createIntEditBox(int x, int y, int width, int height, IntValue configIntValue, int minValue, int maxValue) {
+    private EditBox createIntEditBox(int x, int y, int width, int height, int configIntValue, int minValue, int maxValue) {
         EditBox editBox = new EditBox(this.font, x, y, width, height, Component.empty());
-        editBox.setValue(String.valueOf(configIntValue.get()));
+        editBox.setValue(String.valueOf(configIntValue));
         editBox.setResponder((text) -> {
             try {
                 int value = Integer.parseInt(text);
                 if (value >= minValue && value <= maxValue) { // Check against min and max
-                    configIntValue.set(value);
+                   //configIntValue.set(value);
                     editBox.setTextColor(0xE0E0E0); // Default color
                 } else {
                     editBox.setTextColor(0xFF5555); // Red for out of bounds
