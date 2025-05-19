@@ -24,13 +24,8 @@ import dev.muon.dynamic_resource_bars.util.BarRenderBehavior;
 
 public class ClientConfig {
 
-    // --- General Defaults ---
     public static final float DEFAULT_TEXT_SCALING_FACTOR = 0.5f;
-    public static final boolean DEFAULT_DISABLE_DEFAULT_ARMOR = true;
-
-    // New config value fields
     public final DoubleValue textScalingFactor;
-    public final BooleanValue disableDefaultArmor;
 
     /**
      * Health
@@ -149,7 +144,7 @@ public class ClientConfig {
     public static final int DEFAULT_MANA_OVERLAY_HEIGHT = 10;
     public static final int DEFAULT_MANA_BAR_X_OFFSET = 3;
     public static final int DEFAULT_MANA_BAR_Y_OFFSET = 3;
-    public static final int DEFAULT_MANA_TOTAL_X_OFFSET = -40; // Recalculated based on anchor (ABOVE_UTILITIES is centered)
+    public static final int DEFAULT_MANA_TOTAL_X_OFFSET = -40;
     public static final int DEFAULT_MANA_TOTAL_Y_OFFSET = 0;
     public static final int DEFAULT_MANA_OVERLAY_X_OFFSET = 0;
     public static final int DEFAULT_MANA_OVERLAY_Y_OFFSET = -3;
@@ -179,7 +174,7 @@ public class ClientConfig {
     /**
      * Armor
      */
-    public static final BarRenderBehavior DEFAULT_ARMOR_BAR_BEHAVIOR = BarRenderBehavior.VANILLA;
+    public static final BarRenderBehavior DEFAULT_ARMOR_BAR_BEHAVIOR = BarRenderBehavior.HIDDEN;
     public static final HUDPositioning.BarPlacement DEFAULT_ARMOR_BAR_ANCHOR = HUDPositioning.BarPlacement.ARMOR;
     public static final int DEFAULT_MAX_EXPECTED_ARMOR = 20;
     public static final int DEFAULT_MAX_EXPECTED_PROT = 16;
@@ -260,12 +255,6 @@ public class ClientConfig {
                 .comment("The amount to adjust the size of text rendered on resource bars")
                 .defineInRange("textScalingFactor", DEFAULT_TEXT_SCALING_FACTOR, 0.0f, 2.0f); // Assuming a range for float
 
-        disableDefaultArmor = builder
-                .comment("Whether to hide the vanilla armor bar from the HUD")
-                .define("disableDefaultArmor", DEFAULT_DISABLE_DEFAULT_ARMOR);
-        builder.pop();
-
-
         builder.push("health"); // Group for health settings
         builder.comment("Customize the health bar"); // Comment for the group
 
@@ -308,19 +297,19 @@ public class ClientConfig {
 
         healthBarWidth = builder
                 .comment("Width of the actual animated bar, in pixels.")
-                .defineInRange("healthBarWidth", DEFAULT_HEALTH_BAR_WIDTH, 0, Integer.MAX_VALUE);
+                .defineInRange("healthBarWidth", DEFAULT_HEALTH_BAR_WIDTH, 0, 256);
 
         healthBarHeight = builder
                 .comment("Height of the actual animated bar, in pixels.")
-                .defineInRange("healthBarHeight", DEFAULT_HEALTH_BAR_HEIGHT, 0, Integer.MAX_VALUE);
+                .defineInRange("healthBarHeight", DEFAULT_HEALTH_BAR_HEIGHT, 0, 32);
 
         healthBarAnimationCycles = builder
                 .comment("Number of animation frames in the bar animation.")
-                .defineInRange("healthBarAnimationCycles", 33, 0, Integer.MAX_VALUE);
+                .defineInRange("healthBarAnimationCycles", 32, 0, Integer.MAX_VALUE);
 
         healthBarFrameHeight = builder
                 .comment("Height of each frame in the health bar animation.")
-                .defineInRange("healthBarFrameHeight", 6, 0, Integer.MAX_VALUE);
+                .defineInRange("healthBarFrameHeight", 32, 0, Integer.MAX_VALUE);
 
         // --- New Foreground Sizing ---
         healthOverlayWidth = builder
@@ -373,8 +362,8 @@ public class ClientConfig {
         staminaBackgroundHeight = builder.comment("Height of the stamina bar's background sprite, in pixels.").defineInRange("staminaBackgroundHeight", DEFAULT_STAMINA_BACKGROUND_HEIGHT, 0, Integer.MAX_VALUE);
         staminaBarWidth = builder.comment("Width of the actual animated bar, in pixels.").defineInRange("staminaBarWidth", DEFAULT_STAMINA_BAR_WIDTH, 0, Integer.MAX_VALUE);
         staminaBarHeight = builder.comment("Height of the actual animated bar, in pixels.").defineInRange("staminaBarHeight", DEFAULT_STAMINA_BAR_HEIGHT, 0, Integer.MAX_VALUE);
-        staminaBarAnimationCycles = builder.comment("Number of animation frames in the bar animation.").defineInRange("staminaBarAnimationCycles", 33, 0, Integer.MAX_VALUE);
-        staminaBarFrameHeight = builder.comment("Height of each frame in the stamina bar animation.").defineInRange("staminaBarFrameHeight", 6, 0, Integer.MAX_VALUE);
+        staminaBarAnimationCycles = builder.comment("Number of animation frames in the bar animation.").defineInRange("staminaBarAnimationCycles", 32, 0, Integer.MAX_VALUE);
+        staminaBarFrameHeight = builder.comment("Height of each frame in the stamina bar animation.").defineInRange("staminaBarFrameHeight", 32, 0, Integer.MAX_VALUE);
         staminaOverlayWidth = builder.comment("Width of the stamina bar's foreground sprite, in pixels.").defineInRange("staminaOverlayWidth", DEFAULT_STAMINA_OVERLAY_WIDTH, 0, Integer.MAX_VALUE);
         staminaOverlayHeight = builder.comment("Height of the stamina bar's foreground sprite, in pixels.").defineInRange("staminaOverlayHeight", DEFAULT_STAMINA_OVERLAY_HEIGHT, 0, Integer.MAX_VALUE);
         staminaOverlayXOffset = builder.comment("Foreground overlay X offset. Adjusted via HUD editor focus mode.").defineInRange("staminaOverlayXOffset", DEFAULT_STAMINA_OVERLAY_X_OFFSET, Integer.MIN_VALUE, Integer.MAX_VALUE);
@@ -399,8 +388,8 @@ public class ClientConfig {
         manaBackgroundHeight = builder.comment("Height of the mana bar's background sprite, in pixels.").defineInRange("manaBackgroundHeight", DEFAULT_MANA_BACKGROUND_HEIGHT, 0, Integer.MAX_VALUE);
         manaBarWidth = builder.comment("Width of the actual animated bar, in pixels.").defineInRange("manaBarWidth", DEFAULT_MANA_BAR_WIDTH, 0, Integer.MAX_VALUE);
         manaBarHeight = builder.comment("Height of the actual animated bar, in pixels.").defineInRange("manaBarHeight", DEFAULT_MANA_BAR_HEIGHT, 0, Integer.MAX_VALUE);
-        manaBarAnimationCycles = builder.comment("Number of animation frames in the bar animation.").defineInRange("manaBarAnimationCycles", 33, 0, Integer.MAX_VALUE);
-        manaBarFrameHeight = builder.comment("Height of each frame in the mana bar animation.").defineInRange("manaBarFrameHeight", 6, 0, Integer.MAX_VALUE);
+        manaBarAnimationCycles = builder.comment("Number of animation frames in the bar animation.").defineInRange("manaBarAnimationCycles", 32, 0, Integer.MAX_VALUE);
+        manaBarFrameHeight = builder.comment("Height of each frame in the mana bar animation.").defineInRange("manaBarFrameHeight", 32, 0, Integer.MAX_VALUE);
         manaOverlayWidth = builder.comment("Width of the mana bar's foreground sprite, in pixels.").defineInRange("manaOverlayWidth", DEFAULT_MANA_OVERLAY_WIDTH, 0, Integer.MAX_VALUE);
         manaOverlayHeight = builder.comment("Height of the mana bar's foreground sprite, in pixels.").defineInRange("manaOverlayHeight", DEFAULT_MANA_OVERLAY_HEIGHT, 0, Integer.MAX_VALUE);
         manaBarXOffset = builder.comment("Bar X offset relative to background. Adjusted via HUD editor focus mode.").defineInRange("manaBarXOffset", DEFAULT_MANA_BAR_X_OFFSET, Integer.MIN_VALUE, Integer.MAX_VALUE);

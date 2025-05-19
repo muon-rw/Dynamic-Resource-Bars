@@ -93,11 +93,7 @@ public class ManaBarRenderer {
         RenderSystem.setShaderColor(1.0f, 1.0f, 1.0f, currentAlphaForRender);
 
         ScreenRect complexRect = getScreenRect(player);
-        int xPos = complexRect.x();
-        int yPos = complexRect.y();
 
-        int backgroundWidth = complexRect.width();
-        int backgroundHeight = complexRect.height();
         int animationCycles = ModConfigManager.getClient().manaBarAnimationCycles.get();
         int frameHeight = ModConfigManager.getClient().manaBarFrameHeight.get();
         int animOffset = (int) (((player.tickCount + #if NEWER_THAN_20_1 deltaTracker.getGameTimeDeltaTicks() #else partialTicks #endif) / 3) % animationCycles) * frameHeight;
@@ -110,7 +106,7 @@ public class ManaBarRenderer {
         }
 
         ScreenRect barRect = getSubElementRect(SubElementType.BAR_MAIN, player);
-        renderManaBarItself(graphics, manaProvider, animOffset, barRect, isRightAnchored);
+        renderManaBar(graphics, manaProvider, animOffset, barRect, isRightAnchored);
 
         renderReservedOverlay(graphics, manaProvider, animOffset, barRect);
 
@@ -183,8 +179,8 @@ public class ManaBarRenderer {
         }
     }
 
-    private static void renderManaBarItself(GuiGraphics graphics, ManaProvider manaProvider,
-                                          int animOffset, ScreenRect barAreaRect, boolean isRightAnchored) {
+    private static void renderManaBar(GuiGraphics graphics, ManaProvider manaProvider,
+                                      int animOffset, ScreenRect barAreaRect, boolean isRightAnchored) {
         float maxManaTotal = manaProvider.getMaxMana() * (1.0f + manaProvider.getReservedMana());
         if (maxManaTotal <= 0) maxManaTotal = 1;
         double currentMana = manaProvider.getCurrentMana();

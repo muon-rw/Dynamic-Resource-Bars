@@ -4,9 +4,7 @@ package dev.muon.dynamic_resource_bars.render;
 import com.mojang.blaze3d.systems.RenderSystem;
 import dev.muon.dynamic_resource_bars.DynamicResourceBars;
 import dev.muon.dynamic_resource_bars.config.ModConfigManager;
-import dev.muon.dynamic_resource_bars.util.HUDPositioning;
-import dev.muon.dynamic_resource_bars.util.Position;
-import dev.muon.dynamic_resource_bars.util.RenderUtil;
+import dev.muon.dynamic_resource_bars.util.*;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.world.effect.MobEffects;
@@ -17,13 +15,6 @@ import net.minecraft.world.entity.player.Player;
 #endif
 
 import java.lang.reflect.Method;
-
-import dev.muon.dynamic_resource_bars.util.EditModeManager;
-import dev.muon.dynamic_resource_bars.util.ScreenRect;
-import dev.muon.dynamic_resource_bars.util.TextBehavior;
-import dev.muon.dynamic_resource_bars.util.SubElementType;
-import dev.muon.dynamic_resource_bars.util.DraggableElement;
-import dev.muon.dynamic_resource_bars.util.HorizontalAlignment;
 
 public class HealthBarRenderer {
 
@@ -126,10 +117,6 @@ public class HealthBarRenderer {
 
         int backgroundWidth = ModConfigManager.getClient().healthBackgroundWidth.get();
         int backgroundHeight = ModConfigManager.getClient().healthBackgroundHeight.get();
-        int barWidth = ModConfigManager.getClient().healthBarWidth.get();
-        int barHeight = ModConfigManager.getClient().healthBarHeight.get();
-        int barOnlyXOffset = ModConfigManager.getClient().healthBarXOffset.get();
-        int barOnlyYOffset = ModConfigManager.getClient().healthBarYOffset.get();
         int animationCycles = ModConfigManager.getClient().healthBarAnimationCycles.get();
         int frameHeight = ModConfigManager.getClient().healthBarFrameHeight.get();
 
@@ -158,7 +145,9 @@ public class HealthBarRenderer {
         RenderSystem.setShaderColor(1.0f, 1.0f, 1.0f, 1.0f);
 
         int textX = mainBarRect.x() + (mainBarRect.width() / 2);
-        int textY = mainBarRect.y() + (mainBarRect.height() - Minecraft.getInstance().font.lineHeight) / 2;
+        int textY = mainBarRect.y() + (mainBarRect.height() / 2);
+
+        //int textY = mainBarRect.y() + (mainBarRect.height() / 2);
 
         if (shouldRenderHealthText(actualHealth, maxHealth, player)) {
             int color = getHealthTextColor(actualHealth, maxHealth);
@@ -166,31 +155,24 @@ public class HealthBarRenderer {
 
             int baseX = mainBarRect.x();
             if (alignment == HorizontalAlignment.CENTER) {
-                baseX = mainBarRect.x() + (mainBarRect.width() / 2);
+                baseX = textX;
             } else if (alignment == HorizontalAlignment.RIGHT) {
                 baseX = mainBarRect.x() + mainBarRect.width();
             }
-            // For LEFT, baseX is already mainBarRect.x()
-
-            int baseY = mainBarRect.y() + (mainBarRect.height() / 2); // Center Y for the text
 
             RenderUtil.renderText(actualHealth, maxHealth,
-                    graphics, baseX, baseY, color, alignment);
+                    graphics, baseX, textY, color, alignment);
         }
 
         if (absorptionAmount > 0) {
             String absorptionText = "+" + absorptionAmount;
             Minecraft mc = Minecraft.getInstance();
             float scalingFactor = ModConfigManager.getClient().textScalingFactor.get().floatValue();
-            // Width of the text *before* our utility scales it
             int unscaledTextWidth = mc.font.width(absorptionText);
 
-            // baseX for renderAdditionText should be the intended *start* of the text *before* internal scaling in RenderUtil
-            // Position it to the right of the background, with some padding
-            int absorptionTextX = complexRect.x() + backgroundWidth - (int)(unscaledTextWidth * scalingFactor) - 2; // 2px padding from the right edge
-            int absorptionTextY = mainBarRect.y() + (mainBarRect.height() / 2); // Vertically centered with the main bar
+            int absorptionTextX = complexRect.x() + backgroundWidth - (int)(unscaledTextWidth * scalingFactor) - 2;
 
-            RenderUtil.renderAdditionText(absorptionText, graphics, absorptionTextX, absorptionTextY, ((int)(RenderUtil.BASE_TEXT_ALPHA * currentAlphaForRender) << 24) | 0xFFFFFF);
+            RenderUtil.renderAdditionText(absorptionText, graphics, absorptionTextX, textY, ((int)(RenderUtil.BASE_TEXT_ALPHA * currentAlphaForRender) << 24) | 0xFFFFFF);
         }
 
         if (EditModeManager.isEditModeEnabled()) {
@@ -226,11 +208,11 @@ public class HealthBarRenderer {
         if (partialBarWidth <= 0 && actualHealth > 0) partialBarWidth = 1;
         if (partialBarWidth > 0) {
             graphics.blit(
-                    DynamicResourceBars.loc("textures/gui/" + barType.getTexture() + ".png"),
+                    DynamicResourceBars.loc("textures/gui/" + barType.getTexture() + "_large.png"),
                     barAbsX, barAbsY,
                     barXOffsetWithinTexture, animOffset + barYOffsetWithinTexture,
                     partialBarWidth, barAbsHeight,
-                    256, 256
+                    256, 1024
             );
         }
     }
@@ -322,26 +304,35 @@ public class HealthBarRenderer {
     }
 
     private static float getWetnessScale(Player player) {
-        try {
-            Method getWetScale = player.getClass().getMethod("thermoo$getSoakedScale");
-            return (float) getWetScale.invoke(player);
-        } catch (Exception e) {
-            return 0.0f;
+
+        if (PlatformUtil.isModLoaded("thermoo")) {
+            try {
+                Method getWetScale = player.getClass().getMethod("thermoo$getSoakedScale");
+                return (float) getWetScale.invoke(player);
+            } catch (Exception e) {
+                return 0.0f;
+            }
         }
+        return 0.0f;
     }
 
     private static boolean isScorched(Player player) {
-        try {
-            Method getMaxTemp = player.getClass().getMethod("thermoo$getMaxTemperature");
-            Method getTemp = player.getClass().getMethod("thermoo$getTemperature");
 
-            int maxTemperature = (int) getMaxTemp.invoke(player);
-            int temperature = (int) getTemp.invoke(player);
+        if (PlatformUtil.isModLoaded("thermoo")) {
+            try {
+                Method getMaxTemp = player.getClass().getMethod("thermoo$getMaxTemperature");
+                Method getTemp = player.getClass().getMethod("thermoo$getTemperature");
 
-            return temperature >= maxTemperature - 1;
-        } catch (Exception e) {
-            return false;
+                int maxTemperature = (int) getMaxTemp.invoke(player);
+                int temperature = (int) getTemp.invoke(player);
+
+                return temperature >= maxTemperature - 1;
+            } catch (Exception e) {
+                return false;
+            }
         }
+
+        return false;
     }
 
     private static boolean isFrozen(Player player) {
@@ -349,17 +340,19 @@ public class HealthBarRenderer {
             return true;
         }
 
-        try {
-            Method getTemp = player.getClass().getMethod("thermoo$getTemperature");
-            Method getTempScale = player.getClass().getMethod("thermoo$getTemperatureScale");
+        if (PlatformUtil.isModLoaded("thermoo")) {
+            try {
+                Method getTemp = player.getClass().getMethod("thermoo$getTemperature");
+                Method getTempScale = player.getClass().getMethod("thermoo$getTemperatureScale");
 
-            int minTemperature = (int) getTemp.invoke(player);
-            if (minTemperature < 0) {
-                float tempScale = (float) getTempScale.invoke(player);
-                return tempScale <= -0.99f;
+                int minTemperature = (int) getTemp.invoke(player);
+                if (minTemperature < 0) {
+                    float tempScale = (float) getTempScale.invoke(player);
+                    return tempScale <= -0.99f;
+                }
+            } catch (Exception e) {
+                // Revert to vanilla check
             }
-        } catch (Exception e) {
-            // Revert to vanilla check
         }
 
         return false;

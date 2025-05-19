@@ -90,8 +90,8 @@ public class ResizeElementScreen extends Screen {
         this.addRenderableWidget(bgHeightBox);
         currentY += 2 * (boxHeight + rowSpacing) + rowSpacing; // Add extra spacing between groups
 
-        barWidthBox = createIntEditBox(editBoxX, currentY, boxWidth, boxHeight, barWidthConf);
-        barHeightBox = createIntEditBox(editBoxX, currentY + boxHeight + rowSpacing, boxWidth, boxHeight, barHeightConf, 0, Integer.MAX_VALUE);
+        barWidthBox = createIntEditBox(editBoxX, currentY, boxWidth, boxHeight, barWidthConf, 0, 256);
+        barHeightBox = createIntEditBox(editBoxX, currentY + boxHeight + rowSpacing, boxWidth, boxHeight, barHeightConf, 0, 32);
         this.addRenderableWidget(barWidthBox);
         this.addRenderableWidget(barHeightBox);
         currentY += 2 * (boxHeight + rowSpacing) + rowSpacing;

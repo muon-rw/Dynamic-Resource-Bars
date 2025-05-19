@@ -42,7 +42,6 @@ public class RenderUtil {
         } else if (alignment == HorizontalAlignment.RIGHT) {
             actualX = scaledX - totalTextWidth;
         }
-        // For LEFT alignment, scaledX is already the starting point.
 
         graphics.drawString(minecraft.font, fullTextComponent, actualX, scaledY, color, true);
 
@@ -61,7 +60,7 @@ public class RenderUtil {
         float scalingFactor = ModConfigManager.getClient().textScalingFactor.get().floatValue();
 
         int xPos = (int) (baseX / scalingFactor);
-        int yPos = (int) (baseY / scalingFactor);
+        int yPos = (int) (baseY / scalingFactor) - (minecraft.font.lineHeight / 2);
         poseStack.scale(scalingFactor, scalingFactor, 1.0f);
 
         graphics.drawString(minecraft.font, text, xPos, yPos, color, true);

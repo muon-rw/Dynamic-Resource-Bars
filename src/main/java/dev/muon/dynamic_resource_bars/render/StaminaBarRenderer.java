@@ -111,10 +111,6 @@ public class StaminaBarRenderer {
         RenderSystem.setShaderColor(1.0f, 1.0f, 1.0f, currentAlphaForRender);
 
         ScreenRect complexRect = getScreenRect(player);
-        int xPos = complexRect.x();
-        int yPos = complexRect.y();
-        int backgroundWidth = complexRect.width();
-        int backgroundHeight = complexRect.height();
         
         int animationCycles = ModConfigManager.getClient().staminaBarAnimationCycles.get();
         int frameHeight = ModConfigManager.getClient().staminaBarFrameHeight.get();
@@ -186,8 +182,8 @@ public class StaminaBarRenderer {
                 graphics.renderOutline(complexRect.x()-1, complexRect.y()-1, complexRect.width()+2, complexRect.height()+2, borderColor);
             }
         }
-        RenderSystem.setShaderColor(1.0f, 1.0f, 1.0f, 1.0f); // Reset shader color after all rendering for this bar
-        RenderSystem.disableBlend(); // Ensure blend is disabled
+        RenderSystem.setShaderColor(1.0f, 1.0f, 1.0f, 1.0f);
+        RenderSystem.disableBlend();
     }
 
     private static void renderBaseBar(GuiGraphics graphics, Player player, float currentStamina, float maxStamina,
@@ -214,7 +210,7 @@ public class StaminaBarRenderer {
                     barX, barY,
                     0, animOffset,
                     partialBarWidth, barHeight,
-                    256, 256
+                    256, 1024
             );
         }
     }
