@@ -24,23 +24,23 @@ public class GuiOverlays {
 
         var config = ModConfigManager.getClient();
 
-        if (config.enableHealthBar.get()) {
+        if (config.enableHealthBar) {
             HealthBarRenderer.render(graphics, player, player.getMaxHealth(), player.getHealth(), (int) player.getAbsorptionAmount(), partialTick);
-            gui.leftHeight += config.healthBackgroundHeight.get() + 1;
+            gui.leftHeight += config.healthBackgroundHeight + 1;
         }
-        if (config.enableStaminaBar.get()) {
+        if (config.enableStaminaBar) {
             StaminaBarRenderer.render(graphics, player, partialTick);
-            gui.rightHeight += config.staminaBackgroundHeight.get() + 1;
+            gui.rightHeight += config.staminaBackgroundHeight + 1;
         }
 
-        if (config.armorBarBehavior.get() == BarRenderBehavior.CUSTOM) {
+        if (config.armorBarBehavior == BarRenderBehavior.CUSTOM) {
             ArmorBarRenderer.render(graphics, player);
-            gui.leftHeight += config.armorBackgroundHeight.get() + 1;
+            gui.leftHeight += config.armorBackgroundHeight + 1;
         }
 
-        if (config.airBarBehavior.get() == BarRenderBehavior.CUSTOM) {
+        if (config.airBarBehavior == BarRenderBehavior.CUSTOM) {
             AirBarRenderer.render(graphics, player);
-            gui.rightHeight += config.airBackgroundHeight.get() + 1;
+            gui.rightHeight += config.airBackgroundHeight + 1;
         }
 
     };

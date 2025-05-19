@@ -17,7 +17,7 @@ public class RenderUtil {
         Minecraft minecraft = Minecraft.getInstance();
         PoseStack poseStack = graphics.pose();
         poseStack.pushPose();
-        float scalingFactor = ModConfigManager.getClient().textScalingFactor.get().floatValue();
+        float scalingFactor = (float) ModConfigManager.getClient().textScalingFactor;
 
         // Apply scaling
         poseStack.scale(scalingFactor, scalingFactor, 1.0f);
@@ -57,7 +57,7 @@ public class RenderUtil {
         Minecraft minecraft = Minecraft.getInstance();
         PoseStack poseStack = graphics.pose();
         poseStack.pushPose();
-        float scalingFactor = ModConfigManager.getClient().textScalingFactor.get().floatValue();
+        float scalingFactor = (float) ModConfigManager.getClient().textScalingFactor;
 
         int xPos = (int) (baseX / scalingFactor);
         int yPos = (int) (baseY / scalingFactor) - (minecraft.font.lineHeight / 2);
@@ -72,7 +72,7 @@ public class RenderUtil {
         Minecraft minecraft = Minecraft.getInstance();
         PoseStack poseStack = graphics.pose();
         poseStack.pushPose();
-        float scalingFactor = ModConfigManager.getClient().textScalingFactor.get().floatValue();
+        float scalingFactor = (float) ModConfigManager.getClient().textScalingFactor;
 
         int xPos = (int) (baseX / scalingFactor);
         int yPos = (int) (baseY / scalingFactor) - (minecraft.font.lineHeight / 2); // Added vertical centering

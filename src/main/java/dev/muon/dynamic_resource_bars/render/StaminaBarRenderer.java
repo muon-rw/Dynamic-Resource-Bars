@@ -56,10 +56,10 @@ public class StaminaBarRenderer {
 
     public static ScreenRect getScreenRect(Player player) {
         if (player == null) return new ScreenRect(0,0,0,0);
-        Position staminaPosBase = HUDPositioning.getPositionFromAnchor(ModConfigManager.getClient().staminaBarAnchor.get());
-        Position staminaPos = staminaPosBase.offset(ModConfigManager.getClient().staminaTotalXOffset.get(), ModConfigManager.getClient().staminaTotalYOffset.get());
-        int backgroundWidth = ModConfigManager.getClient().staminaBackgroundWidth.get();
-        int backgroundHeight = ModConfigManager.getClient().staminaBackgroundHeight.get();
+        Position staminaPosBase = HUDPositioning.getPositionFromAnchor(ModConfigManager.getClient().staminaBarAnchor);
+        Position staminaPos = staminaPosBase.offset(ModConfigManager.getClient().staminaTotalXOffset, ModConfigManager.getClient().staminaTotalYOffset);
+        int backgroundWidth = ModConfigManager.getClient().staminaBackgroundWidth;
+        int backgroundHeight = ModConfigManager.getClient().staminaBackgroundHeight;
         return new ScreenRect(staminaPos.x(), staminaPos.y(), backgroundWidth, backgroundHeight);
     }
 
@@ -73,25 +73,25 @@ public class StaminaBarRenderer {
         switch (type) {
             case BACKGROUND:
                 return new ScreenRect(x, y, 
-                                      ModConfigManager.getClient().staminaBackgroundWidth.get(), 
-                                      ModConfigManager.getClient().staminaBackgroundHeight.get());
+                                      ModConfigManager.getClient().staminaBackgroundWidth, 
+                                      ModConfigManager.getClient().staminaBackgroundHeight);
             case BAR_MAIN:
-                return new ScreenRect(x + ModConfigManager.getClient().staminaBarXOffset.get(), 
-                                      y + ModConfigManager.getClient().staminaBarYOffset.get(), 
-                                      ModConfigManager.getClient().staminaBarWidth.get(), 
-                                      ModConfigManager.getClient().staminaBarHeight.get());
+                return new ScreenRect(x + ModConfigManager.getClient().staminaBarXOffset, 
+                                      y + ModConfigManager.getClient().staminaBarYOffset, 
+                                      ModConfigManager.getClient().staminaBarWidth, 
+                                      ModConfigManager.getClient().staminaBarHeight);
             case FOREGROUND_DETAIL:
-                 return new ScreenRect(x + ModConfigManager.getClient().staminaOverlayXOffset.get(), 
-                                       y + ModConfigManager.getClient().staminaOverlayYOffset.get(), 
-                                       ModConfigManager.getClient().staminaOverlayWidth.get(),
-                                       ModConfigManager.getClient().staminaOverlayHeight.get());
+                 return new ScreenRect(x + ModConfigManager.getClient().staminaOverlayXOffset, 
+                                       y + ModConfigManager.getClient().staminaOverlayYOffset, 
+                                       ModConfigManager.getClient().staminaOverlayWidth,
+                                       ModConfigManager.getClient().staminaOverlayHeight);
             default:
                 return new ScreenRect(0,0,0,0); 
         }
     }
 
     public static void render(GuiGraphics graphics, Player player, #if NEWER_THAN_20_1 DeltaTracker deltaTracker #else float partialTicks #endif) {
-        boolean shouldFade = ModConfigManager.getClient().fadeStaminaWhenFull.get() && player.getFoodData().getFoodLevel() >= 20;
+        boolean shouldFade = ModConfigManager.getClient().fadeStaminaWhenFull && player.getFoodData().getFoodLevel() >= 20;
         setStaminaBarVisibility(!shouldFade || EditModeManager.isEditModeEnabled());
 
         if (!isStaminaBarVisible() && !EditModeManager.isEditModeEnabled() && (System.currentTimeMillis() - staminaBarDisabledStartTime) > RenderUtil.BAR_FADEOUT_DURATION) {
@@ -112,12 +112,12 @@ public class StaminaBarRenderer {
 
         ScreenRect complexRect = getScreenRect(player);
         
-        int animationCycles = ModConfigManager.getClient().staminaBarAnimationCycles.get();
-        int frameHeight = ModConfigManager.getClient().staminaBarFrameHeight.get();
+        int animationCycles = ModConfigManager.getClient().staminaBarAnimationCycles;
+        int frameHeight = ModConfigManager.getClient().staminaBarFrameHeight;
         int animOffset = (int) (((player.tickCount + #if NEWER_THAN_20_1 deltaTracker.getGameTimeDeltaTicks() #else partialTicks #endif) / 3) % animationCycles) * frameHeight;
-        boolean isRightAnchored = ModConfigManager.getClient().staminaBarAnchor.get().getSide() == HUDPositioning.AnchorSide.RIGHT;
+        boolean isRightAnchored = ModConfigManager.getClient().staminaBarAnchor.getSide() == HUDPositioning.AnchorSide.RIGHT;
 
-        if (ModConfigManager.getClient().enableStaminaBackground.get()) {
+        if (ModConfigManager.getClient().enableStaminaBackground) {
             ScreenRect bgRect = getSubElementRect(SubElementType.BACKGROUND, player);
             graphics.blit(
                     DynamicResourceBars.loc("textures/gui/stamina_background.png"),
@@ -132,7 +132,7 @@ public class StaminaBarRenderer {
                       barRect,
                       animOffset, isRightAnchored);
 
-        if (ModConfigManager.getClient().enableStaminaForeground.get()) {
+        if (ModConfigManager.getClient().enableStaminaForeground) {
              ScreenRect fgRect = getSubElementRect(SubElementType.FOREGROUND_DETAIL, player);
              graphics.blit(
                     DynamicResourceBars.loc("textures/gui/detail_overlay.png"),
@@ -146,7 +146,7 @@ public class StaminaBarRenderer {
 
         if (shouldRenderStaminaText(currentStamina, maxStamina, player)) {
             int color = getStaminaTextColor(currentStamina, maxStamina);
-            HorizontalAlignment alignment = ModConfigManager.getClient().staminaTextAlign.get();
+            HorizontalAlignment alignment = ModConfigManager.getClient().staminaTextAlign;
 
             int baseX = barRect.x();
             if (alignment == HorizontalAlignment.CENTER) {
@@ -165,14 +165,14 @@ public class StaminaBarRenderer {
             if (EditModeManager.getFocusedElement() == currentBarType) {
                 int focusedBorderColor = 0xA0FFFF00;
                 ScreenRect bgRect = getSubElementRect(SubElementType.BACKGROUND, player);
-                if (ModConfigManager.getClient().enableStaminaBackground.get()) {
+                if (ModConfigManager.getClient().enableStaminaBackground) {
                     graphics.renderOutline(bgRect.x()-1, bgRect.y()-1, bgRect.width()+2, bgRect.height()+2, focusedBorderColor);
                 }
                 
                 ScreenRect barRectOutline = getSubElementRect(SubElementType.BAR_MAIN, player);
                 graphics.renderOutline(barRectOutline.x()-1, barRectOutline.y()-1, barRectOutline.width()+2, barRectOutline.height()+2, 0xA0FFA500);
                 
-                if (ModConfigManager.getClient().enableStaminaForeground.get()) {
+                if (ModConfigManager.getClient().enableStaminaForeground) {
                     ScreenRect fgRect = getSubElementRect(SubElementType.FOREGROUND_DETAIL, player);
                     graphics.renderOutline(fgRect.x()-1, fgRect.y()-1, fgRect.width()+2, fgRect.height()+2, 0xA0FF00FF);
                 }
@@ -216,7 +216,7 @@ public class StaminaBarRenderer {
     }
 
     private static boolean shouldRenderStaminaText(float currentStamina, float maxStamina, Player player) {
-        TextBehavior textBehavior = ModConfigManager.getClient().showStaminaText.get();
+        TextBehavior textBehavior = ModConfigManager.getClient().showStaminaText;
         if (textBehavior == TextBehavior.NEVER) {
             return false;
         }
@@ -239,7 +239,7 @@ public class StaminaBarRenderer {
     }
 
     private static int getStaminaTextColor(float currentStamina, float maxStamina) {
-        TextBehavior textBehavior = ModConfigManager.getClient().showStaminaText.get();
+        TextBehavior textBehavior = ModConfigManager.getClient().showStaminaText;
         int baseColor = 0xFFFFFF; // White
         int alpha = RenderUtil.BASE_TEXT_ALPHA;
 

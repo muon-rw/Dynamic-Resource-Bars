@@ -13,12 +13,8 @@ import org.apache.logging.log4j.Logger;
 
 #if FABRIC
     import net.fabricmc.api.ClientModInitializer;
-    import net.fabricmc.api.ModInitializer;
     import com.terraformersmc.modmenu.api.ConfigScreenFactory;
     import com.terraformersmc.modmenu.api.ModMenuApi;
-    #if after_21_1
-        import fuzs.forgeconfigapiport.fabric.api.neoforge.v4.client.ConfigScreenFactoryRegistry;
-    #endif
 #endif
 
 #if FORGE
@@ -31,7 +27,6 @@ import org.apache.logging.log4j.Logger;
 #if NEO
     import net.neoforged.fml.common.Mod;
     import net.neoforged.fml.event.lifecycle.FMLClientSetupEvent;
-    import net.neoforged.fml.event.lifecycle.FMLCommonSetupEvent;
     import net.neoforged.bus.api.IEventBus;
     import net.neoforged.fml.ModContainer;
     import net.neoforged.neoforge.client.gui.IConfigScreenFactory;
@@ -54,7 +49,6 @@ public class DynamicResourceBars #if FABRIC implements ClientModInitializer, Mod
         #endif
     }
 
-    // ModMenu Config Screen Factory (Fabric)
     #if FABRIC
     @Override
     public ConfigScreenFactory<?> getModConfigScreenFactory() {
@@ -62,22 +56,17 @@ public class DynamicResourceBars #if FABRIC implements ClientModInitializer, Mod
     }
     #endif
 
-    // Constructor: Primarily for Forge/NeoForge due to argument injection
-    public DynamicResourceBars(#if NEO IEventBus modEventBus, ModContainer modContainer #elif FORGE FMLJavaModLoadingContext context #endif) {
+    public DynamicResourceBars(#if NEO IEventBus modEventBus, ModContainer modContainer #elif FORGE FMLJavaModLoadingContext fmlContext #endif) {
         #if FORGE
-            var forgeModEventBus = context.getModEventBus();
-            ModConfigManager.registerConfigs(context);
-            forgeModEventBus.addListener(this::clientSetup);
-            context.registerExtensionPoint(ConfigScreenHandler.ConfigScreenFactory.class,
+            fmlContext.getModEventBus().addListener(this::clientSetup);
+            fmlContext.registerExtensionPoint(ConfigScreenHandler.ConfigScreenFactory.class,
                 () -> new ConfigScreenHandler.ConfigScreenFactory((mc, screen) -> new ModConfigScreen(screen)));
         #elif NEO
-            ModConfigManager.registerConfigs(modContainer);
             modEventBus.addListener(this::clientSetup);
-            modContainer.registerExtensionPoint(IConfigScreenFactory.class, 
+             modContainer.registerExtensionPoint(IConfigScreenFactory.class, 
                 (mc, screen) -> new ModConfigScreen(screen));
         #endif
-        
-        // Common event registrations for newer versions, independent of config loader
+
         #if NEWER_THAN_20_1
             RenderGuiLayerEvents.before(RenderGuiLayerEvents.PLAYER_HEALTH).register(CommonEvents::onRenderPlayerHealth);
             RenderGuiLayerEvents.before(RenderGuiLayerEvents.FOOD_LEVEL).register(CommonEvents::onRenderHunger);
@@ -85,26 +74,16 @@ public class DynamicResourceBars #if FABRIC implements ClientModInitializer, Mod
         #endif
     }
 
-    // Fabric ClientModInitializer entry point
     #if FABRIC @Override #endif
     public void onInitializeClient() {
-        // Called by Fabric directly.
-        // Called by Forge/NeoForge via clientSetup listener.
-        #if FABRIC
-            ModConfigManager.registerConfigs();
-            #if AFTER_21_1
-                ConfigScreenFactoryRegistry.INSTANCE.register(DynamicResourceBars.ID, 
-                    (minecraft, screen) -> new ModConfigScreen(screen) 
-                );
-            #endif
-        #endif
-        // Other client-specific initializations can go here.
+        ModConfigManager.initializeConfig();
     }
 
-    // Forge/NeoForge specific setup methods that call the shared onInitialize/onInitializeClient
     #if FORGELIKE
-    public void clientSetup(FMLClientSetupEvent event) { 
-        this.onInitializeClient(); 
+    public void clientSetup(FMLClientSetupEvent event) {
+        event.enqueueWork(() -> {
+            onInitializeClient();
+        });
     }
     #endif
 }

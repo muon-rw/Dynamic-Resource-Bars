@@ -2,6 +2,7 @@ import toni.blahaj.setup.implementation
 import toni.blahaj.setup.include
 import org.gradle.api.Project
 import org.gradle.api.tasks.SourceSetContainer
+import toni.blahaj.setup.compileOnly
 
 plugins {
 	id("toni.blahaj")
@@ -9,15 +10,15 @@ plugins {
 
 allprojects {
 	configurations.all {
+
 		/*
 		exclude(group = "org.jetbrains.kotlin", module = "kotlin-stdlib")
 		exclude(group = "org.jetbrains.kotlin", module = "kotlin-stdlib-common")
 		exclude(group = "org.jetbrains.kotlin", module = "kotlin-stdlib-jdk7")
 		exclude(group = "org.jetbrains.kotlin", module = "kotlin-stdlib-jdk8")
-
-
-		 */
+		*/
 		exclude(group = "toni.txnilib")
+
 	}
 }
 
@@ -36,14 +37,15 @@ blahaj {
 		// Required
 		deps.modImplementation("fuzs.puzzleslib:puzzleslib-$loader:${property("puzzleslib")}")
 
+		// GSON
+		deps.implementation("com.google.code.gson:gson:2.13.1")
+		deps.include("com.google.code.gson:gson:2.13.1")
+
 		// Integrations
 		// TODO: Appleskin, Farmer's Delight
 		// TODO: Mana: Ars Nouveau, Iron's Spellbooks, RPGMana, Mana Attributes
-
-		// Maybe at some point, low prio, Overflowing Bars compat:
-		// if (project.hasProperty("overflowingbars")) { deps.modImplementation("maven.modrinth:overflowing-bars:v${property("overflowingbars")}-$mc-$loader") }
-
-
+		//deps.compileOnly("")
+		if (project.hasProperty("thermoo")) { deps.modImplementation("maven.modrinth:thermoo:${property("thermoo")}-$mc") }
 
 		// Publishing
 		addRequiredMod("puzzleslib")
