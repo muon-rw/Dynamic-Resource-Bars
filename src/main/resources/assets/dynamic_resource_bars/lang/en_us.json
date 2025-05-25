@@ -46,6 +46,9 @@
   "gui.dynamic_resource_bars.hud_editor.button.air_settings": "Air Settings",
   "gui.dynamic_resource_bars.hud_editor.button.reset_all_bars": "Reset All Bars to Default",
 
+  "gui.dynamic_resource_bars.hud_editor.button.cycle_fill_direction_format": "Fill: %s",
+  "fill_direction.horizontal": "Horizontal",
+  "fill_direction.vertical": "Vertical",
   "gui.dynamic_resource_bars.hud_editor.button.toggle_background_format": "Background: %s",
   "gui.dynamic_resource_bars.hud_editor.button.toggle_foreground_format": "Foreground: %s",
   "gui.dynamic_resource_bars.hud_editor.button.toggle_fade_full_format": "Fade When Full: %s",

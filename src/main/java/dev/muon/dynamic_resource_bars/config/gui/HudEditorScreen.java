@@ -71,6 +71,7 @@ public class HudEditorScreen extends Screen {
     private Button cycleAnchorButton;
     private Button resetPositionButton;
     private Button resetSizeButton;
+    private Button cycleFillDirectionButton;
 
     // Buttons for Non-Focus Mode (Grid)
     private Button toggleHealthBarButton;
@@ -114,6 +115,7 @@ public class HudEditorScreen extends Screen {
         cycleTextBehaviorButton = null; cycleTextAlignButton = null; cycleAnchorButton = null;
         resetPositionButton = null; resetSizeButton = null;
         toggleHealthBarButton = null; toggleStaminaBarButton = null; toggleManaBarButton = null;
+        cycleFillDirectionButton = null;
         cycleArmorBehaviorButton = null; cycleAirBehaviorButton = null;
         openHealthSettingsButton = null; openStaminaSettingsButton = null; openManaSettingsButton = null;
         openArmorSettingsButton = null; openAirSettingsButton = null;
@@ -263,11 +265,13 @@ public class HudEditorScreen extends Screen {
             final Supplier<Boolean> fadeGetter;
             final Runnable bgToggler; final Runnable fgToggler; final Runnable fadeToggler;
             final Runnable textCycler; final Runnable textAlignCycler; final Runnable anchorCycler;
+            final Runnable fillDirectionCycler;
             boolean fgSupported = false;
             boolean textSupported = false;
             boolean anchorSupported = false;
             boolean fadeSupported = false;
             boolean bgSupported = false;
+            boolean fillDirectionSupported = false;
 
             switch (focused) { 
                 case HEALTH_BAR:
@@ -278,14 +282,16 @@ public class HudEditorScreen extends Screen {
                     fgToggler = () -> { config.enableHealthForeground = !config.enableHealthForeground; rebuildEditorWidgets(); };
                     fadeToggler = () -> { config.fadeHealthWhenFull = !config.fadeHealthWhenFull; rebuildEditorWidgets(); };
                     textCycler = () -> { config.showHealthText = getNextTextBehavior(config.showHealthText); rebuildEditorWidgets(); }; 
-                    textAlignCycler = () -> { config.healthTextAlign = getNextHorizontalAlignment(config.healthTextAlign); rebuildEditorWidgets(); }; 
+                    textAlignCycler = () -> { config.healthTextAlign = getNextHorizontalAlignment(config.healthTextAlign); rebuildEditorWidgets(); };
                     anchorCycler = () -> {
                         HUDPositioning.BarPlacement nextAnchor = getNextBarPlacement(config.healthBarAnchor); config.healthBarAnchor = nextAnchor;
                         int bgWidth = config.healthBackgroundWidth; int newDefaultXOffset = 0;
                         if (nextAnchor == HUDPositioning.BarPlacement.ABOVE_UTILITIES) { newDefaultXOffset = -bgWidth / 2; } else if (nextAnchor.getSide() == HUDPositioning.AnchorSide.RIGHT) { newDefaultXOffset = -bgWidth; }
                         config.healthTotalXOffset = newDefaultXOffset; config.healthTotalYOffset = 0; rebuildEditorWidgets(); 
                     };
+                    fillDirectionCycler = () -> { config.healthFillDirection = getNextFillDirection(config.healthFillDirection); rebuildEditorWidgets(); };
                     fgSupported = true; textSupported = true; anchorSupported = true; fadeSupported = true; bgSupported = true;
+                    fillDirectionSupported = true;
                     break;
                 case MANA_BAR:
                     bgGetter = () -> config.enableManaBackground; 
@@ -302,7 +308,9 @@ public class HudEditorScreen extends Screen {
                         if (nextAnchor == HUDPositioning.BarPlacement.ABOVE_UTILITIES) { newDefaultXOffset = -bgWidth / 2; } else if (nextAnchor.getSide() == HUDPositioning.AnchorSide.RIGHT) { newDefaultXOffset = -bgWidth; }
                         config.manaTotalXOffset = newDefaultXOffset; config.manaTotalYOffset = 0; rebuildEditorWidgets();
                     };
+                    fillDirectionCycler = () -> { config.manaFillDirection = getNextFillDirection(config.manaFillDirection); rebuildEditorWidgets(); };
                     fgSupported = true; textSupported = true; anchorSupported = true; fadeSupported = true; bgSupported = true;
+                    fillDirectionSupported = true;
                     break;
                 case STAMINA_BAR:
                     bgGetter = () -> config.enableStaminaBackground; 
@@ -319,13 +327,16 @@ public class HudEditorScreen extends Screen {
                         if (nextAnchor == HUDPositioning.BarPlacement.ABOVE_UTILITIES) { newDefaultXOffset = -bgWidth / 2; } else if (nextAnchor.getSide() == HUDPositioning.AnchorSide.RIGHT) { newDefaultXOffset = -bgWidth; }
                         config.staminaTotalXOffset = newDefaultXOffset; config.staminaTotalYOffset = 0; rebuildEditorWidgets();
                     };
+                    fillDirectionCycler = () -> { config.staminaFillDirection = getNextFillDirection(config.staminaFillDirection); rebuildEditorWidgets(); };
                     fgSupported = true; textSupported = true; anchorSupported = true; fadeSupported = true; bgSupported = true;
+                    fillDirectionSupported = true;
                     break;
                 case ARMOR_BAR:
                     bgGetter = () -> true; 
                     fgGetter = () -> false; 
                     fadeGetter = () -> false;
                     bgToggler = () -> {}; fgToggler = () -> {}; fadeToggler = () -> {}; textCycler = () -> {}; textAlignCycler = () -> {};
+                    fillDirectionCycler = () -> {}; // Not supported for armor
                     anchorCycler = () -> {
                         HUDPositioning.BarPlacement nextAnchor = getNextBarPlacement(config.armorBarAnchor); config.armorBarAnchor = nextAnchor;
                         int bgWidth = config.armorBackgroundWidth; int newDefaultXOffset = 0;
@@ -339,6 +350,7 @@ public class HudEditorScreen extends Screen {
                     fgGetter = () -> false; 
                     fadeGetter = () -> false;
                     bgToggler = () -> {}; fgToggler = () -> {}; fadeToggler = () -> {}; textCycler = () -> {}; textAlignCycler = () -> {};
+                    fillDirectionCycler = () -> {}; // Not supported for air
                     anchorCycler = () -> {
                         HUDPositioning.BarPlacement nextAnchor = getNextBarPlacement(config.airBarAnchor); config.airBarAnchor = nextAnchor;
                         int bgWidth = config.airBackgroundWidth; int newDefaultXOffset = 0;
@@ -409,9 +421,10 @@ public class HudEditorScreen extends Screen {
 
             if (anchorSupported) {
                 HUDPositioning.BarPlacement currentAnchor = HUDPositioning.BarPlacement.HEALTH; // Default
-                if (focused == DraggableElement.HEALTH_BAR) { currentAnchor = config.healthBarAnchor; }
-                else if (focused == DraggableElement.MANA_BAR) { currentAnchor = config.manaBarAnchor; }
-                else if (focused == DraggableElement.STAMINA_BAR) { currentAnchor = config.staminaBarAnchor; }
+                FillDirection currentFillDirection = FillDirection.HORIZONTAL; // Default
+                if (focused == DraggableElement.HEALTH_BAR) { currentAnchor = config.healthBarAnchor; currentFillDirection = config.healthFillDirection; }
+                else if (focused == DraggableElement.MANA_BAR) { currentAnchor = config.manaBarAnchor; currentFillDirection = config.manaFillDirection; }
+                else if (focused == DraggableElement.STAMINA_BAR) { currentAnchor = config.staminaBarAnchor; currentFillDirection = config.staminaFillDirection; }
                 else if (focused == DraggableElement.ARMOR_BAR) { currentAnchor = config.armorBarAnchor; }
                 else if (focused == DraggableElement.AIR_BAR) { currentAnchor = config.airBarAnchor; }
 
@@ -420,6 +433,14 @@ public class HudEditorScreen extends Screen {
                     (b) -> { anchorCycler.run(); }).bounds(currentX, currentY, focusButtonWidth, focusButtonHeight).build();
                 addRenderableWidget(cycleAnchorButton);
                 currentX += focusButtonWidth + focusColSpacing; buttonsInCurrentRow++;
+
+                if (fillDirectionSupported) {
+                    if (buttonsInCurrentRow >= maxButtonsPerRow) { currentX = focusGridStartX; currentY += focusButtonHeight + focusRowSpacing; buttonsInCurrentRow = 0; }
+                    cycleFillDirectionButton = Button.builder(Component.translatable("gui.dynamic_resource_bars.hud_editor.button.cycle_fill_direction_format", Component.translatable("fill_direction." + currentFillDirection.name().toLowerCase())),
+                        (b) -> { fillDirectionCycler.run(); }).bounds(currentX, currentY, focusButtonWidth, focusButtonHeight).build();
+                    addRenderableWidget(cycleFillDirectionButton);
+                    currentX += focusButtonWidth + focusColSpacing; buttonsInCurrentRow++;
+                }
             }
 
             if (buttonsInCurrentRow > 0) { // Start new row if previous had items
@@ -474,6 +495,12 @@ public class HudEditorScreen extends Screen {
         HUDPositioning.BarPlacement[] placements = HUDPositioning.BarPlacement.values();
         int nextIndex = (current.ordinal() + 1) % placements.length;
         return placements[nextIndex];
+    }
+
+    private FillDirection getNextFillDirection(FillDirection current) {
+        FillDirection[] directions = FillDirection.values();
+        int nextIndex = (current.ordinal() + 1) % directions.length;
+        return directions[nextIndex];
     }
 
     @Override
@@ -629,10 +656,6 @@ public class HudEditorScreen extends Screen {
     private void drawResizeHandles(GuiGraphics graphics, Player player, DraggableElement focused, int mouseX, int mouseY) {
         ClientConfig config = ModConfigManager.getClient();
 
-        // Skip resize handles for armor and air bars as they have limited customization
-        if (focused == DraggableElement.ARMOR_BAR || focused == DraggableElement.AIR_BAR) {
-            return;
-        }
 
         // Draw resize handles for background
         ScreenRect bgRect = null;
@@ -686,6 +709,22 @@ public class HudEditorScreen extends Screen {
                     ScreenRect fgRect = StaminaBarRenderer.getSubElementRect(SubElementType.FOREGROUND_DETAIL, player);
                     drawHandlesForRect(graphics, fgRect, focused, SubElementType.FOREGROUND_DETAIL, mouseX, mouseY); // Pass focused
                 }
+                break;
+            case ARMOR_BAR:
+                // Background for Armor Bar is not optional, always draw handles if focused
+                bgRect = ArmorBarRenderer.getSubElementRect(SubElementType.BACKGROUND, player);
+                drawHandlesForRect(graphics, bgRect, focused, SubElementType.BACKGROUND, mouseX, mouseY);
+                // Main Bar for Armor Bar
+                ScreenRect armorBarRect = ArmorBarRenderer.getSubElementRect(SubElementType.BAR_MAIN, player);
+                drawHandlesForRect(graphics, armorBarRect, focused, SubElementType.BAR_MAIN, mouseX, mouseY);
+                break;
+            case AIR_BAR:
+                // Background for Air Bar is not optional, always draw handles if focused
+                bgRect = AirBarRenderer.getSubElementRect(SubElementType.BACKGROUND, player);
+                drawHandlesForRect(graphics, bgRect, focused, SubElementType.BACKGROUND, mouseX, mouseY);
+                // Main Bar for Air Bar
+                ScreenRect airBarRect = AirBarRenderer.getSubElementRect(SubElementType.BAR_MAIN, player);
+                drawHandlesForRect(graphics, airBarRect, focused, SubElementType.BAR_MAIN, mouseX, mouseY);
                 break;
         }
     }
@@ -744,8 +783,12 @@ public class HudEditorScreen extends Screen {
             case STAMINA_BAR:
                 rect = StaminaBarRenderer.getSubElementRect(subElement, player);
                 break;
-            default:
-                return null; // Armor and Air bars don't support resizing this way
+            case ARMOR_BAR:
+                rect = ArmorBarRenderer.getSubElementRect(subElement, player);
+                break;
+            case AIR_BAR:
+                rect = AirBarRenderer.getSubElementRect(subElement, player);
+                break;
         }
 
         if (rect == null || rect.width() <= 0 || rect.height() <= 0) return null;
@@ -830,6 +873,16 @@ public class HudEditorScreen extends Screen {
                         if (subType == SubElementType.BACKGROUND && config.enableStaminaBackground) canTestThisSubElement = true;
                         if (subType == SubElementType.BAR_MAIN) canTestThisSubElement = true;
                         if (subType == SubElementType.FOREGROUND_DETAIL && config.enableStaminaForeground) canTestThisSubElement = true;
+                        break;
+                    case ARMOR_BAR: // Added for Armor Bar
+                        if (subType == SubElementType.BACKGROUND) canTestThisSubElement = true; // Background is always enabled conceptually
+                        if (subType == SubElementType.BAR_MAIN) canTestThisSubElement = true;
+                        // No FOREGROUND_DETAIL for Armor Bar
+                        break;
+                    case AIR_BAR: // Added for Air Bar
+                        if (subType == SubElementType.BACKGROUND) canTestThisSubElement = true; // Background is always enabled conceptually
+                        if (subType == SubElementType.BAR_MAIN) canTestThisSubElement = true;
+                        // No FOREGROUND_DETAIL for Air Bar
                         break;
                 }
 
@@ -1067,6 +1120,16 @@ public class HudEditorScreen extends Screen {
                 else if (resizeData.subElement == SubElementType.BAR_MAIN) { this.initialWidth = config.staminaBarWidth; this.initialHeight = config.staminaBarHeight; }
                 else if (resizeData.subElement == SubElementType.FOREGROUND_DETAIL) { this.initialWidth = config.staminaOverlayWidth; this.initialHeight = config.staminaOverlayHeight; }
                 break;
+            case ARMOR_BAR: // Added for Armor Bar
+                if (resizeData.subElement == SubElementType.BACKGROUND) { this.initialWidth = config.armorBackgroundWidth; this.initialHeight = config.armorBackgroundHeight; }
+                else if (resizeData.subElement == SubElementType.BAR_MAIN) { this.initialWidth = config.armorBarWidth; this.initialHeight = config.armorBarHeight; }
+                // No FOREGROUND_DETAIL for Armor Bar
+                break;
+            case AIR_BAR: // Added for Air Bar
+                if (resizeData.subElement == SubElementType.BACKGROUND) { this.initialWidth = config.airBackgroundWidth; this.initialHeight = config.airBackgroundHeight; }
+                else if (resizeData.subElement == SubElementType.BAR_MAIN) { this.initialWidth = config.airBarWidth; this.initialHeight = config.airBarHeight; }
+                // No FOREGROUND_DETAIL for Air Bar
+                break;
         }
     }
 
@@ -1081,6 +1144,8 @@ public class HudEditorScreen extends Screen {
             case HEALTH_BAR: applyHealthResizing(config, deltaX, deltaY); break;
             case MANA_BAR: applyManaResizing(config, deltaX, deltaY); break;
             case STAMINA_BAR: applyStaminaResizing(config, deltaX, deltaY); break;
+            case ARMOR_BAR: applyArmorResizing(config, deltaX, deltaY); break; // Added for Armor Bar
+            case AIR_BAR: applyAirResizing(config, deltaX, deltaY); break;       // Added for Air Bar
         }
     }
 
@@ -1132,6 +1197,34 @@ public class HudEditorScreen extends Screen {
                 if (this.currentResizeMode == ResizeMode.WIDTH) { config.staminaOverlayWidth = Math.max(10, this.initialWidth + deltaX); }
                 else if (this.currentResizeMode == ResizeMode.HEIGHT) { config.staminaOverlayHeight = Math.max(4, this.initialHeight + deltaY); }
                 break;
+        }
+    }
+
+    private void applyArmorResizing(ClientConfig config, int deltaX, int deltaY) {
+        switch (this.resizingSubElement) {
+            case BACKGROUND:
+                if (this.currentResizeMode == ResizeMode.WIDTH) { config.armorBackgroundWidth = Math.max(10, this.initialWidth + deltaX); }
+                else if (this.currentResizeMode == ResizeMode.HEIGHT) { config.armorBackgroundHeight = Math.max(4, this.initialHeight + deltaY); }
+                break;
+            case BAR_MAIN:
+                if (this.currentResizeMode == ResizeMode.WIDTH) { config.armorBarWidth = Math.max(4, Math.min(256, this.initialWidth + deltaX)); }
+                else if (this.currentResizeMode == ResizeMode.HEIGHT) { config.armorBarHeight = Math.max(1, Math.min(32, this.initialHeight + deltaY)); }
+                break;
+            // No FOREGROUND_DETAIL for Armor Bar
+        }
+    }
+
+    private void applyAirResizing(ClientConfig config, int deltaX, int deltaY) {
+        switch (this.resizingSubElement) {
+            case BACKGROUND:
+                if (this.currentResizeMode == ResizeMode.WIDTH) { config.airBackgroundWidth = Math.max(10, this.initialWidth + deltaX); }
+                else if (this.currentResizeMode == ResizeMode.HEIGHT) { config.airBackgroundHeight = Math.max(4, this.initialHeight + deltaY); }
+                break;
+            case BAR_MAIN:
+                if (this.currentResizeMode == ResizeMode.WIDTH) { config.airBarWidth = Math.max(4, Math.min(256, this.initialWidth + deltaX)); }
+                else if (this.currentResizeMode == ResizeMode.HEIGHT) { config.airBarHeight = Math.max(1, Math.min(32, this.initialHeight + deltaY)); }
+                break;
+            // No FOREGROUND_DETAIL for Air Bar
         }
     }
 
@@ -1336,6 +1429,8 @@ public class HudEditorScreen extends Screen {
                     case HEALTH_BAR: return 0xA000FF00; // Green
                     case MANA_BAR: return 0xA000FFFF;   // Cyan
                     case STAMINA_BAR: return 0xA0FFA500; // Orange
+                    case ARMOR_BAR: return 0xA0C0C0C0; // Light Gray for Armor Bar
+                    case AIR_BAR: return 0xA0ADD8E6;   // Light Blue for Air Bar
                     default: return 0xFFFFFFFF;
                 }
             case FOREGROUND_DETAIL:

@@ -37,10 +37,6 @@ blahaj {
 		// Required
 		deps.modImplementation("fuzs.puzzleslib:puzzleslib-$loader:${property("puzzleslib")}")
 
-		// GSON
-		deps.implementation("com.google.code.gson:gson:2.13.1")
-		deps.include("com.google.code.gson:gson:2.13.1")
-
 		// Integrations
 		// TODO: Appleskin, Farmer's Delight
 		// TODO: Mana: Ars Nouveau, Iron's Spellbooks, RPGMana, Mana Attributes

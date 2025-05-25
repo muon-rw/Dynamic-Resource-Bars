@@ -21,6 +21,7 @@ import dev.muon.dynamic_resource_bars.util.TextBehavior;
 import dev.muon.dynamic_resource_bars.util.SubElementType;
 import dev.muon.dynamic_resource_bars.util.DraggableElement;
 import dev.muon.dynamic_resource_bars.util.HorizontalAlignment;
+import dev.muon.dynamic_resource_bars.util.FillDirection;
 
 public class ManaBarRenderer {
     private static float lastMana = -1;
@@ -187,23 +188,45 @@ public class ManaBarRenderer {
         int totalBarWidth = barAreaRect.width();
         int barHeight = barAreaRect.height();
 
-        int filledWidth = (int) (totalBarWidth * (currentMana / maxManaTotal));
-        if (filledWidth <= 0 && currentMana > 0) filledWidth = 1;
-        if (filledWidth > totalBarWidth) filledWidth = totalBarWidth;
+        FillDirection fillDirection = ModConfigManager.getClient().manaFillDirection;
 
-        int barX = barAreaRect.x();
-        int barY = barAreaRect.y();
+        if (fillDirection == FillDirection.VERTICAL) {
+            int filledHeight = (int) (barHeight * (currentMana / maxManaTotal));
+            if (filledHeight <= 0 && currentMana > 0) filledHeight = 1;
+            if (filledHeight > barHeight) filledHeight = barHeight;
 
-        if (isRightAnchored) {
-            barX = barAreaRect.x() + totalBarWidth - filledWidth;
-        }
+            int barX = barAreaRect.x();
+            // Fill from bottom up, so Y is adjusted by the unfilled portion
+            int barY = barAreaRect.y() + (barHeight - filledHeight);
+            // Texture V offset needs to match the visible portion of the bar
+            int textureVOffset = animOffset + (barHeight - filledHeight);
 
-        if (filledWidth > 0) {
-        graphics.blit(DynamicResourceBars.loc("textures/gui/mana_bar.png"),
-                    barX, barY, 
-                    0, animOffset,
-                    filledWidth, barHeight,
-                    256, 256);
+            if (filledHeight > 0) {
+                graphics.blit(DynamicResourceBars.loc("textures/gui/mana_bar.png"),
+                        barX, barY,
+                        0, textureVOffset, // Use 0 for U, adjusted V for vertical fill
+                        totalBarWidth, filledHeight, // Use full width, partial height
+                        256, 256);
+            }
+        } else { // HORIZONTAL
+            int filledWidth = (int) (totalBarWidth * (currentMana / maxManaTotal));
+            if (filledWidth <= 0 && currentMana > 0) filledWidth = 1;
+            if (filledWidth > totalBarWidth) filledWidth = totalBarWidth;
+
+            int barX = barAreaRect.x();
+            int barY = barAreaRect.y();
+
+            if (isRightAnchored) {
+                barX = barAreaRect.x() + totalBarWidth - filledWidth;
+            }
+
+            if (filledWidth > 0) {
+                graphics.blit(DynamicResourceBars.loc("textures/gui/mana_bar.png"),
+                        barX, barY,
+                        0, animOffset,
+                        filledWidth, barHeight,
+                        256, 256);
+            }
         }
     }
 

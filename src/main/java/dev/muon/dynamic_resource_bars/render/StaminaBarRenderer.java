@@ -22,6 +22,7 @@ import dev.muon.dynamic_resource_bars.util.ScreenRect;
 import dev.muon.dynamic_resource_bars.util.SubElementType;
 import dev.muon.dynamic_resource_bars.util.DraggableElement;
 import dev.muon.dynamic_resource_bars.util.HorizontalAlignment;
+import dev.muon.dynamic_resource_bars.util.FillDirection;
 
 public class StaminaBarRenderer {
     private static final float CRITICAL_THRESHOLD = 6.0f;
@@ -193,25 +194,48 @@ public class StaminaBarRenderer {
         int totalBarWidth = barAreaRect.width();
         int barHeight = barAreaRect.height();
 
-        int partialBarWidth = (int) (totalBarWidth * (currentStamina / maxStamina));
-        if (partialBarWidth <= 0 && currentStamina > 0) partialBarWidth = 1;
-        if (partialBarWidth > totalBarWidth) partialBarWidth = totalBarWidth;
+        FillDirection fillDirection = ModConfigManager.getClient().staminaFillDirection;
 
-        int barX = barAreaRect.x();
-        int barY = barAreaRect.y();
-        
-        if (isRightAnchored) {
-            barX = barAreaRect.x() + totalBarWidth - partialBarWidth;
-        }
+        if (fillDirection == FillDirection.VERTICAL) {
+            int partialBarHeight = (int) (barHeight * (currentStamina / maxStamina));
+            if (partialBarHeight <= 0 && currentStamina > 0) partialBarHeight = 1;
+            if (partialBarHeight > barHeight) partialBarHeight = barHeight;
 
-        if (partialBarWidth > 0) {
-            graphics.blit(
-                    DynamicResourceBars.loc("textures/gui/" + barType.getTexture() + ".png"),
-                    barX, barY,
-                    0, animOffset,
-                    partialBarWidth, barHeight,
-                    256, 1024
-            );
+            int barX = barAreaRect.x();
+            int barY = barAreaRect.y() + (barHeight - partialBarHeight); // Fill from bottom up
+            // Adjust texture V offset to draw the correct part of the texture
+            int textureVOffset = animOffset + (barHeight - partialBarHeight);
+
+            if (partialBarHeight > 0) {
+                graphics.blit(
+                        DynamicResourceBars.loc("textures/gui/" + barType.getTexture() + ".png"),
+                        barX, barY,
+                        0, textureVOffset, // Use 0 for U, adjusted V for vertical fill
+                        totalBarWidth, partialBarHeight, // Use full width, partial height
+                        256, 1024
+                );
+            }
+        } else { // HORIZONTAL
+            int partialBarWidth = (int) (totalBarWidth * (currentStamina / maxStamina));
+            if (partialBarWidth <= 0 && currentStamina > 0) partialBarWidth = 1;
+            if (partialBarWidth > totalBarWidth) partialBarWidth = totalBarWidth;
+
+            int barX = barAreaRect.x();
+            int barY = barAreaRect.y();
+
+            if (isRightAnchored) {
+                barX = barAreaRect.x() + totalBarWidth - partialBarWidth;
+            }
+
+            if (partialBarWidth > 0) {
+                graphics.blit(
+                        DynamicResourceBars.loc("textures/gui/" + barType.getTexture() + ".png"),
+                        barX, barY,
+                        0, animOffset,
+                        partialBarWidth, barHeight,
+                        256, 1024
+                );
+            }
         }
     }
 

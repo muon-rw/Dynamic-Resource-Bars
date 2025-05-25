@@ -26,6 +26,8 @@ import net.minecraft.world.item.enchantment.Enchantments;
 import net.minecraft.client.DeltaTracker;
 #endif
 
+import dev.muon.dynamic_resource_bars.util.SubElementType;
+
 public class ArmorBarRenderer {
     private static long armorTextStartTime = 0;
     private static boolean shouldShowArmorText = false;
@@ -73,6 +75,31 @@ public class ArmorBarRenderer {
         int backgroundWidth = config.armorBackgroundWidth;
         int backgroundHeight = config.armorBackgroundHeight;
         return new ScreenRect(finalPos.x(), finalPos.y(), backgroundWidth, backgroundHeight);
+    }
+
+    public static ScreenRect getSubElementRect(SubElementType type, Player player) {
+        ScreenRect complexRect = getScreenRect(player);
+        if (complexRect == null || (complexRect.width() == 0 && complexRect.height() == 0)) {
+            return new ScreenRect(0, 0, 0, 0);
+        }
+
+        ClientConfig config = ModConfigManager.getClient();
+        int x = complexRect.x();
+        int y = complexRect.y();
+
+        switch (type) {
+            case BACKGROUND:
+                return new ScreenRect(x, y,
+                                      config.armorBackgroundWidth,
+                                      config.armorBackgroundHeight);
+            case BAR_MAIN:
+                return new ScreenRect(x + config.armorBarXOffset,
+                                      y + config.armorBarYOffset,
+                                      config.armorBarWidth,
+                                      config.armorBarHeight);
+            default:
+                return new ScreenRect(0, 0, 0, 0);
+        }
     }
 
     public static void render(GuiGraphics graphics, Player player) {

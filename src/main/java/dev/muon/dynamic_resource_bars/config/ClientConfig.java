@@ -7,6 +7,7 @@ import dev.muon.dynamic_resource_bars.util.HUDPositioning;
 import dev.muon.dynamic_resource_bars.util.HorizontalAlignment;
 import dev.muon.dynamic_resource_bars.util.TextBehavior;
 import dev.muon.dynamic_resource_bars.util.BarRenderBehavior;
+import dev.muon.dynamic_resource_bars.util.FillDirection;
 
 import java.io.Reader;
 import java.io.Writer;
@@ -36,6 +37,7 @@ public class ClientConfig {
     public static final HorizontalAlignment DEFAULT_HEALTH_TEXT_ALIGN = HorizontalAlignment.CENTER;
     public static final boolean DEFAULT_ENABLE_HEALTH_FOREGROUND = false;
     public static final boolean DEFAULT_ENABLE_HEALTH_BACKGROUND = true;
+    public static final FillDirection DEFAULT_HEALTH_FILL_DIRECTION = FillDirection.HORIZONTAL;
     public static final int DEFAULT_HEALTH_BACKGROUND_WIDTH = 80;
     public static final int DEFAULT_HEALTH_BACKGROUND_HEIGHT = 10;
     public static final int DEFAULT_HEALTH_BAR_WIDTH = 74;
@@ -58,6 +60,7 @@ public class ClientConfig {
     public HorizontalAlignment healthTextAlign;
     public boolean enableHealthForeground;
     public boolean enableHealthBackground;
+    public FillDirection healthFillDirection;
     public int healthBackgroundWidth;
     public int healthBackgroundHeight;
     public int healthBarWidth;
@@ -81,6 +84,7 @@ public class ClientConfig {
     public static final HorizontalAlignment DEFAULT_STAMINA_TEXT_ALIGN = HorizontalAlignment.CENTER;
     public static final boolean DEFAULT_ENABLE_STAMINA_FOREGROUND = false;
     public static final boolean DEFAULT_ENABLE_STAMINA_BACKGROUND = true;
+    public static final FillDirection DEFAULT_STAMINA_FILL_DIRECTION = FillDirection.HORIZONTAL;
     public static final int DEFAULT_STAMINA_BACKGROUND_WIDTH = 80;
     public static final int DEFAULT_STAMINA_BACKGROUND_HEIGHT = 10;
     public static final int DEFAULT_STAMINA_BAR_WIDTH = 74;
@@ -103,6 +107,7 @@ public class ClientConfig {
     public HorizontalAlignment staminaTextAlign;
     public boolean enableStaminaForeground;
     public boolean enableStaminaBackground;
+    public FillDirection staminaFillDirection;
     public int staminaBackgroundWidth;
     public int staminaBackgroundHeight;
     public int staminaBarWidth;
@@ -126,6 +131,7 @@ public class ClientConfig {
     public static final HorizontalAlignment DEFAULT_MANA_TEXT_ALIGN = HorizontalAlignment.CENTER;
     public static final boolean DEFAULT_ENABLE_MANA_FOREGROUND = true;
     public static final boolean DEFAULT_ENABLE_MANA_BACKGROUND = true;
+    public static final FillDirection DEFAULT_MANA_FILL_DIRECTION = FillDirection.HORIZONTAL;
     public static final int DEFAULT_MANA_BACKGROUND_WIDTH = 80;
     public static final int DEFAULT_MANA_BACKGROUND_HEIGHT = 10;
     public static final int DEFAULT_MANA_BAR_WIDTH = 74;
@@ -148,6 +154,7 @@ public class ClientConfig {
     public HorizontalAlignment manaTextAlign;
     public boolean enableManaForeground;
     public boolean enableManaBackground;
+    public FillDirection manaFillDirection;
     public int manaBackgroundWidth;
     public int manaBackgroundHeight;
     public int manaBarWidth;
@@ -211,7 +218,7 @@ public class ClientConfig {
     public static final int DEFAULT_AIR_BAR_HEIGHT = 4;
     public static final int DEFAULT_AIR_BAR_X_OFFSET = 3;
     public static final int DEFAULT_AIR_BAR_Y_OFFSET = 3;
-    public static final int DEFAULT_AIR_TOTAL_X_OFFSET = 0;
+    public static final int DEFAULT_AIR_TOTAL_X_OFFSET = -80;
     public static final int DEFAULT_AIR_TOTAL_Y_OFFSET = 0;
     public static final boolean DEFAULT_ENABLE_AIR_ICON = true;
     public static final int DEFAULT_AIR_ICON_SIZE = 16;
@@ -246,6 +253,7 @@ public class ClientConfig {
         this.healthTextAlign = DEFAULT_HEALTH_TEXT_ALIGN;
         this.enableHealthForeground = DEFAULT_ENABLE_HEALTH_FOREGROUND;
         this.enableHealthBackground = DEFAULT_ENABLE_HEALTH_BACKGROUND;
+        this.healthFillDirection = DEFAULT_HEALTH_FILL_DIRECTION;
         this.healthBackgroundWidth = DEFAULT_HEALTH_BACKGROUND_WIDTH;
         this.healthBackgroundHeight = DEFAULT_HEALTH_BACKGROUND_HEIGHT;
         this.healthBarWidth = DEFAULT_HEALTH_BAR_WIDTH;
@@ -268,6 +276,7 @@ public class ClientConfig {
         this.staminaTextAlign = DEFAULT_STAMINA_TEXT_ALIGN;
         this.enableStaminaForeground = DEFAULT_ENABLE_STAMINA_FOREGROUND;
         this.enableStaminaBackground = DEFAULT_ENABLE_STAMINA_BACKGROUND;
+        this.staminaFillDirection = DEFAULT_STAMINA_FILL_DIRECTION;
         this.staminaBackgroundWidth = DEFAULT_STAMINA_BACKGROUND_WIDTH;
         this.staminaBackgroundHeight = DEFAULT_STAMINA_BACKGROUND_HEIGHT;
         this.staminaBarWidth = DEFAULT_STAMINA_BAR_WIDTH;
@@ -290,6 +299,7 @@ public class ClientConfig {
         this.manaTextAlign = DEFAULT_MANA_TEXT_ALIGN;
         this.enableManaForeground = DEFAULT_ENABLE_MANA_FOREGROUND;
         this.enableManaBackground = DEFAULT_ENABLE_MANA_BACKGROUND;
+        this.manaFillDirection = DEFAULT_MANA_FILL_DIRECTION;
         this.manaBackgroundWidth = DEFAULT_MANA_BACKGROUND_WIDTH;
         this.manaBackgroundHeight = DEFAULT_MANA_BACKGROUND_HEIGHT;
         this.manaBarWidth = DEFAULT_MANA_BAR_WIDTH;
@@ -409,16 +419,19 @@ public class ClientConfig {
         if (cfg.healthBarAnchor == null) { cfg.healthBarAnchor = DEFAULT_HEALTH_BAR_ANCHOR; modified = true; }
         if (cfg.showHealthText == null) { cfg.showHealthText = DEFAULT_SHOW_HEALTH_TEXT; modified = true; }
         if (cfg.healthTextAlign == null) { cfg.healthTextAlign = DEFAULT_HEALTH_TEXT_ALIGN; modified = true; }
+        if (cfg.healthFillDirection == null) { cfg.healthFillDirection = DEFAULT_HEALTH_FILL_DIRECTION; modified = true; }
 
         // Stamina
         if (cfg.staminaBarAnchor == null) { cfg.staminaBarAnchor = DEFAULT_STAMINA_BAR_ANCHOR; modified = true; }
         if (cfg.showStaminaText == null) { cfg.showStaminaText = DEFAULT_SHOW_STAMINA_TEXT; modified = true; }
         if (cfg.staminaTextAlign == null) { cfg.staminaTextAlign = DEFAULT_STAMINA_TEXT_ALIGN; modified = true; }
+        if (cfg.staminaFillDirection == null) { cfg.staminaFillDirection = DEFAULT_STAMINA_FILL_DIRECTION; modified = true; }
 
         // Mana
         if (cfg.manaBarAnchor == null) { cfg.manaBarAnchor = DEFAULT_MANA_BAR_ANCHOR; modified = true; }
         if (cfg.showManaText == null) { cfg.showManaText = DEFAULT_SHOW_MANA_TEXT; modified = true; }
         if (cfg.manaTextAlign == null) { cfg.manaTextAlign = DEFAULT_MANA_TEXT_ALIGN; modified = true; }
+        if (cfg.manaFillDirection == null) { cfg.manaFillDirection = DEFAULT_MANA_FILL_DIRECTION; modified = true; }
 
         // Armor
         if (cfg.armorBarBehavior == null) { cfg.armorBarBehavior = DEFAULT_ARMOR_BAR_BEHAVIOR; modified = true; }

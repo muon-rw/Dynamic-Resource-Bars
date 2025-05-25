@@ -204,14 +204,31 @@ public class HealthBarRenderer {
         BarType barType = BarType.fromPlayerState(player);
         int partialBarWidth = (int) (barAbsWidth * (actualHealth / maxHealth));
         if (partialBarWidth <= 0 && actualHealth > 0) partialBarWidth = 1;
-        if (partialBarWidth > 0) {
-            graphics.blit(
-                    DynamicResourceBars.loc("textures/gui/" + barType.getTexture() + ".png"),
-                    barAbsX, barAbsY,
-                    barXOffsetWithinTexture, animOffset + barYOffsetWithinTexture,
-                    partialBarWidth, barAbsHeight,
-                    256, 1024
-            );
+
+        FillDirection fillDirection = ModConfigManager.getClient().healthFillDirection;
+
+        if (fillDirection == FillDirection.VERTICAL) {
+            int partialBarHeight = (int) (barAbsHeight * (actualHealth / maxHealth));
+            if (partialBarHeight <= 0 && actualHealth > 0) partialBarHeight = 1;
+            if (partialBarHeight > 0) {
+                graphics.blit(
+                        DynamicResourceBars.loc("textures/gui/" + barType.getTexture() + ".png"),
+                        barAbsX, barAbsY + (barAbsHeight - partialBarHeight), // Adjust Y to fill from bottom up
+                        barXOffsetWithinTexture, animOffset + barYOffsetWithinTexture + (barAbsHeight - partialBarHeight), // Adjust texture V to match
+                        barAbsWidth, partialBarHeight, // Use full width, partial height
+                        256, 1024
+                );
+            }
+        } else { // HORIZONTAL (current behavior)
+            if (partialBarWidth > 0) {
+                graphics.blit(
+                        DynamicResourceBars.loc("textures/gui/" + barType.getTexture() + ".png"),
+                        barAbsX, barAbsY,
+                        barXOffsetWithinTexture, animOffset + barYOffsetWithinTexture,
+                        partialBarWidth, barAbsHeight,
+                        256, 1024
+                );
+            }
         }
     }
 
