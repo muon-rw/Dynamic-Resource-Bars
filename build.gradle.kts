@@ -28,7 +28,7 @@ blahaj {
 		 versionedAccessWideners()
 	}
 	setup {
-		forgeConfig()
+		//forgeConfig()
 
 		// Bundled
 		deps.compileOnly(deps.annotationProcessor("io.github.llamalad7:mixinextras-common:0.4.1")!!)
