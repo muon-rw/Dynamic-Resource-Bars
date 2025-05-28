@@ -1160,8 +1160,8 @@ public class HudEditorScreen extends Screen {
                 else if (this.currentResizeMode == ResizeMode.HEIGHT) { config.healthBarHeight = Math.max(1, Math.min(32, this.initialHeight + deltaY)); }
                 break;
             case FOREGROUND_DETAIL:
-                if (this.currentResizeMode == ResizeMode.WIDTH) { config.healthOverlayWidth = Math.max(10, this.initialWidth + deltaX); }
-                else if (this.currentResizeMode == ResizeMode.HEIGHT) { config.healthOverlayHeight = Math.max(4, this.initialHeight + deltaY); }
+                if (this.currentResizeMode == ResizeMode.WIDTH) { config.healthOverlayWidth = Math.max(10, Math.min(256, this.initialWidth + deltaX)); }
+                else if (this.currentResizeMode == ResizeMode.HEIGHT) { config.healthOverlayHeight = Math.max(4, Math.min(256, this.initialHeight + deltaY)); }
                 break;
         }
     }
@@ -1177,8 +1177,8 @@ public class HudEditorScreen extends Screen {
                 else if (this.currentResizeMode == ResizeMode.HEIGHT) { config.manaBarHeight = Math.max(1, Math.min(32, this.initialHeight + deltaY)); }
                 break;
             case FOREGROUND_DETAIL:
-                if (this.currentResizeMode == ResizeMode.WIDTH) { config.manaOverlayWidth = Math.max(10, this.initialWidth + deltaX); }
-                else if (this.currentResizeMode == ResizeMode.HEIGHT) { config.manaOverlayHeight = Math.max(4, this.initialHeight + deltaY); }
+                if (this.currentResizeMode == ResizeMode.WIDTH) { config.manaOverlayWidth = Math.max(10, Math.min(256, this.initialWidth + deltaX)); }
+                else if (this.currentResizeMode == ResizeMode.HEIGHT) { config.manaOverlayHeight = Math.max(4, Math.min(256, this.initialHeight + deltaY)); }
                 break;
         }
     }
@@ -1194,8 +1194,8 @@ public class HudEditorScreen extends Screen {
                 else if (this.currentResizeMode == ResizeMode.HEIGHT) { config.staminaBarHeight = Math.max(1, Math.min(32, this.initialHeight + deltaY)); }
                 break;
             case FOREGROUND_DETAIL:
-                if (this.currentResizeMode == ResizeMode.WIDTH) { config.staminaOverlayWidth = Math.max(10, this.initialWidth + deltaX); }
-                else if (this.currentResizeMode == ResizeMode.HEIGHT) { config.staminaOverlayHeight = Math.max(4, this.initialHeight + deltaY); }
+                if (this.currentResizeMode == ResizeMode.WIDTH) { config.staminaOverlayWidth = Math.max(10, Math.min(256, this.initialWidth + deltaX)); }
+                else if (this.currentResizeMode == ResizeMode.HEIGHT) { config.staminaOverlayHeight = Math.max(4, Math.min(256, this.initialHeight + deltaY)); }
                 break;
         }
     }

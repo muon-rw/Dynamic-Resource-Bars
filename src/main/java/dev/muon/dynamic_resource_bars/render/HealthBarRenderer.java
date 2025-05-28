@@ -284,7 +284,7 @@ public class HealthBarRenderer {
         if (ModConfigManager.getClient().enableHealthForeground) {
             ScreenRect fgRect = getSubElementRect(SubElementType.FOREGROUND_DETAIL, player);
             graphics.blit(
-                    DynamicResourceBars.loc("textures/gui/detail_overlay.png"),
+                    DynamicResourceBars.loc("textures/gui/health_foreground.png"),
                     fgRect.x(), fgRect.y(),
                     0, 0, fgRect.width(), fgRect.height(),
                     256, 256

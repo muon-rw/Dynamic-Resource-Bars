@@ -113,7 +113,7 @@ public class ManaBarRenderer {
 
         if (ModConfigManager.getClient().enableManaForeground) {
             ScreenRect fgRect = getSubElementRect(SubElementType.FOREGROUND_DETAIL, player);
-            graphics.blit(DynamicResourceBars.loc("textures/gui/detail_overlay.png"),
+            graphics.blit(DynamicResourceBars.loc("textures/gui/mana_foreground.png"),
                     fgRect.x(), fgRect.y(),
                     0, 0, fgRect.width(), fgRect.height(), 256, 256);
         }

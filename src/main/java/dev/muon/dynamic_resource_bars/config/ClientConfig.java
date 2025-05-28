@@ -420,18 +420,36 @@ public class ClientConfig {
         if (cfg.showHealthText == null) { cfg.showHealthText = DEFAULT_SHOW_HEALTH_TEXT; modified = true; }
         if (cfg.healthTextAlign == null) { cfg.healthTextAlign = DEFAULT_HEALTH_TEXT_ALIGN; modified = true; }
         if (cfg.healthFillDirection == null) { cfg.healthFillDirection = DEFAULT_HEALTH_FILL_DIRECTION; modified = true; }
+        
+        // Ensure health overlay dimensions are within valid ranges
+        if (cfg.healthOverlayWidth > 256) { cfg.healthOverlayWidth = 256; modified = true; }
+        if (cfg.healthOverlayHeight > 256) { cfg.healthOverlayHeight = 256; modified = true; }
+        if (cfg.healthOverlayWidth < 1) { cfg.healthOverlayWidth = DEFAULT_HEALTH_OVERLAY_WIDTH; modified = true; }
+        if (cfg.healthOverlayHeight < 1) { cfg.healthOverlayHeight = DEFAULT_HEALTH_OVERLAY_HEIGHT; modified = true; }
 
         // Stamina
         if (cfg.staminaBarAnchor == null) { cfg.staminaBarAnchor = DEFAULT_STAMINA_BAR_ANCHOR; modified = true; }
         if (cfg.showStaminaText == null) { cfg.showStaminaText = DEFAULT_SHOW_STAMINA_TEXT; modified = true; }
         if (cfg.staminaTextAlign == null) { cfg.staminaTextAlign = DEFAULT_STAMINA_TEXT_ALIGN; modified = true; }
         if (cfg.staminaFillDirection == null) { cfg.staminaFillDirection = DEFAULT_STAMINA_FILL_DIRECTION; modified = true; }
+        
+        // Ensure stamina overlay dimensions are within valid ranges
+        if (cfg.staminaOverlayWidth > 256) { cfg.staminaOverlayWidth = 256; modified = true; }
+        if (cfg.staminaOverlayHeight > 256) { cfg.staminaOverlayHeight = 256; modified = true; }
+        if (cfg.staminaOverlayWidth < 1) { cfg.staminaOverlayWidth = DEFAULT_STAMINA_OVERLAY_WIDTH; modified = true; }
+        if (cfg.staminaOverlayHeight < 1) { cfg.staminaOverlayHeight = DEFAULT_STAMINA_OVERLAY_HEIGHT; modified = true; }
 
         // Mana
         if (cfg.manaBarAnchor == null) { cfg.manaBarAnchor = DEFAULT_MANA_BAR_ANCHOR; modified = true; }
         if (cfg.showManaText == null) { cfg.showManaText = DEFAULT_SHOW_MANA_TEXT; modified = true; }
         if (cfg.manaTextAlign == null) { cfg.manaTextAlign = DEFAULT_MANA_TEXT_ALIGN; modified = true; }
         if (cfg.manaFillDirection == null) { cfg.manaFillDirection = DEFAULT_MANA_FILL_DIRECTION; modified = true; }
+        
+        // Ensure mana overlay dimensions are within valid ranges
+        if (cfg.manaOverlayWidth > 256) { cfg.manaOverlayWidth = 256; modified = true; }
+        if (cfg.manaOverlayHeight > 256) { cfg.manaOverlayHeight = 256; modified = true; }
+        if (cfg.manaOverlayWidth < 1) { cfg.manaOverlayWidth = DEFAULT_MANA_OVERLAY_WIDTH; modified = true; }
+        if (cfg.manaOverlayHeight < 1) { cfg.manaOverlayHeight = DEFAULT_MANA_OVERLAY_HEIGHT; modified = true; }
 
         // Armor
         if (cfg.armorBarBehavior == null) { cfg.armorBarBehavior = DEFAULT_ARMOR_BAR_BEHAVIOR; modified = true; }

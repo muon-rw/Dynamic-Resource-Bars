@@ -90,8 +90,8 @@ public class ResizeElementScreen extends Screen {
         this.addRenderableWidget(barHeightBox);
         currentY += 2 * (boxHeight + rowSpacing) + rowSpacing;
 
-        overlayWidthBox = createIntEditBox(editBoxX, currentY, boxWidth, boxHeight, overlayWidthConf);
-        overlayHeightBox = createIntEditBox(editBoxX, currentY + boxHeight + rowSpacing, boxWidth, boxHeight, overlayHeightConf);
+        overlayWidthBox = createIntEditBox(editBoxX, currentY, boxWidth, boxHeight, overlayWidthConf, 0, 256);
+        overlayHeightBox = createIntEditBox(editBoxX, currentY + boxHeight + rowSpacing, boxWidth, boxHeight, overlayHeightConf, 0, 256);
         this.addRenderableWidget(overlayWidthBox);
         this.addRenderableWidget(overlayHeightBox);
 

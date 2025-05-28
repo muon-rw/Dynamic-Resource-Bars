@@ -136,7 +136,7 @@ public class StaminaBarRenderer {
         if (ModConfigManager.getClient().enableStaminaForeground) {
              ScreenRect fgRect = getSubElementRect(SubElementType.FOREGROUND_DETAIL, player);
              graphics.blit(
-                    DynamicResourceBars.loc("textures/gui/detail_overlay.png"),
+                    DynamicResourceBars.loc("textures/gui/stamina_foreground.png"),
                     fgRect.x(), fgRect.y(),
                     0, 0, fgRect.width(), fgRect.height(),
                     256, 256
