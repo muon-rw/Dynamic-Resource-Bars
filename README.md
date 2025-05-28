@@ -1,8 +1,8 @@
 # Dynamic RPG Resource Bars
-### Animated adjustable resource bars.
-### In Progress!
+### Animated adjustable resource 
 
-*Coming soon to 1.20.1/1.21.1 Fabric/Forge/Neoforge!*
-
-## Libraries 
-*   This mod uses GSON, a Java library for JSON serialization and deserialization. GSON is licensed under the Apache License 2.0 ([http://www.apache.org/licenses/LICENSE-2.0](http://www.apache.org/licenses/LICENSE-2.0)).
+# Download:
+Curseforge: https://www.curseforge.com/minecraft/mc-mods/dynamic-rpg-resource-bars
+Modrinth: https://modrinth.com/mod/dynamic-resource-bars
+# Tutorial:
+Coming soon!
