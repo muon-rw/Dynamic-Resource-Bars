@@ -71,7 +71,8 @@ public class HealthBarRenderer {
 
         switch (type) {
             case BACKGROUND:
-                return new ScreenRect(x, y, 
+                return new ScreenRect(x + ModConfigManager.getClient().healthBackgroundXOffset, 
+                                      y + ModConfigManager.getClient().healthBackgroundYOffset, 
                                       ModConfigManager.getClient().healthBackgroundWidth, 
                                       ModConfigManager.getClient().healthBackgroundHeight);
             case BAR_MAIN:
@@ -187,7 +188,7 @@ public class HealthBarRenderer {
                     ScreenRect fgRect = getSubElementRect(SubElementType.FOREGROUND_DETAIL, player);
                     graphics.renderOutline(fgRect.x()-1, fgRect.y()-1, fgRect.width()+2, fgRect.height()+2, 0xA0FF00FF);
                 }
-                graphics.renderOutline(complexRect.x()-2, complexRect.y()-2, complexRect.width()+4, complexRect.height()+4, focusedBorderColor);
+                graphics.renderOutline(complexRect.x()-2, complexRect.y()-2, complexRect.width()+4, complexRect.height()+4, 0x80FFFFFF);
             } else {
                 int borderColor = 0x80FFFFFF;
                 graphics.renderOutline(complexRect.x()-1, complexRect.y()-1, complexRect.width()+2, complexRect.height()+2, borderColor);

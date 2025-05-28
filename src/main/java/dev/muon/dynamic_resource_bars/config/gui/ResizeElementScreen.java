@@ -21,6 +21,8 @@ public class ResizeElementScreen extends Screen {
 
     private EditBox bgWidthBox;
     private EditBox bgHeightBox;
+    private EditBox bgXOffsetBox;
+    private EditBox bgYOffsetBox;
     private EditBox barWidthBox;
     private EditBox barHeightBox;
     private EditBox overlayWidthBox;
@@ -36,12 +38,14 @@ public class ResizeElementScreen extends Screen {
     protected void init() {
         super.init();
         ClientConfig config = ModConfigManager.getClient();
-        int bgWidthConf, bgHeightConf, barWidthConf, barHeightConf, overlayWidthConf, overlayHeightConf;
+        int bgWidthConf, bgHeightConf, bgXOffsetConf, bgYOffsetConf, barWidthConf, barHeightConf, overlayWidthConf, overlayHeightConf;
 
         switch (elementToResize) {
             case HEALTH_BAR:
                 bgWidthConf = config.healthBackgroundWidth;
                 bgHeightConf = config.healthBackgroundHeight;
+                bgXOffsetConf = config.healthBackgroundXOffset;
+                bgYOffsetConf = config.healthBackgroundYOffset;
                 barWidthConf = config.healthBarWidth;
                 barHeightConf = config.healthBarHeight;
                 overlayWidthConf = config.healthOverlayWidth;
@@ -50,6 +54,8 @@ public class ResizeElementScreen extends Screen {
             case STAMINA_BAR:
                 bgWidthConf = config.staminaBackgroundWidth;
                 bgHeightConf = config.staminaBackgroundHeight;
+                bgXOffsetConf = config.staminaBackgroundXOffset;
+                bgYOffsetConf = config.staminaBackgroundYOffset;
                 barWidthConf = config.staminaBarWidth;
                 barHeightConf = config.staminaBarHeight;
                 overlayWidthConf = config.staminaOverlayWidth;
@@ -58,6 +64,8 @@ public class ResizeElementScreen extends Screen {
             case MANA_BAR:
                 bgWidthConf = config.manaBackgroundWidth;
                 bgHeightConf = config.manaBackgroundHeight;
+                bgXOffsetConf = config.manaBackgroundXOffset;
+                bgYOffsetConf = config.manaBackgroundYOffset;
                 barWidthConf = config.manaBarWidth;
                 barHeightConf = config.manaBarHeight;
                 overlayWidthConf = config.manaOverlayWidth;
@@ -80,9 +88,13 @@ public class ResizeElementScreen extends Screen {
 
         bgWidthBox = createIntEditBox(editBoxX, currentY, boxWidth, boxHeight, bgWidthConf);
         bgHeightBox = createIntEditBox(editBoxX, currentY + boxHeight + rowSpacing, boxWidth, boxHeight, bgHeightConf);
+        bgXOffsetBox = createIntEditBox(editBoxX, currentY + 2 * (boxHeight + rowSpacing), boxWidth, boxHeight, bgXOffsetConf, Integer.MIN_VALUE, Integer.MAX_VALUE);
+        bgYOffsetBox = createIntEditBox(editBoxX, currentY + 3 * (boxHeight + rowSpacing), boxWidth, boxHeight, bgYOffsetConf, Integer.MIN_VALUE, Integer.MAX_VALUE);
         this.addRenderableWidget(bgWidthBox);
         this.addRenderableWidget(bgHeightBox);
-        currentY += 2 * (boxHeight + rowSpacing) + rowSpacing; // Add extra spacing between groups
+        this.addRenderableWidget(bgXOffsetBox);
+        this.addRenderableWidget(bgYOffsetBox);
+        currentY += 4 * (boxHeight + rowSpacing) + rowSpacing; // Add extra spacing between groups
 
         barWidthBox = createIntEditBox(editBoxX, currentY, boxWidth, boxHeight, barWidthConf, 0, 256);
         barHeightBox = createIntEditBox(editBoxX, currentY + boxHeight + rowSpacing, boxWidth, boxHeight, barHeightConf, 0, 32);
@@ -104,8 +116,8 @@ public class ResizeElementScreen extends Screen {
     }
 
     private EditBox createIntEditBox(int x, int y, int width, int height, int configIntValue) {
-        // Default min value for sizes should be 0, or 1 if 0 is problematic for rendering.
-        return createIntEditBox(x, y, width, height, configIntValue, 0, Integer.MAX_VALUE);
+        // Default min value for sizes should be 1 to ensure minimum size for rendering
+        return createIntEditBox(x, y, width, height, configIntValue, 1, Integer.MAX_VALUE);
     }
 
     private EditBox createIntEditBox(int x, int y, int width, int height, int configIntValue, int minValue, int maxValue) {
@@ -143,6 +155,8 @@ public class ResizeElementScreen extends Screen {
             int labelX = bgWidthBox.getX() - 5 - 100; 
             graphics.drawString(this.font, Component.translatable("gui.dynamic_resource_bars.resize.label.background_width"), labelX, bgWidthBox.getY() + (bgWidthBox.getHeight() - this.font.lineHeight) / 2, 0xFFFFFF);
             graphics.drawString(this.font, Component.translatable("gui.dynamic_resource_bars.resize.label.background_height"), labelX, bgHeightBox.getY() + (bgHeightBox.getHeight() - this.font.lineHeight) / 2, 0xFFFFFF);
+            graphics.drawString(this.font, Component.translatable("gui.dynamic_resource_bars.resize.label.background_x_offset"), labelX, bgXOffsetBox.getY() + (bgXOffsetBox.getHeight() - this.font.lineHeight) / 2, 0xFFFFFF);
+            graphics.drawString(this.font, Component.translatable("gui.dynamic_resource_bars.resize.label.background_y_offset"), labelX, bgYOffsetBox.getY() + (bgYOffsetBox.getHeight() - this.font.lineHeight) / 2, 0xFFFFFF);
             graphics.drawString(this.font, Component.translatable("gui.dynamic_resource_bars.resize.label.bar_width"), labelX, barWidthBox.getY() + (barWidthBox.getHeight() - this.font.lineHeight) / 2, 0xFFFFFF);
             graphics.drawString(this.font, Component.translatable("gui.dynamic_resource_bars.resize.label.bar_height"), labelX, barHeightBox.getY() + (barHeightBox.getHeight() - this.font.lineHeight) / 2, 0xFFFFFF);
             graphics.drawString(this.font, Component.translatable("gui.dynamic_resource_bars.resize.label.overlay_width"), labelX, overlayWidthBox.getY() + (overlayWidthBox.getHeight() - this.font.lineHeight) / 2, 0xFFFFFF);
@@ -193,8 +207,62 @@ public class ResizeElementScreen extends Screen {
 
     @Override
     public void onClose() {
+        // Save all values to config before closing
+        ClientConfig config = ModConfigManager.getClient();
+        
+        try {
+            switch (elementToResize) {
+                case HEALTH_BAR:
+                    config.healthBackgroundWidth = parseIntSafely(bgWidthBox.getValue(), config.healthBackgroundWidth, 1, Integer.MAX_VALUE);
+                    config.healthBackgroundHeight = parseIntSafely(bgHeightBox.getValue(), config.healthBackgroundHeight, 1, Integer.MAX_VALUE);
+                    config.healthBarWidth = parseIntSafely(barWidthBox.getValue(), config.healthBarWidth, 1, 256);
+                    config.healthBarHeight = parseIntSafely(barHeightBox.getValue(), config.healthBarHeight, 1, 32);
+                    config.healthOverlayWidth = parseIntSafely(overlayWidthBox.getValue(), config.healthOverlayWidth, 1, 256);
+                    config.healthOverlayHeight = parseIntSafely(overlayHeightBox.getValue(), config.healthOverlayHeight, 1, 256);
+                    config.healthBackgroundXOffset = parseIntSafely(bgXOffsetBox.getValue(), config.healthBackgroundXOffset, Integer.MIN_VALUE, Integer.MAX_VALUE);
+                    config.healthBackgroundYOffset = parseIntSafely(bgYOffsetBox.getValue(), config.healthBackgroundYOffset, Integer.MIN_VALUE, Integer.MAX_VALUE);
+                    break;
+                case STAMINA_BAR:
+                    config.staminaBackgroundWidth = parseIntSafely(bgWidthBox.getValue(), config.staminaBackgroundWidth, 1, Integer.MAX_VALUE);
+                    config.staminaBackgroundHeight = parseIntSafely(bgHeightBox.getValue(), config.staminaBackgroundHeight, 1, Integer.MAX_VALUE);
+                    config.staminaBarWidth = parseIntSafely(barWidthBox.getValue(), config.staminaBarWidth, 1, 256);
+                    config.staminaBarHeight = parseIntSafely(barHeightBox.getValue(), config.staminaBarHeight, 1, 32);
+                    config.staminaOverlayWidth = parseIntSafely(overlayWidthBox.getValue(), config.staminaOverlayWidth, 1, 256);
+                    config.staminaOverlayHeight = parseIntSafely(overlayHeightBox.getValue(), config.staminaOverlayHeight, 1, 256);
+                    config.staminaBackgroundXOffset = parseIntSafely(bgXOffsetBox.getValue(), config.staminaBackgroundXOffset, Integer.MIN_VALUE, Integer.MAX_VALUE);
+                    config.staminaBackgroundYOffset = parseIntSafely(bgYOffsetBox.getValue(), config.staminaBackgroundYOffset, Integer.MIN_VALUE, Integer.MAX_VALUE);
+                    break;
+                case MANA_BAR:
+                    config.manaBackgroundWidth = parseIntSafely(bgWidthBox.getValue(), config.manaBackgroundWidth, 1, Integer.MAX_VALUE);
+                    config.manaBackgroundHeight = parseIntSafely(bgHeightBox.getValue(), config.manaBackgroundHeight, 1, Integer.MAX_VALUE);
+                    config.manaBarWidth = parseIntSafely(barWidthBox.getValue(), config.manaBarWidth, 1, 256);
+                    config.manaBarHeight = parseIntSafely(barHeightBox.getValue(), config.manaBarHeight, 1, 32);
+                    config.manaOverlayWidth = parseIntSafely(overlayWidthBox.getValue(), config.manaOverlayWidth, 1, 256);
+                    config.manaOverlayHeight = parseIntSafely(overlayHeightBox.getValue(), config.manaOverlayHeight, 1, 256);
+                    config.manaBackgroundXOffset = parseIntSafely(bgXOffsetBox.getValue(), config.manaBackgroundXOffset, Integer.MIN_VALUE, Integer.MAX_VALUE);
+                    config.manaBackgroundYOffset = parseIntSafely(bgYOffsetBox.getValue(), config.manaBackgroundYOffset, Integer.MIN_VALUE, Integer.MAX_VALUE);
+                    break;
+            }
+            
+            // Save config to disk
+            config.save();
+        } catch (Exception e) {
+            // If there's any error parsing, just close without saving
+        }
+        
         if (this.minecraft != null) {
             this.minecraft.setScreen(this.parentScreen);
+        }
+    }
+    
+    private int parseIntSafely(String value, int defaultValue, int minValue, int maxValue) {
+        try {
+            int parsed = Integer.parseInt(value);
+            if (parsed < minValue) return minValue;
+            if (parsed > maxValue) return maxValue;
+            return parsed;
+        } catch (NumberFormatException e) {
+            return defaultValue;
         }
     }
 

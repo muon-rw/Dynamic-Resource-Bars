@@ -922,12 +922,36 @@ public class HudEditorScreen extends Screen {
         if (!actionTaken && currentFocusedElement != null && this.currentResizeMode == ResizeMode.NONE) {
             if (currentFocusedElement != DraggableElement.ARMOR_BAR && currentFocusedElement != DraggableElement.AIR_BAR) {
                 SubElementType clickedSub = getClickedSubElement(currentFocusedElement, mouseX, mouseY, player);
-                if (clickedSub != null && clickedSub != SubElementType.BACKGROUND) { // Don't drag background, only its handles
+                if (clickedSub != null) { // Allow dragging background now
                     int currentSubX = 0; int currentSubY = 0;
                     switch (currentFocusedElement) {
-                         case HEALTH_BAR: if (clickedSub == SubElementType.BAR_MAIN) { currentSubX = config.healthBarXOffset; currentSubY = config.healthBarYOffset; } else if (clickedSub == SubElementType.FOREGROUND_DETAIL) { currentSubX = config.healthOverlayXOffset; currentSubY = config.healthOverlayYOffset; } break;
-                         case MANA_BAR: if (clickedSub == SubElementType.BAR_MAIN) { currentSubX = config.manaBarXOffset; currentSubY = config.manaBarYOffset; } else if (clickedSub == SubElementType.FOREGROUND_DETAIL) { currentSubX = config.manaOverlayXOffset; currentSubY = config.manaOverlayYOffset; } break;
-                         case STAMINA_BAR: if (clickedSub == SubElementType.BAR_MAIN) { currentSubX = config.staminaBarXOffset; currentSubY = config.staminaBarYOffset; } else if (clickedSub == SubElementType.FOREGROUND_DETAIL) { currentSubX = config.staminaOverlayXOffset; currentSubY = config.staminaOverlayYOffset; } break;
+                         case HEALTH_BAR: 
+                             if (clickedSub == SubElementType.BAR_MAIN) { 
+                                 currentSubX = config.healthBarXOffset; currentSubY = config.healthBarYOffset; 
+                             } else if (clickedSub == SubElementType.FOREGROUND_DETAIL) { 
+                                 currentSubX = config.healthOverlayXOffset; currentSubY = config.healthOverlayYOffset; 
+                             } else if (clickedSub == SubElementType.BACKGROUND) {
+                                 currentSubX = config.healthBackgroundXOffset; currentSubY = config.healthBackgroundYOffset;
+                             }
+                             break;
+                         case MANA_BAR: 
+                             if (clickedSub == SubElementType.BAR_MAIN) { 
+                                 currentSubX = config.manaBarXOffset; currentSubY = config.manaBarYOffset; 
+                             } else if (clickedSub == SubElementType.FOREGROUND_DETAIL) { 
+                                 currentSubX = config.manaOverlayXOffset; currentSubY = config.manaOverlayYOffset; 
+                             } else if (clickedSub == SubElementType.BACKGROUND) {
+                                 currentSubX = config.manaBackgroundXOffset; currentSubY = config.manaBackgroundYOffset;
+                             }
+                             break;
+                         case STAMINA_BAR: 
+                             if (clickedSub == SubElementType.BAR_MAIN) { 
+                                 currentSubX = config.staminaBarXOffset; currentSubY = config.staminaBarYOffset; 
+                             } else if (clickedSub == SubElementType.FOREGROUND_DETAIL) { 
+                                 currentSubX = config.staminaOverlayXOffset; currentSubY = config.staminaOverlayYOffset; 
+                             } else if (clickedSub == SubElementType.BACKGROUND) {
+                                 currentSubX = config.staminaBackgroundXOffset; currentSubY = config.staminaBackgroundYOffset;
+                             }
+                             break;
                     }
                     EditModeManager.setDraggedSubElement(clickedSub, (int)mouseX, (int)mouseY, currentSubX, currentSubY);
                     this.lastFocusedElementForSubUndo = currentFocusedElement;
@@ -995,6 +1019,7 @@ public class HudEditorScreen extends Screen {
 
         ScreenRect barMainRect = null;
         ScreenRect barFgRect = null;
+        ScreenRect barBgRect = null;
         ClientConfig currentConfig = ModConfigManager.getClient();
 
         switch (focusedBar) {
@@ -1003,11 +1028,17 @@ public class HudEditorScreen extends Screen {
                 if (currentConfig.enableHealthForeground) {
                     barFgRect = HealthBarRenderer.getSubElementRect(SubElementType.FOREGROUND_DETAIL, player);
                 }
+                if (currentConfig.enableHealthBackground) {
+                    barBgRect = HealthBarRenderer.getSubElementRect(SubElementType.BACKGROUND, player);
+                }
                 break;
             case STAMINA_BAR:
                 barMainRect = StaminaBarRenderer.getSubElementRect(SubElementType.BAR_MAIN, player);
                 if (currentConfig.enableStaminaForeground) {
                     barFgRect = StaminaBarRenderer.getSubElementRect(SubElementType.FOREGROUND_DETAIL, player);
+                }
+                if (currentConfig.enableStaminaBackground) {
+                    barBgRect = StaminaBarRenderer.getSubElementRect(SubElementType.BACKGROUND, player);
                 }
                 break;
             case MANA_BAR:
@@ -1015,11 +1046,16 @@ public class HudEditorScreen extends Screen {
                 if (currentConfig.enableManaForeground) {
                     barFgRect = ManaBarRenderer.getSubElementRect(SubElementType.FOREGROUND_DETAIL, player);
                 }
+                if (currentConfig.enableManaBackground) {
+                    barBgRect = ManaBarRenderer.getSubElementRect(SubElementType.BACKGROUND, player);
+                }
                 break;
         }
 
+        // Check in order: foreground, main bar, then background (so clicking overlapping elements prioritizes the topmost)
         if (barFgRect != null && barFgRect.contains((int)mouseX, (int)mouseY)) return SubElementType.FOREGROUND_DETAIL;
         if (barMainRect != null && barMainRect.contains((int)mouseX, (int)mouseY)) return SubElementType.BAR_MAIN;
+        if (barBgRect != null && barBgRect.contains((int)mouseX, (int)mouseY)) return SubElementType.BACKGROUND;
         return null; 
     }
 
@@ -1041,16 +1077,31 @@ public class HudEditorScreen extends Screen {
             SubElementType sub = EditModeManager.getDraggedSubElement();
             switch (focused) {
                 case HEALTH_BAR:
-                    if (sub == SubElementType.BAR_MAIN) { config.healthBarXOffset = finalNewSubX; config.healthBarYOffset = finalNewSubY; } 
-                    else if (sub == SubElementType.FOREGROUND_DETAIL) { config.healthOverlayXOffset = finalNewSubX; config.healthOverlayYOffset = finalNewSubY; }
+                    if (sub == SubElementType.BAR_MAIN) { 
+                        config.healthBarXOffset = finalNewSubX; config.healthBarYOffset = finalNewSubY; 
+                    } else if (sub == SubElementType.FOREGROUND_DETAIL) { 
+                        config.healthOverlayXOffset = finalNewSubX; config.healthOverlayYOffset = finalNewSubY; 
+                    } else if (sub == SubElementType.BACKGROUND) {
+                        config.healthBackgroundXOffset = finalNewSubX; config.healthBackgroundYOffset = finalNewSubY;
+                    }
                     break;
                 case MANA_BAR:
-                     if (sub == SubElementType.BAR_MAIN) { config.manaBarXOffset = finalNewSubX; config.manaBarYOffset = finalNewSubY; } 
-                     else if (sub == SubElementType.FOREGROUND_DETAIL) { config.manaOverlayXOffset = finalNewSubX; config.manaOverlayYOffset = finalNewSubY; }
+                     if (sub == SubElementType.BAR_MAIN) { 
+                         config.manaBarXOffset = finalNewSubX; config.manaBarYOffset = finalNewSubY; 
+                     } else if (sub == SubElementType.FOREGROUND_DETAIL) { 
+                         config.manaOverlayXOffset = finalNewSubX; config.manaOverlayYOffset = finalNewSubY; 
+                     } else if (sub == SubElementType.BACKGROUND) {
+                         config.manaBackgroundXOffset = finalNewSubX; config.manaBackgroundYOffset = finalNewSubY;
+                     }
                     break;
                 case STAMINA_BAR:
-                     if (sub == SubElementType.BAR_MAIN) { config.staminaBarXOffset = finalNewSubX; config.staminaBarYOffset = finalNewSubY; } 
-                     else if (sub == SubElementType.FOREGROUND_DETAIL) { config.staminaOverlayXOffset = finalNewSubX; config.staminaOverlayYOffset = finalNewSubY; }
+                     if (sub == SubElementType.BAR_MAIN) { 
+                         config.staminaBarXOffset = finalNewSubX; config.staminaBarYOffset = finalNewSubY; 
+                     } else if (sub == SubElementType.FOREGROUND_DETAIL) { 
+                         config.staminaOverlayXOffset = finalNewSubX; config.staminaOverlayYOffset = finalNewSubY; 
+                     } else if (sub == SubElementType.BACKGROUND) {
+                         config.staminaBackgroundXOffset = finalNewSubX; config.staminaBackgroundYOffset = finalNewSubY;
+                     }
                     break;
             }
             return true; 
@@ -1292,6 +1343,8 @@ public class HudEditorScreen extends Screen {
                 config.healthBarYOffset = ClientConfig.DEFAULT_HEALTH_BAR_Y_OFFSET;
                 config.healthOverlayXOffset = ClientConfig.DEFAULT_HEALTH_OVERLAY_X_OFFSET;
                 config.healthOverlayYOffset = ClientConfig.DEFAULT_HEALTH_OVERLAY_Y_OFFSET;
+                config.healthBackgroundXOffset = ClientConfig.DEFAULT_HEALTH_BACKGROUND_X_OFFSET;
+                config.healthBackgroundYOffset = ClientConfig.DEFAULT_HEALTH_BACKGROUND_Y_OFFSET;
                 config.healthTotalYOffset = ClientConfig.DEFAULT_HEALTH_TOTAL_Y_OFFSET;
                 break;
             case STAMINA_BAR:
@@ -1302,6 +1355,8 @@ public class HudEditorScreen extends Screen {
                 config.staminaBarYOffset = ClientConfig.DEFAULT_STAMINA_BAR_Y_OFFSET;
                 config.staminaOverlayXOffset = ClientConfig.DEFAULT_STAMINA_OVERLAY_X_OFFSET;
                 config.staminaOverlayYOffset = ClientConfig.DEFAULT_STAMINA_OVERLAY_Y_OFFSET;
+                config.staminaBackgroundXOffset = ClientConfig.DEFAULT_STAMINA_BACKGROUND_X_OFFSET;
+                config.staminaBackgroundYOffset = ClientConfig.DEFAULT_STAMINA_BACKGROUND_Y_OFFSET;
                 config.staminaTotalYOffset = ClientConfig.DEFAULT_STAMINA_TOTAL_Y_OFFSET;
                 break;
             case MANA_BAR:
@@ -1312,6 +1367,8 @@ public class HudEditorScreen extends Screen {
                 config.manaBarYOffset = ClientConfig.DEFAULT_MANA_BAR_Y_OFFSET;
                 config.manaOverlayXOffset = ClientConfig.DEFAULT_MANA_OVERLAY_X_OFFSET;
                 config.manaOverlayYOffset = ClientConfig.DEFAULT_MANA_OVERLAY_Y_OFFSET;
+                config.manaBackgroundXOffset = ClientConfig.DEFAULT_MANA_BACKGROUND_X_OFFSET;
+                config.manaBackgroundYOffset = ClientConfig.DEFAULT_MANA_BACKGROUND_Y_OFFSET;
                 config.manaTotalYOffset = ClientConfig.DEFAULT_MANA_TOTAL_Y_OFFSET;
                 break;
             case ARMOR_BAR:

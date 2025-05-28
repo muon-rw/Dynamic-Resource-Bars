@@ -52,6 +52,8 @@ public class ClientConfig {
     public static final int DEFAULT_HEALTH_TOTAL_Y_OFFSET = 0;
     public static final int DEFAULT_HEALTH_OVERLAY_X_OFFSET = 0;
     public static final int DEFAULT_HEALTH_OVERLAY_Y_OFFSET = -3;
+    public static final int DEFAULT_HEALTH_BACKGROUND_X_OFFSET = 0;
+    public static final int DEFAULT_HEALTH_BACKGROUND_Y_OFFSET = 0;
 
     public boolean enableHealthBar;
     public HUDPositioning.BarPlacement healthBarAnchor;
@@ -75,6 +77,8 @@ public class ClientConfig {
     public int healthTotalYOffset;
     public int healthOverlayXOffset;
     public int healthOverlayYOffset;
+    public int healthBackgroundXOffset;
+    public int healthBackgroundYOffset;
 
     // Stamina Defaults & Fields
     public static final boolean DEFAULT_ENABLE_STAMINA_BAR = true;
@@ -99,6 +103,8 @@ public class ClientConfig {
     public static final int DEFAULT_STAMINA_BAR_Y_OFFSET = 3;
     public static final int DEFAULT_STAMINA_TOTAL_X_OFFSET = -80;
     public static final int DEFAULT_STAMINA_TOTAL_Y_OFFSET = 0;
+    public static final int DEFAULT_STAMINA_BACKGROUND_X_OFFSET = 0;
+    public static final int DEFAULT_STAMINA_BACKGROUND_Y_OFFSET = 0;
 
     public boolean enableStaminaBar;
     public HUDPositioning.BarPlacement staminaBarAnchor;
@@ -122,6 +128,8 @@ public class ClientConfig {
     public int staminaBarYOffset;
     public int staminaTotalXOffset;
     public int staminaTotalYOffset;
+    public int staminaBackgroundXOffset;
+    public int staminaBackgroundYOffset;
 
     // Mana Defaults & Fields
     public static final boolean DEFAULT_ENABLE_MANA_BAR = true;
@@ -146,6 +154,8 @@ public class ClientConfig {
     public static final int DEFAULT_MANA_TOTAL_Y_OFFSET = 0;
     public static final int DEFAULT_MANA_OVERLAY_X_OFFSET = 0;
     public static final int DEFAULT_MANA_OVERLAY_Y_OFFSET = -3;
+    public static final int DEFAULT_MANA_BACKGROUND_X_OFFSET = 0;
+    public static final int DEFAULT_MANA_BACKGROUND_Y_OFFSET = 0;
 
     public boolean enableManaBar;
     public HUDPositioning.BarPlacement manaBarAnchor;
@@ -169,6 +179,8 @@ public class ClientConfig {
     public int manaTotalYOffset;
     public int manaOverlayXOffset;
     public int manaOverlayYOffset;
+    public int manaBackgroundXOffset;
+    public int manaBackgroundYOffset;
 
     // Armor Defaults & Fields
     public static final BarRenderBehavior DEFAULT_ARMOR_BAR_BEHAVIOR = BarRenderBehavior.HIDDEN;
@@ -268,6 +280,8 @@ public class ClientConfig {
         this.healthTotalYOffset = DEFAULT_HEALTH_TOTAL_Y_OFFSET;
         this.healthOverlayXOffset = DEFAULT_HEALTH_OVERLAY_X_OFFSET;
         this.healthOverlayYOffset = DEFAULT_HEALTH_OVERLAY_Y_OFFSET;
+        this.healthBackgroundXOffset = DEFAULT_HEALTH_BACKGROUND_X_OFFSET;
+        this.healthBackgroundYOffset = DEFAULT_HEALTH_BACKGROUND_Y_OFFSET;
 
         this.enableStaminaBar = DEFAULT_ENABLE_STAMINA_BAR;
         this.staminaBarAnchor = DEFAULT_STAMINA_BAR_ANCHOR;
@@ -291,6 +305,8 @@ public class ClientConfig {
         this.staminaBarYOffset = DEFAULT_STAMINA_BAR_Y_OFFSET;
         this.staminaTotalXOffset = DEFAULT_STAMINA_TOTAL_X_OFFSET;
         this.staminaTotalYOffset = DEFAULT_STAMINA_TOTAL_Y_OFFSET;
+        this.staminaBackgroundXOffset = DEFAULT_STAMINA_BACKGROUND_X_OFFSET;
+        this.staminaBackgroundYOffset = DEFAULT_STAMINA_BACKGROUND_Y_OFFSET;
 
         this.enableManaBar = DEFAULT_ENABLE_MANA_BAR;
         this.manaBarAnchor = DEFAULT_MANA_BAR_ANCHOR;
@@ -314,6 +330,8 @@ public class ClientConfig {
         this.manaTotalYOffset = DEFAULT_MANA_TOTAL_Y_OFFSET;
         this.manaOverlayXOffset = DEFAULT_MANA_OVERLAY_X_OFFSET;
         this.manaOverlayYOffset = DEFAULT_MANA_OVERLAY_Y_OFFSET;
+        this.manaBackgroundXOffset = DEFAULT_MANA_BACKGROUND_X_OFFSET;
+        this.manaBackgroundYOffset = DEFAULT_MANA_BACKGROUND_Y_OFFSET;
 
         this.armorBarBehavior = DEFAULT_ARMOR_BAR_BEHAVIOR;
         this.armorBarAnchor = DEFAULT_ARMOR_BAR_ANCHOR;
