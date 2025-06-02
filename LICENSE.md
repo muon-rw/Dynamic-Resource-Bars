@@ -16,7 +16,7 @@ You may modify the Artwork solely for creation of resource packs or addons, prov
 
 ### Definitions
 - **Resource Pack**: A zip file containing a pack.mcmeta file and assets designed to be loaded via Minecraft's resource pack system
-- **Addon**: A Java mod (similar to Dynamic Resource Bars) that may extend or modify functionality and may include its own assets
+- **Addon**: A mod for Minecraft: Java Edition (similar to Dynamic Resource Bars) that may extend or modify functionality and may include its own assets
 - **Artwork**: All graphical assets, textures, models, animations, and other visual content
 - **Dynamic Resource Bars**: Refers specifically to the original mod authored by muon-rw, not forks or derivative works
 
