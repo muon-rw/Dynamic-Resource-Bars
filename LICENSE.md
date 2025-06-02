@@ -12,7 +12,7 @@ All files contained within the `/assets/` or `/art_work_dir/` directories (colle
 You may modify the Artwork solely for creation of resource packs or addons, provided that:
 - Any modified or unmodified Artwork from this project included in your resource pack or addon may only function when the original Dynamic Resource Bars mod (authored by muon-rw) is installed and active
 - The Artwork may not be redistributed independently of such resource packs or addons
-- **GPL Code Fork Exception**: If you create a fork of the Dynamic Resource Bars code under the GPL v3, you may not include or redistribute any Artwork from the original project in your fork. The Artwork license does not extend to derivative works of the code base.
+- **GPL Code Fork Exception**: If you create and publish a fork of the Dynamic Resource Bars code under the GPL v3, you may not include or redistribute any Artwork from the original project in published versions of your fork. The Artwork license does not extend to derivative works of the code base.
 
 ### Definitions
 - **Resource Pack**: A zip file containing a pack.mcmeta file and assets designed to be loaded via Minecraft's resource pack system
