@@ -89,7 +89,8 @@ public abstract class GuiMixin {
     )
     private void replaceHearts(Gui instance, GuiGraphics guiGraphics, Player player, int x, int y, int height, int offsetHeartIndex, float maxHealth, int currentHealth, int displayHealth, int absorptionAmount, boolean renderHighlight, Operation<Void> original) {
         if (ModConfigManager.getClient().enableHealthBar) {
-            HealthBarRenderer.render(guiGraphics, player, maxHealth, currentHealth, absorptionAmount, this.minecraft.getFrameTime());
+            float actualHealth = Minecraft.getInstance().player != null ? (Minecraft.getInstance().player).getHealth() : currentHealth;
+            HealthBarRenderer.render(guiGraphics, player, maxHealth, actualHealth, absorptionAmount, this.minecraft.getFrameTime());
         } else {
             original.call(instance, guiGraphics, player, x, y, height, offsetHeartIndex, maxHealth, currentHealth, displayHealth, absorptionAmount, renderHighlight);
         }
