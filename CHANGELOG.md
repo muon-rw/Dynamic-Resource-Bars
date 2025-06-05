@@ -1,3 +1,8 @@
+## 0.4.0
+- Add mount health bar. Replaces stamina bar when mounted, but uses health text settings.
+- Added `stamina_bar_mounted`
+- Improved the default color of `health_bar_scorched`
+
 ## 0.3.0
 - Fix Health bar partial size only changing by whole-number health values on 1.20.1 Fabric
 - Add AppleSkin Compat
