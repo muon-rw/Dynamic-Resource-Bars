@@ -18,17 +18,14 @@ import dev.muon.dynamic_resource_bars.compat.AppleSkinCompat;
 
 import java.lang.reflect.Method;
 
+import vectorwing.farmersdelight.common.registry.ModEffects;
+
 public class HealthBarRenderer {
 
     private static float lastHealth = -1;
     private static long fullHealthStartTime = 0;
     private static boolean healthBarSetVisible = true; // Default to visible
     private static long healthBarDisabledStartTime = 0L;
-    
-    // AppleSkin pulsing effect fields
-    private static float unclampedFlashAlpha = 0f;
-    private static float flashAlpha = 0f;
-    private static byte alphaDir = 1;
 
     private enum BarType {
         NORMAL("health_bar"),
@@ -258,8 +255,7 @@ public class HealthBarRenderer {
         renderTemperatureOverlay(graphics, tempScale, barAbsX + barXOffset, barAbsY + barYOffset, barAbsWidth, barAbsHeight, 0, 0);
 
         if (absorptionAmount > 0) {
-            // Use pulsing opacity for absorption overlay
-            float pulseAlpha = 0.5f + (flashAlpha * 0.5f); // Range from 0.5 to 1.0
+            float pulseAlpha = 0.5f + (TickHandler.getOverlayFlashAlpha() * 0.5f);
             RenderSystem.setShaderColor(1.0f, 1.0f, 1.0f, pulseAlpha);
             
             graphics.blit(
@@ -270,6 +266,35 @@ public class HealthBarRenderer {
             );
             RenderSystem.setShaderColor(1.0f, 1.0f, 1.0f, 1.0f);
         }
+
+        if (PlatformUtil.isModLoaded("farmersdelight") && hasComfortEffect(player)) {
+            if (player.getFoodData().getSaturationLevel() == 0.0F && player.isHurt() && !player.hasEffect(MobEffects.REGENERATION)) {
+                float pulseAlpha = TickHandler.getOverlayFlashAlpha();
+                RenderSystem.setShaderColor(1.0f, 1.0f, 1.0f, pulseAlpha);
+                
+                graphics.blit(
+                        DynamicResourceBars.loc("textures/gui/comfort_overlay.png"),
+                        barAbsX + barXOffset, barAbsY + barYOffset,
+                        0, 0, barAbsWidth, barAbsHeight,
+                        256, 256
+                );
+                RenderSystem.setShaderColor(1.0f, 1.0f, 1.0f, 1.0f);
+            }
+        }
+
+        if (player.hasEffect(MobEffects.REGENERATION)) {
+            float pulseAlpha = TickHandler.getOverlayFlashAlpha();
+            RenderSystem.setShaderColor(1.0f, 1.0f, 1.0f, pulseAlpha);
+            
+            graphics.blit(
+                    DynamicResourceBars.loc("textures/gui/regeneration_overlay.png"),
+                    barAbsX + barXOffset, barAbsY + barYOffset,
+                    0, 0, barAbsWidth, barAbsHeight,
+                    256, 256
+            );
+            RenderSystem.setShaderColor(1.0f, 1.0f, 1.0f, 1.0f);
+        }
+        
         RenderSystem.disableBlend();
     }
 
@@ -468,26 +493,6 @@ public class HealthBarRenderer {
     }
     
     // AppleSkin compatibility methods
-    public static void updateFlashAlpha() {
-        unclampedFlashAlpha += alphaDir * 0.0625F; // Slow animation to match StaminaBar
-        if (unclampedFlashAlpha >= 1.5F) {
-            alphaDir = -1;
-        } else if (unclampedFlashAlpha <= -0.5F) {
-            alphaDir = 1;
-        }
-        // Max alpha of 0.5 for the pulsing effect
-        flashAlpha = Math.max(0F, Math.min(1F, unclampedFlashAlpha)) * 0.5F;
-    }
-    
-    private static void resetFlash() {
-        unclampedFlashAlpha = flashAlpha = 0;
-        alphaDir = 1;
-    }
-    
-    public static float getFlashAlpha() {
-        return flashAlpha;
-    }
-    
     private static ItemStack getHeldFood(Player player) {
         ItemStack mainHand = player.getItemInHand(net.minecraft.world.InteractionHand.MAIN_HAND);
         if (AppleSkinCompat.canConsume(mainHand, player)) {
@@ -511,17 +516,14 @@ public class HealthBarRenderer {
         
         float healthRestoration = AppleSkinCompat.getEstimatedHealthRestoration(heldFood, player);
         if (healthRestoration <= 0 || currentHealth >= maxHealth) {
-            resetFlash();
             return;
         }
         
         float restoredHealth = Math.min(maxHealth, currentHealth + healthRestoration);
         
-        // Flash alpha is updated elsewhere, just use current value
-        
         RenderSystem.enableBlend();
         RenderSystem.defaultBlendFunc();
-        RenderSystem.setShaderColor(1.0f, 1.0f, 1.0f, flashAlpha);
+        RenderSystem.setShaderColor(1.0f, 1.0f, 1.0f, TickHandler.getOverlayFlashAlpha());
         
         FillDirection fillDirection = ModConfigManager.getClient().healthFillDirection;
         // Use the bar type based on the player's current state
@@ -562,5 +564,20 @@ public class HealthBarRenderer {
         
         RenderSystem.setShaderColor(1.0f, 1.0f, 1.0f, 1.0f);
         RenderSystem.disableBlend();
+    }
+    
+    private static boolean hasComfortEffect(Player player) {
+        #if UPTO_20_1
+            // 1.20.1 Forge: RegistryObject<MobEffect>
+            // 1.20.1 Fabric: Supplier<MobEffect>
+        var comfortEffect = ModEffects.COMFORT.get();
+        return player.hasEffect(comfortEffect);
+        #elif NEWER_THAN_20_1
+            // 1.21.1 Fabric/NeoForge - Holder<MobEffect>
+        var comfortEffect = ModEffects.COMFORT;
+        return player.hasEffect(comfortEffect);
+        #else
+        return false;
+        #endif
     }
 }

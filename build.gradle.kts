@@ -47,6 +47,9 @@ blahaj {
 		if (project.hasProperty("clothconfig")) { deps.modRuntimeOnly("me.shedaniel.cloth:cloth-config-$loader:${property("clothconfig")}") }
 		deps.modImplementation("squeek.appleskin:appleskin-$loader:${property("appleskin")}")
 
+		// Farmer's Delight
+		if (project.hasProperty("farmersdelight_forge")) { deps.modImplementation("maven.modrinth:farmers-delight:$mc-${property("farmersdelight_forge")}-$loader") }
+		if (project.hasProperty("farmersdelight_fabric")) { deps.modImplementation("vectorwing:FarmersDelight:$mc-${property("farmersdelight_fabric")}+refabricated") }
 
 		// Publishing
 		addRequiredMod("puzzleslib")
@@ -75,6 +78,23 @@ repositories {
 		url = uri("https://code.redspace.io/snapshots")
 		content {
 			includeGroup("io.redspace")
+		}
+	}
+
+	// Farmer's Delight + Refabricated
+	maven("https://repo.greenhouse.house/releases/")
+	maven("https://repo.greenhouse.house/snapshots/")
+	maven("https://mvn.devos.one/releases/")
+	maven {
+		url = uri("https://maven.jamieswhiteshirt.com/libs-release")
+		content {
+			includeGroup("com.jamieswhiteshirt")
+		}
+	}
+	maven {
+		url = uri("https://jitpack.io/")
+		content {
+			excludeGroup("io.github.fabricators_of_create")
 		}
 	}
 }
