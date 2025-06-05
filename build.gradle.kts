@@ -38,7 +38,6 @@ blahaj {
 		deps.modImplementation("fuzs.puzzleslib:puzzleslib-$loader:${property("puzzleslib")}")
 
 		// Integrations
-		// TODO: Farmer's Delight
 		// TODO: Mana: Ars Nouveau, Iron's Spellbooks, RPGMana, Mana Attributes
 		// Frostiful, Scorchful
 		if (project.hasProperty("thermoo")) { deps.modImplementation("maven.modrinth:thermoo:${property("thermoo")}-$mc") }
