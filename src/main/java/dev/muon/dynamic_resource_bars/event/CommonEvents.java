@@ -91,5 +91,15 @@ public class CommonEvents {
         }
         return EventResult.INTERRUPT;
     }
+
+    public static EventResult onRenderMountHealth(Minecraft minecraft, GuiGraphics guiGraphics, DeltaTracker deltaTracker) {
+        var config = ModConfigManager.getClient();
+        // Cancel mount health rendering if stamina bar is enabled (since it handles mount health)
+        if (!config.enableStaminaBar) {
+            return EventResult.PASS;
+        }
+
+        return EventResult.INTERRUPT;
+    }
 }
 #endif

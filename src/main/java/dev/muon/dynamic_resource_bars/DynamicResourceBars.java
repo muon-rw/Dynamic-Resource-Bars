@@ -80,6 +80,8 @@ public class DynamicResourceBars #if FABRIC implements ClientModInitializer, Mod
             RenderGuiLayerEvents.before(RenderGuiLayerEvents.PLAYER_HEALTH).register(CommonEvents::onRenderPlayerHealth);
             RenderGuiLayerEvents.before(RenderGuiLayerEvents.FOOD_LEVEL).register(CommonEvents::onRenderHunger);
             RenderGuiLayerEvents.before(RenderGuiLayerEvents.ARMOR_LEVEL).register(CommonEvents::onRenderArmor);
+            RenderGuiLayerEvents.before(RenderGuiLayerEvents.AIR_LEVEL).register(CommonEvents::onRenderAir);
+            RenderGuiLayerEvents.before(RenderGuiLayerEvents.VEHICLE_HEALTH).register(CommonEvents::onRenderMountHealth);
         #endif
     }
 

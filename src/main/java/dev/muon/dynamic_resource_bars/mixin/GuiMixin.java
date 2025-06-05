@@ -59,9 +59,6 @@ public abstract class GuiMixin {
         }
         return originalY;
     }
-    // TODO: Air shift by needed
-    // TODO: Add logic here to hide vanilla armor if !showVanillaArmorInsteadOfCustom for 1.21.1+
-    // This might involve a @ModifyVariable on armorValue or an @Inject to cancel renderArmor similar to 1.20.1.
 
     #endif
 
@@ -108,13 +105,13 @@ public abstract class GuiMixin {
         Player player = this.minecraft.player;
         ClientConfig config = ModConfigManager.getClient();
 
-        // On Fabric 1.20.1, this toggle will be combined into one config value
+        // On Fabric 1.20.1, this toggle will be combined into one config value.
+        // TODO: Maybe use more precise mixin targets. Low priority because the target method fills me with rage.
         if (player != null && config.enableStaminaBar) {
             StaminaBarRenderer.render(guiGraphics, player, this.minecraft.getFrameTime());
             AirBarRenderer.render(guiGraphics, player);
             ci.cancel();
         }
-
     }
 
     @ModifyExpressionValue(
@@ -128,6 +125,15 @@ public abstract class GuiMixin {
             return 0;
         }
         return originalArmorValue;
+    }
+
+    @Inject(method = "renderVehicleHealth(Lnet/minecraft/client/gui/GuiGraphics;)V",
+            at = @At(value = "HEAD"), cancellable = true)
+    private void hideMountHealth(GuiGraphics guiGraphics, CallbackInfo ci) {
+        ClientConfig config = ModConfigManager.getClient();
+        if (config.enableStaminaBar) {
+            ci.cancel();
+        }
     }
     #endif
 }

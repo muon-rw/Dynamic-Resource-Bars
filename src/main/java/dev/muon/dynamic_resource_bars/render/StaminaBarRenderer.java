@@ -25,12 +25,18 @@ public class StaminaBarRenderer {
     private static long fullStaminaStartTime = 0;
     private static boolean staminaBarSetVisible = true; // Default to visible
     private static long staminaBarDisabledStartTime = 0L;
+    
+    // Mount health tracking
+    private static float lastMountHealth = -1;
+    private static float lastMountMaxHealth = -1;
+    private static long fullMountHealthStartTime = 0;
 
     private enum BarType {
         NORMAL("stamina_bar"),
         NOURISHED("stamina_bar_nourished"),
         HUNGER("stamina_bar_hunger"),
-        CRITICAL("stamina_bar_critical");
+        CRITICAL("stamina_bar_critical"),
+        MOUNTED("stamina_bar_mounted");
 
         private final String texture;
 
@@ -42,12 +48,21 @@ public class StaminaBarRenderer {
             return texture;
         }
 
-        public static BarType fromPlayerState(Player player, float stamina) {
+        public static BarType fromPlayerState(Player player, float value) {
+            // Check if player is riding a living mount first
+            if (player.getVehicle() instanceof net.minecraft.world.entity.LivingEntity mount) {
+                float healthPercentage = value / mount.getMaxHealth();
+                if (healthPercentage <= 0.2f) { // 20% or less
+                    return CRITICAL;
+                }
+                return MOUNTED;
+            }
+            
             if (PlatformUtil.isModLoaded("farmersdelight") && hasNourishmentEffect(player)) {
                 return NOURISHED;
             }
             if (player.hasEffect(MobEffects.HUNGER)) return HUNGER;
-            if (stamina <= CRITICAL_THRESHOLD) return CRITICAL;
+            if (value <= CRITICAL_THRESHOLD) return CRITICAL;
             return NORMAL;
         }
 
@@ -92,7 +107,16 @@ public class StaminaBarRenderer {
     }
 
     public static void render(GuiGraphics graphics, Player player, #if NEWER_THAN_20_1 DeltaTracker deltaTracker #else float partialTicks #endif ) {
-        boolean shouldFade = ModConfigManager.getClient().fadeStaminaWhenFull && player.getFoodData().getFoodLevel() >= 20;
+        // Check if player is mounted on a living entity
+        net.minecraft.world.entity.LivingEntity mount = null;
+        boolean isMounted = false;
+        if (player.getVehicle() instanceof net.minecraft.world.entity.LivingEntity livingMount) {
+            mount = livingMount;
+            isMounted = true;
+        }
+        
+        // Only apply fade logic when not mounted
+        boolean shouldFade = !isMounted && ModConfigManager.getClient().fadeStaminaWhenFull && player.getFoodData().getFoodLevel() >= 20;
         setStaminaBarVisibility(!shouldFade || EditModeManager.isEditModeEnabled());
 
         if (!isStaminaBarVisible() && !EditModeManager.isEditModeEnabled() && (System.currentTimeMillis() - staminaBarDisabledStartTime) > RenderUtil.BAR_FADEOUT_DURATION) {
@@ -127,33 +151,43 @@ public class StaminaBarRenderer {
             );
         }
 
-        float maxStamina = 20f;
-        float currentStamina = player.getFoodData().getFoodLevel();
+        float maxValue = 20f;
+        float currentValue = player.getFoodData().getFoodLevel();
+        
+        // Use mount health values if mounted
+        if (isMounted && mount != null) {
+            maxValue = mount.getMaxHealth();
+            currentValue = mount.getHealth();
+        }
+        
         ScreenRect barRect = getSubElementRect(SubElementType.BAR_MAIN, player);
-        renderBaseBar(graphics, player, currentStamina, maxStamina,
+        renderBaseBar(graphics, player, currentValue, maxValue,
                 barRect,
                 animOffset, isRightAnchored);
 
-        if (AppleSkinCompat.isLoaded()) {
-            ItemStack heldFood = getHeldFood(player);
-            renderHungerRestoredOverlay(graphics, player, heldFood, barRect, #if NEWER_THAN_20_1 deltaTracker.getGameTimeDeltaTicks() #else partialTicks #endif , animOffset);
-            renderSaturationOverlay(graphics, player, barRect, animOffset);
-        }
+        // Only render overlays if not mounted
+        if (!isMounted) {
+            if (AppleSkinCompat.isLoaded()) {
+                ItemStack heldFood = getHeldFood(player);
+                renderHungerRestoredOverlay(graphics, player, heldFood, barRect, #if NEWER_THAN_20_1 deltaTracker.getGameTimeDeltaTicks() #else partialTicks #endif , animOffset);
+                renderSaturationOverlay(graphics, player, barRect, animOffset);
+            }
 
-        if (PlatformUtil.isModLoaded("farmersdelight") && hasNourishmentEffect(player)) {
-            RenderSystem.enableBlend();
-            RenderSystem.defaultBlendFunc();
-            float pulseAlpha = TickHandler.getOverlayFlashAlpha();
-            RenderSystem.setShaderColor(1.0f, 1.0f, 1.0f, pulseAlpha);
+            if (PlatformUtil.isModLoaded("farmersdelight") && hasNourishmentEffect(player)) {
+                RenderSystem.enableBlend();
+                RenderSystem.defaultBlendFunc();
+                float pulseAlpha = TickHandler.getOverlayFlashAlpha();
+                RenderSystem.setShaderColor(1.0f, 1.0f, 1.0f, pulseAlpha);
 
-            graphics.blit(
-                    DynamicResourceBars.loc("textures/gui/nourishment_overlay.png"),
-                    barRect.x(), barRect.y(),
-                    0, 0, barRect.width(), barRect.height(),
-                    256, 256
-            );
-            RenderSystem.setShaderColor(1.0f, 1.0f, 1.0f, 1.0f);
-            RenderSystem.disableBlend();
+                graphics.blit(
+                        DynamicResourceBars.loc("textures/gui/nourishment_overlay.png"),
+                        barRect.x(), barRect.y(),
+                        0, 0, barRect.width(), barRect.height(),
+                        256, 256
+                );
+                RenderSystem.setShaderColor(1.0f, 1.0f, 1.0f, 1.0f);
+                RenderSystem.disableBlend();
+            }
         }
 
         if (ModConfigManager.getClient().enableStaminaForeground) {
@@ -168,9 +202,11 @@ public class StaminaBarRenderer {
 
         RenderSystem.setShaderColor(1.0f, 1.0f, 1.0f, 1.0f);
 
-        if (shouldRenderStaminaText(currentStamina, maxStamina, player)) {
-            int color = getStaminaTextColor(currentStamina, maxStamina);
-            HorizontalAlignment alignment = ModConfigManager.getClient().staminaTextAlign;
+        if (shouldRenderStaminaText(currentValue, maxValue, player, isMounted)) {
+            int color = getStaminaTextColor(currentValue, maxValue, isMounted);
+            HorizontalAlignment alignment = isMounted ? 
+                ModConfigManager.getClient().healthTextAlign :
+                ModConfigManager.getClient().staminaTextAlign;
 
             int baseX = barRect.x();
             if (alignment == HorizontalAlignment.CENTER) {
@@ -181,7 +217,7 @@ public class StaminaBarRenderer {
 
             int baseY = barRect.y() + (barRect.height() / 2);
 
-            RenderUtil.renderText(currentStamina, maxStamina, graphics, baseX, baseY, color, alignment);
+            RenderUtil.renderText(currentValue, maxValue, graphics, baseX, baseY, color, alignment);
         }
 
         if (EditModeManager.isEditModeEnabled()) {
@@ -262,36 +298,67 @@ public class StaminaBarRenderer {
         }
     }
 
-    private static boolean shouldRenderStaminaText(float currentStamina, float maxStamina, Player player) {
-        TextBehavior textBehavior = ModConfigManager.getClient().showStaminaText;
+    private static boolean shouldRenderStaminaText(float currentValue, float maxValue, Player player, boolean isMounted) {
+        TextBehavior textBehavior = isMounted ? 
+            ModConfigManager.getClient().showHealthText : 
+            ModConfigManager.getClient().showStaminaText;
+            
         if (textBehavior == TextBehavior.NEVER) {
             return false;
         }
         if (textBehavior == TextBehavior.ALWAYS) {
             return true;
         }
+        
         // WHEN_NOT_FULL logic
-        boolean isFull = currentStamina >= maxStamina;
-        if (isFull) {
-            if (lastStamina < maxStamina || lastStamina == -1) { // Just became full or first check
-                fullStaminaStartTime = System.currentTimeMillis(); // Use System.currentTimeMillis()
+        if (isMounted) {
+            // Handle mount health separately
+            boolean isFull = currentValue >= maxValue;
+            if (isFull) {
+                // Check if just became full or values changed
+                if (lastMountHealth < maxValue || lastMountMaxHealth != maxValue || lastMountHealth == -1) {
+                    fullMountHealthStartTime = System.currentTimeMillis();
+                }
+                lastMountHealth = currentValue;
+                lastMountMaxHealth = maxValue;
+                // Show for a short duration after becoming full
+                return (System.currentTimeMillis() - fullMountHealthStartTime) < RenderUtil.TEXT_DISPLAY_DURATION;
+            } else {
+                lastMountHealth = currentValue;
+                lastMountMaxHealth = maxValue;
+                return true; // Not full, so show
             }
-            lastStamina = currentStamina;
-            // Show for a short duration after becoming full
-            return (System.currentTimeMillis() - fullStaminaStartTime) < RenderUtil.TEXT_DISPLAY_DURATION;
         } else {
-            lastStamina = currentStamina;
-            return true; // Not full, so show
+            // Handle stamina normally
+            boolean isFull = currentValue >= maxValue;
+            if (isFull) {
+                if (lastStamina < maxValue || lastStamina == -1) { // Just became full or first check
+                    fullStaminaStartTime = System.currentTimeMillis();
+                }
+                lastStamina = currentValue;
+                // Show for a short duration after becoming full
+                return (System.currentTimeMillis() - fullStaminaStartTime) < RenderUtil.TEXT_DISPLAY_DURATION;
+            } else {
+                lastStamina = currentValue;
+                return true; // Not full, so show
+            }
         }
     }
 
-    private static int getStaminaTextColor(float currentStamina, float maxStamina) {
-        TextBehavior textBehavior = ModConfigManager.getClient().showStaminaText;
+    private static int getStaminaTextColor(float currentValue, float maxValue, boolean isMounted) {
+        TextBehavior textBehavior = isMounted ? 
+            ModConfigManager.getClient().showHealthText : 
+            ModConfigManager.getClient().showStaminaText;
         int baseColor = 0xFFFFFF; // White
         int alpha = RenderUtil.BASE_TEXT_ALPHA;
 
-        if (textBehavior == TextBehavior.WHEN_NOT_FULL && currentStamina >= maxStamina) {
-            long timeSinceFull = System.currentTimeMillis() - fullStaminaStartTime;
+        if (textBehavior == TextBehavior.WHEN_NOT_FULL && currentValue >= maxValue) {
+            long timeSinceFull;
+            if (isMounted) {
+                timeSinceFull = System.currentTimeMillis() - fullMountHealthStartTime;
+            } else {
+                timeSinceFull = System.currentTimeMillis() - fullStaminaStartTime;
+            }
             alpha = RenderUtil.calculateTextAlpha(timeSinceFull);
         }
 

@@ -25,6 +25,11 @@ public class ForgeEvents {
             event.setCanceled(true);
         }
         
+        // Cancel mount health when stamina bar is enabled (since it renders mount health)
+        if (config.enableStaminaBar && event.getOverlay() == VanillaGuiOverlay.MOUNT_HEALTH.type()) {
+            event.setCanceled(true);
+        }
+        
         if (event.getOverlay() == VanillaGuiOverlay.ARMOR_LEVEL.type()) {
             if (config.armorBarBehavior == BarRenderBehavior.CUSTOM ||
                 config.armorBarBehavior == BarRenderBehavior.HIDDEN) {

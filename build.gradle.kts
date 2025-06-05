@@ -38,7 +38,7 @@ blahaj {
 		deps.modImplementation("fuzs.puzzleslib:puzzleslib-$loader:${property("puzzleslib")}")
 
 		// Integrations
-		// TODO: Mana: Ars Nouveau, Iron's Spellbooks, RPGMana, Mana Attributes
+		// TODO: Mana: Ars Nouveau, Iron's Spellbooks, RPGMana, Mana Attributes, Archon?
 		// Frostiful, Scorchful
 		if (project.hasProperty("thermoo")) { deps.modImplementation("maven.modrinth:thermoo:${property("thermoo")}-$mc") }
 
@@ -51,7 +51,7 @@ blahaj {
 		if (project.hasProperty("farmersdelight_fabric")) { deps.modImplementation("vectorwing:FarmersDelight:$mc-${property("farmersdelight_fabric")}+refabricated") }
 
 		// Publishing
-		addRequiredMod("puzzleslib")
+		addRequiredMod("puzzles-lib")
 			.modrinth("puzzles-lib") // override with Modrinth URL slug
 			.addPlatform("1.21.1-neoforge", "v21.1.36-1.21.1-NeoForge") { required() }
 			.addPlatform("1.21.1-fabric", "v21.1.36-1.21.1-Fabric") { required() }
@@ -67,6 +67,8 @@ repositories {
 	maven("https://maven.shedaniel.me/")
 	maven("https://maven.terraformersmc.com/releases/")
 	maven("https://maven.kosmx.dev/")
+
+	// Iron's Spellbooks
 	maven {
 		url = uri("https://code.redspace.io/releases")
 		content {
