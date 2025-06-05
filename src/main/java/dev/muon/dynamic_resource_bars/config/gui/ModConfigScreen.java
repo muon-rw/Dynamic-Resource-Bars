@@ -26,9 +26,8 @@ public class ModConfigScreen extends Screen {
         int centerX = this.width / 2;
         int currentY = this.height / 4;
 
-        // Button to open the HUD Editor
         Minecraft mc = Minecraft.getInstance();
-        boolean canEditHUD = mc.level != null; // Check if world is loaded
+        boolean canEditHUD = mc.level != null;
 
         Button editHudButton = Button.builder(
                 Component.translatable("gui.dynamic_resource_bars.config.button.open_hud_editor"),
@@ -41,8 +40,7 @@ public class ModConfigScreen extends Screen {
                 .build();
         
         editHudButton.active = canEditHUD; 
-        
-        // Add tooltip if disabled
+
         if (!canEditHUD) {
              editHudButton.setTooltip(Tooltip.create(Component.translatable("gui.dynamic_resource_bars.config.tooltip.hud_editor_disabled")));
         }

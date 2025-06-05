@@ -1,0 +1,40 @@
+package dev.muon.dynamic_resource_bars.compat;
+
+#if FABRIC && NEWER_THAN_20_1
+import dev.muon.dynamic_resource_bars.config.ModConfigManager;
+import squeek.appleskin.api.event.HUDOverlayEvent;
+#endif
+public class AppleSkinFabricEventHandler {
+    #if FABRIC && NEWER_THAN_20_1
+
+    public static void init() {
+        if (!AppleSkinCompat.isLoaded()) {
+            return;
+        }
+
+        HUDOverlayEvent.HungerRestored.EVENT.register(event -> {
+            if (ModConfigManager.getClient().enableStaminaBar) {
+                event.isCanceled = true;
+            }
+        });
+        
+        HUDOverlayEvent.Saturation.EVENT.register(event -> {
+            if (ModConfigManager.getClient().enableStaminaBar) {
+                event.isCanceled = true;
+            }
+        });
+        
+        HUDOverlayEvent.HealthRestored.EVENT.register(event -> {
+            if (ModConfigManager.getClient().enableHealthBar) {
+                event.isCanceled = true;
+            }
+        });
+        
+        HUDOverlayEvent.Exhaustion.EVENT.register(event -> {
+            if (ModConfigManager.getClient().enableStaminaBar) {
+                event.isCanceled = true;
+            }
+        });
+    }
+    #endif
+}

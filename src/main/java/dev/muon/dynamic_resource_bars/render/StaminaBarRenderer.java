@@ -12,6 +12,8 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.world.effect.MobEffects;
 import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.item.ItemStack;
+import dev.muon.dynamic_resource_bars.compat.AppleSkinCompat;
 
 #if NEWER_THAN_20_1
     import net.minecraft.client.DeltaTracker;
@@ -30,6 +32,11 @@ public class StaminaBarRenderer {
     private static long fullStaminaStartTime = 0;
     private static boolean staminaBarSetVisible = true; // Default to visible
     private static long staminaBarDisabledStartTime = 0L;
+    
+    // AppleSkin pulsing effect fields
+    private static float unclampedFlashAlpha = 0f;
+    private static float flashAlpha = 0f;
+    private static byte alphaDir = 1;
     // TODO: Appleskin compat
     // TODO: Pulse when hunger drains a tick, similar to vanilla shake
 
@@ -133,6 +140,16 @@ public class StaminaBarRenderer {
         renderBaseBar(graphics, player, currentStamina, maxStamina, 
                       barRect,
                       animOffset, isRightAnchored);
+
+        // Render AppleSkin overlays
+        if (AppleSkinCompat.isLoaded()) {
+            // Get held food item for hunger restored overlay
+            ItemStack heldFood = getHeldFood(player);
+            renderHungerRestoredOverlay(graphics, player, heldFood, barRect, #if NEWER_THAN_20_1 deltaTracker.getGameTimeDeltaTicks() #else partialTicks #endif, animOffset);
+            
+            // Render saturation overlay
+            renderSaturationOverlay(graphics, player, barRect, animOffset);
+        }
 
         if (ModConfigManager.getClient().enableStaminaForeground) {
              ScreenRect fgRect = getSubElementRect(SubElementType.FOREGROUND_DETAIL, player);
@@ -301,5 +318,172 @@ public class StaminaBarRenderer {
             return 0.0f;
         }
         return Math.max(0.0f, 1.0f - (timeSinceDisabled / (float) RenderUtil.BAR_FADEOUT_DURATION));
+    }
+
+    // AppleSkin overlay rendering methods
+    private static void renderSaturationOverlay(GuiGraphics graphics, Player player, ScreenRect barRect, int animOffset) {
+        if (!AppleSkinCompat.isLoaded()) {
+            return;
+        }
+        
+        float saturation = player.getFoodData().getSaturationLevel();
+        if (saturation <= 0) return;
+        
+        RenderSystem.enableBlend();
+        RenderSystem.defaultBlendFunc();
+        
+        float saturationPercent = Math.min(1.0f, saturation / 20f);
+        FillDirection fillDirection = ModConfigManager.getClient().staminaFillDirection;
+        boolean isRightAnchored = ModConfigManager.getClient().staminaBarAnchor.getSide() == HUDPositioning.AnchorSide.RIGHT;
+        
+        // Use pulsing opacity instead of frame animation
+        float pulseAlpha = 0.5f + (flashAlpha * 0.5f); // Range from 0.5 to 1.0
+        RenderSystem.setShaderColor(1.0f, 1.0f, 1.0f, pulseAlpha);
+        
+        if (fillDirection == FillDirection.VERTICAL) {
+            int overlayHeight = (int) (barRect.height() * saturationPercent);
+            if (overlayHeight > 0) {
+                graphics.blit(
+                    DynamicResourceBars.loc("textures/gui/protection_overlay.png"), // Placeholder texture
+                    barRect.x(), 
+                    barRect.y() + (barRect.height() - overlayHeight),
+                    0, 0,
+                    barRect.width(), overlayHeight,
+                    256, 256
+                );
+            }
+        } else { // HORIZONTAL
+            int overlayWidth = (int) (barRect.width() * saturationPercent);
+            if (overlayWidth > 0) {
+                int xPos = isRightAnchored ? 
+                    barRect.x() + barRect.width() - overlayWidth : 
+                    barRect.x();
+                    
+                graphics.blit(
+                    DynamicResourceBars.loc("textures/gui/protection_overlay.png"), // Placeholder texture
+                    xPos, barRect.y(),
+                    0, 0,
+                    overlayWidth, barRect.height(),
+                    256, 256
+                );
+            }
+        }
+        
+        RenderSystem.setShaderColor(1.0f, 1.0f, 1.0f, 1.0f);
+        RenderSystem.disableBlend();
+    }
+    
+    private static void renderHungerRestoredOverlay(GuiGraphics graphics, Player player, ItemStack heldFood, 
+                                                   ScreenRect barRect, float partialTicks, int animOffset) {
+        if (!AppleSkinCompat.isLoaded()) {
+            return;
+        }
+        
+        AppleSkinCompat.FoodData foodData = AppleSkinCompat.getFoodValues(heldFood, player);
+        if (foodData.isEmpty()) {
+            resetFlash();
+            return;
+        }
+        
+        float currentHunger = player.getFoodData().getFoodLevel();
+        float restoredHunger = Math.min(20f, currentHunger + foodData.hunger);
+        
+        if (restoredHunger <= currentHunger) {
+            resetFlash();
+            return;
+        }
+        
+        // Flash alpha is updated elsewhere, just use current value
+        
+        RenderSystem.enableBlend();
+        RenderSystem.defaultBlendFunc();
+        RenderSystem.setShaderColor(1.0f, 1.0f, 1.0f, flashAlpha);
+        
+        FillDirection fillDirection = ModConfigManager.getClient().staminaFillDirection;
+        // Use the bar type that would apply at the restored hunger level
+        BarType barType = BarType.fromPlayerState(player, restoredHunger);
+        boolean isRightAnchored = ModConfigManager.getClient().staminaBarAnchor.getSide() == HUDPositioning.AnchorSide.RIGHT;
+        
+        if (fillDirection == FillDirection.VERTICAL) {
+            int currentHeight = (int) (barRect.height() * (currentHunger / 20f));
+            int restoredHeight = (int) (barRect.height() * (restoredHunger / 20f));
+            int overlayHeight = restoredHeight - currentHeight;
+            
+            if (overlayHeight > 0) {
+                int yPos = barRect.y() + (barRect.height() - restoredHeight);
+                int textureVOffset = animOffset + (barRect.height() - restoredHeight);
+                
+                graphics.blit(
+                    DynamicResourceBars.loc("textures/gui/" + barType.getTexture() + ".png"),
+                    barRect.x(), yPos,
+                    0, textureVOffset,
+                    barRect.width(), overlayHeight,
+                    256, 1024
+                );
+            }
+        } else { // HORIZONTAL
+            int currentWidth = (int) (barRect.width() * (currentHunger / 20f));
+            int restoredWidth = (int) (barRect.width() * (restoredHunger / 20f));
+            int overlayWidth = restoredWidth - currentWidth;
+            
+            if (overlayWidth > 0) {
+                int xPos;
+                if (isRightAnchored) {
+                    // For right-anchored bars, we need to position from the right
+                    int currentFromRight = barRect.width() - currentWidth;
+                    int restoredFromRight = barRect.width() - restoredWidth;
+                    xPos = barRect.x() + restoredFromRight;
+                } else {
+                    // For left-anchored bars, overlay starts where current ends
+                    xPos = barRect.x() + currentWidth;
+                }
+                
+                graphics.blit(
+                    DynamicResourceBars.loc("textures/gui/" + barType.getTexture() + ".png"),
+                    xPos, barRect.y(),
+                    isRightAnchored ? 0 : currentWidth, animOffset,
+                    overlayWidth, barRect.height(),
+                    256, 1024
+                );
+            }
+        }
+        
+        RenderSystem.setShaderColor(1.0f, 1.0f, 1.0f, 1.0f);
+        RenderSystem.disableBlend();
+    }
+    
+    // AppleSkin compatibility methods
+    public static void updateFlashAlpha() {
+        unclampedFlashAlpha += alphaDir * 0.0625F;
+        if (unclampedFlashAlpha >= 1.5F) {
+            alphaDir = -1;
+        } else if (unclampedFlashAlpha <= -0.5F) {
+            alphaDir = 1;
+        }
+        // Max alpha of 0.5 for the pulsing effect
+        flashAlpha = Math.max(0F, Math.min(1F, unclampedFlashAlpha)) * 0.5F;
+    }
+    
+    private static void resetFlash() {
+        unclampedFlashAlpha = flashAlpha = 0;
+        alphaDir = 1;
+    }
+    
+    public static float getFlashAlpha() {
+        return flashAlpha;
+    }
+    
+    private static ItemStack getHeldFood(Player player) {
+        ItemStack mainHand = player.getItemInHand(net.minecraft.world.InteractionHand.MAIN_HAND);
+        if (AppleSkinCompat.canConsume(mainHand, player)) {
+            return mainHand;
+        }
+        
+        ItemStack offHand = player.getItemInHand(net.minecraft.world.InteractionHand.OFF_HAND);
+        if (AppleSkinCompat.canConsume(offHand, player)) {
+            return offHand;
+        }
+        
+        return ItemStack.EMPTY;
     }
 }

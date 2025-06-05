@@ -1,7 +1,9 @@
 package dev.muon.dynamic_resource_bars;
 
+import dev.muon.dynamic_resource_bars.compat.AppleSkinFabricEventHandler;
 import dev.muon.dynamic_resource_bars.config.gui.ModConfigScreen;
 import dev.muon.dynamic_resource_bars.config.ModConfigManager;
+import dev.muon.dynamic_resource_bars.util.TickHandler;
 import net.minecraft.resources.ResourceLocation;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -15,6 +17,7 @@ import org.apache.logging.log4j.Logger;
     import net.fabricmc.api.ClientModInitializer;
     import com.terraformersmc.modmenu.api.ConfigScreenFactory;
     import com.terraformersmc.modmenu.api.ModMenuApi;
+    import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
 #endif
 
 #if FORGE
@@ -22,6 +25,9 @@ import org.apache.logging.log4j.Logger;
     import net.minecraftforge.fml.event.lifecycle.FMLClientSetupEvent;
     import net.minecraftforge.fml.javafmlmod.FMLJavaModLoadingContext;
     import net.minecraftforge.client.ConfigScreenHandler;
+    import net.minecraftforge.common.MinecraftForge;
+    import net.minecraftforge.event.TickEvent;
+    import net.minecraftforge.eventbus.api.SubscribeEvent;
 #endif
 
 #if NEO
@@ -30,6 +36,9 @@ import org.apache.logging.log4j.Logger;
     import net.neoforged.bus.api.IEventBus;
     import net.neoforged.fml.ModContainer;
     import net.neoforged.neoforge.client.gui.IConfigScreenFactory;
+    import net.neoforged.neoforge.client.event.ClientTickEvent;
+    import net.neoforged.neoforge.common.NeoForge;
+    import net.neoforged.bus.api.SubscribeEvent;
 #endif
 
 #if FORGELIKE
@@ -77,6 +86,12 @@ public class DynamicResourceBars #if FABRIC implements ClientModInitializer, Mod
     #if FABRIC @Override #endif
     public void onInitializeClient() {
         ModConfigManager.initializeConfig();
+        #if FABRIC
+        ClientTickEvents.END_CLIENT_TICK.register(client -> TickHandler.onClientTick());
+            #if NEWER_THAN_20_1
+            AppleSkinFabricEventHandler.init();
+            #endif
+        #endif
     }
 
     #if FORGELIKE
@@ -84,6 +99,23 @@ public class DynamicResourceBars #if FABRIC implements ClientModInitializer, Mod
         event.enqueueWork(() -> {
             onInitializeClient();
         });
+        
+        #if FORGE
+        MinecraftForge.EVENT_BUS.register(this);
+        #elif NEO
+        NeoForge.EVENT_BUS.register(this);
+        #endif
+    }
+
+    @SubscribeEvent
+    #if FORGE
+    public void onClientTick(TickEvent.ClientTickEvent event) {
+        if (event.phase == TickEvent.Phase.END) {
+    #elif NEO
+    public void onClientTick(ClientTickEvent.Post event) {
+    #endif
+            TickHandler.onClientTick();
+    #if FORGE } #endif
     }
     #endif
 }

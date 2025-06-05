@@ -1,8 +1,8 @@
-import toni.blahaj.setup.implementation
-import toni.blahaj.setup.include
 import org.gradle.api.Project
 import org.gradle.api.tasks.SourceSetContainer
-import toni.blahaj.setup.compileOnly
+import org.gradle.kotlin.dsl.annotationProcessor
+import org.gradle.kotlin.dsl.modRuntimeOnly
+import toni.blahaj.setup.*
 
 plugins {
 	id("toni.blahaj")
@@ -38,10 +38,15 @@ blahaj {
 		deps.modImplementation("fuzs.puzzleslib:puzzleslib-$loader:${property("puzzleslib")}")
 
 		// Integrations
-		// TODO: Appleskin, Farmer's Delight
+		// TODO: Farmer's Delight
 		// TODO: Mana: Ars Nouveau, Iron's Spellbooks, RPGMana, Mana Attributes
-		//deps.compileOnly("")
+		// Frostiful, Scorchful
 		if (project.hasProperty("thermoo")) { deps.modImplementation("maven.modrinth:thermoo:${property("thermoo")}-$mc") }
+
+		// Appleskin
+		if (project.hasProperty("clothconfig")) { deps.modRuntimeOnly("me.shedaniel.cloth:cloth-config-$loader:${property("clothconfig")}") }
+		deps.modImplementation("squeek.appleskin:appleskin-$loader:${property("appleskin")}")
+
 
 		// Publishing
 		addRequiredMod("puzzleslib")
@@ -54,8 +59,11 @@ blahaj {
 }
 
 repositories {
+	maven("https://maven.ryanliptak.com/" ) // Appleskin
 	maven("https://maven.ladysnake.org/releases")
 	maven("https://dl.cloudsmith.io/public/geckolib3/geckolib/maven/")
+	maven("https://maven.shedaniel.me/")
+	maven("https://maven.terraformersmc.com/releases/")
 	maven("https://maven.kosmx.dev/")
 	maven {
 		url = uri("https://code.redspace.io/releases")

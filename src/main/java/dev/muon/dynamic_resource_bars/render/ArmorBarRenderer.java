@@ -27,6 +27,7 @@ import net.minecraft.client.DeltaTracker;
 #endif
 
 import dev.muon.dynamic_resource_bars.util.SubElementType;
+import dev.muon.dynamic_resource_bars.util.TickHandler;
 
 public class ArmorBarRenderer {
     private static long armorTextStartTime = 0;
@@ -194,13 +195,13 @@ public class ArmorBarRenderer {
         RenderSystem.enableBlend();
         RenderSystem.defaultBlendFunc();
 
-        int frameHeight = config.protOverlayFrameHeight;
-        int animationCycles = config.protOverlayAnimationCycles;
         int maxProtection = config.maxExpectedProt;
-
-        int animOffset = (int)(((player.tickCount + #if NEWER_THAN_20_1 Minecraft.getInstance().getTimer().getGameTimeDeltaTicks() #else Minecraft.getInstance().getFrameTime() #endif) / 3) % animationCycles) * frameHeight;
-
         float protectionScale = Math.min(1.0f, (float)totalProtection / maxProtection);
+        
+        // Use the same flash alpha system as AppleSkin overlays
+        float pulseAlpha = 0.5f + (TickHandler.getOverlayFlashAlpha() * 0.5f); // Range from 0.5 to 1.0
+        RenderSystem.setShaderColor(1.0f, 1.0f, 1.0f, pulseAlpha);
+        
         int adjustedBarWidth = config.enableArmorIcon ?
                 barWidth - (iconSize / 2) : barWidth;
         int overlayWidth = (int)(adjustedBarWidth * protectionScale);
@@ -209,13 +210,13 @@ public class ArmorBarRenderer {
                 DynamicResourceBars.loc("textures/gui/protection_overlay.png"),
                 xPos + (config.enableArmorIcon ? barOnlyXOffset + iconSize / 2 : barOnlyXOffset),
                 yPos + barOnlyYOffset,
-                0, animOffset,
+                0, 0,
                 overlayWidth, barHeight,
                 256, 256
         );
 
-        RenderSystem.disableBlend();
         RenderSystem.setShaderColor(1.0f, 1.0f, 1.0f, 1.0f);
+        RenderSystem.disableBlend();
     }
 
 

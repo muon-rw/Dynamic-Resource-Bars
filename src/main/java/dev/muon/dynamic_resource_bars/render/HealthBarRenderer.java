@@ -9,6 +9,8 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.world.effect.MobEffects;
 import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.item.ItemStack;
+import dev.muon.dynamic_resource_bars.compat.AppleSkinCompat;
 
 #if NEWER_THAN_20_1
     import net.minecraft.client.DeltaTracker;
@@ -22,6 +24,11 @@ public class HealthBarRenderer {
     private static long fullHealthStartTime = 0;
     private static boolean healthBarSetVisible = true; // Default to visible
     private static long healthBarDisabledStartTime = 0L;
+    
+    // AppleSkin pulsing effect fields
+    private static float unclampedFlashAlpha = 0f;
+    private static float flashAlpha = 0f;
+    private static byte alphaDir = 1;
 
     private enum BarType {
         NORMAL("health_bar"),
@@ -93,6 +100,7 @@ public class HealthBarRenderer {
     public static void render(GuiGraphics graphics, Player player, float maxHealth, float actualHealth, int absorptionAmount,
             #if NEWER_THAN_20_1 DeltaTracker deltaTracker #else float partialTicks #endif) {
 
+        // Override hideWhenFull if player has absorption. TODO: Maybe set this as config value
         boolean shouldFade = ModConfigManager.getClient().fadeHealthWhenFull && actualHealth >= maxHealth && absorptionAmount == 0;
         setHealthBarVisibility(!shouldFade || EditModeManager.isEditModeEnabled());
 
@@ -137,6 +145,13 @@ public class HealthBarRenderer {
                       0, 0,
                       animOffset);
 
+        // Render AppleSkin estimated health overlay
+        if (AppleSkinCompat.isLoaded()) {
+            ItemStack heldFood = getHeldFood(player);
+            if (!heldFood.isEmpty()) {
+                renderHealthRestoredOverlay(graphics, player, heldFood, actualHealth, maxHealth, mainBarRect, animOffset);
+            }
+        }
 
         renderBarOverlays(graphics, player, absorptionAmount,
                           mainBarRect.x(), mainBarRect.y(), mainBarRect.width(), mainBarRect.height(), 
@@ -238,19 +253,24 @@ public class HealthBarRenderer {
                                           int barXOffset, int barYOffset) {
         RenderSystem.enableBlend();
         RenderSystem.defaultBlendFunc();
+        
         float tempScale = getTemperatureScale(player);
         renderTemperatureOverlay(graphics, tempScale, barAbsX + barXOffset, barAbsY + barYOffset, barAbsWidth, barAbsHeight, 0, 0);
 
         if (absorptionAmount > 0) {
+            // Use pulsing opacity for absorption overlay
+            float pulseAlpha = 0.5f + (flashAlpha * 0.5f); // Range from 0.5 to 1.0
+            RenderSystem.setShaderColor(1.0f, 1.0f, 1.0f, pulseAlpha);
+            
             graphics.blit(
                     DynamicResourceBars.loc("textures/gui/absorption_overlay.png"),
                     barAbsX + barXOffset, barAbsY + barYOffset,
                     0, 0, barAbsWidth, barAbsHeight,
                     256, 256
             );
+            RenderSystem.setShaderColor(1.0f, 1.0f, 1.0f, 1.0f);
         }
         RenderSystem.disableBlend();
-        RenderSystem.setShaderColor(1.0f, 1.0f, 1.0f, 1.0f);
     }
 
     private static void renderBackgroundOverlays(GuiGraphics graphics, Player player,
@@ -445,5 +465,102 @@ public class HealthBarRenderer {
             return 0.0f;
         }
         return Math.max(0.0f, 1.0f - (timeSinceDisabled / (float) RenderUtil.BAR_FADEOUT_DURATION));
+    }
+    
+    // AppleSkin compatibility methods
+    public static void updateFlashAlpha() {
+        unclampedFlashAlpha += alphaDir * 0.0625F; // Slow animation to match StaminaBar
+        if (unclampedFlashAlpha >= 1.5F) {
+            alphaDir = -1;
+        } else if (unclampedFlashAlpha <= -0.5F) {
+            alphaDir = 1;
+        }
+        // Max alpha of 0.5 for the pulsing effect
+        flashAlpha = Math.max(0F, Math.min(1F, unclampedFlashAlpha)) * 0.5F;
+    }
+    
+    private static void resetFlash() {
+        unclampedFlashAlpha = flashAlpha = 0;
+        alphaDir = 1;
+    }
+    
+    public static float getFlashAlpha() {
+        return flashAlpha;
+    }
+    
+    private static ItemStack getHeldFood(Player player) {
+        ItemStack mainHand = player.getItemInHand(net.minecraft.world.InteractionHand.MAIN_HAND);
+        if (AppleSkinCompat.canConsume(mainHand, player)) {
+            return mainHand;
+        }
+        
+        ItemStack offHand = player.getItemInHand(net.minecraft.world.InteractionHand.OFF_HAND);
+        if (AppleSkinCompat.canConsume(offHand, player)) {
+            return offHand;
+        }
+        
+        return ItemStack.EMPTY;
+    }
+    
+    private static void renderHealthRestoredOverlay(GuiGraphics graphics, Player player, ItemStack heldFood,
+                                                   float currentHealth, float maxHealth,
+                                                   ScreenRect barRect, int animOffset) {
+        if (!AppleSkinCompat.isLoaded()) {
+            return;
+        }
+        
+        float healthRestoration = AppleSkinCompat.getEstimatedHealthRestoration(heldFood, player);
+        if (healthRestoration <= 0 || currentHealth >= maxHealth) {
+            resetFlash();
+            return;
+        }
+        
+        float restoredHealth = Math.min(maxHealth, currentHealth + healthRestoration);
+        
+        // Flash alpha is updated elsewhere, just use current value
+        
+        RenderSystem.enableBlend();
+        RenderSystem.defaultBlendFunc();
+        RenderSystem.setShaderColor(1.0f, 1.0f, 1.0f, flashAlpha);
+        
+        FillDirection fillDirection = ModConfigManager.getClient().healthFillDirection;
+        // Use the bar type based on the player's current state
+        BarType barType = BarType.fromPlayerState(player);
+        
+        if (fillDirection == FillDirection.VERTICAL) {
+            int currentHeight = (int) (barRect.height() * (currentHealth / maxHealth));
+            int restoredHeight = (int) (barRect.height() * (restoredHealth / maxHealth));
+            int overlayHeight = restoredHeight - currentHeight;
+            
+            if (overlayHeight > 0) {
+                int yPos = barRect.y() + (barRect.height() - restoredHeight);
+                int textureVOffset = animOffset + (barRect.height() - restoredHeight);
+                
+                graphics.blit(
+                    DynamicResourceBars.loc("textures/gui/" + barType.getTexture() + ".png"),
+                    barRect.x(), yPos,
+                    0, textureVOffset,
+                    barRect.width(), overlayHeight,
+                    256, 1024
+                );
+            }
+        } else { // HORIZONTAL
+            int currentWidth = (int) (barRect.width() * (currentHealth / maxHealth));
+            int restoredWidth = (int) (barRect.width() * (restoredHealth / maxHealth));
+            int overlayWidth = restoredWidth - currentWidth;
+            
+            if (overlayWidth > 0) {
+                graphics.blit(
+                    DynamicResourceBars.loc("textures/gui/" + barType.getTexture() + ".png"),
+                    barRect.x() + currentWidth, barRect.y(),
+                    currentWidth, animOffset,
+                    overlayWidth, barRect.height(),
+                    256, 1024
+                );
+            }
+        }
+        
+        RenderSystem.setShaderColor(1.0f, 1.0f, 1.0f, 1.0f);
+        RenderSystem.disableBlend();
     }
 }
