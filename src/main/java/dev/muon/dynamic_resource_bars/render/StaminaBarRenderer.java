@@ -8,6 +8,7 @@ import dev.muon.dynamic_resource_bars.util.*;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.world.effect.MobEffects;
+import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
 import dev.muon.dynamic_resource_bars.compat.AppleSkinCompat;
@@ -49,10 +50,9 @@ public class StaminaBarRenderer {
         }
 
         public static BarType fromPlayerState(Player player, float value) {
-            // Check if player is riding a living mount first
-            if (player.getVehicle() instanceof net.minecraft.world.entity.LivingEntity mount) {
+            if (player.getVehicle() instanceof LivingEntity mount) {
                 float healthPercentage = value / mount.getMaxHealth();
-                if (healthPercentage <= 0.2f) { // 20% or less
+                if (healthPercentage <= 0.2f) {
                     return CRITICAL;
                 }
                 return MOUNTED;
@@ -153,9 +153,8 @@ public class StaminaBarRenderer {
 
         float maxValue = 20f;
         float currentValue = player.getFoodData().getFoodLevel();
-        
-        // Use mount health values if mounted
-        if (isMounted && mount != null) {
+
+        if (isMounted) {
             maxValue = mount.getMaxHealth();
             currentValue = mount.getHealth();
         }
@@ -165,7 +164,6 @@ public class StaminaBarRenderer {
                 barRect,
                 animOffset, isRightAnchored);
 
-        // Only render overlays if not mounted
         if (!isMounted) {
             if (AppleSkinCompat.isLoaded()) {
                 ItemStack heldFood = getHeldFood(player);
@@ -204,9 +202,7 @@ public class StaminaBarRenderer {
 
         if (shouldRenderStaminaText(currentValue, maxValue, player, isMounted)) {
             int color = getStaminaTextColor(currentValue, maxValue, isMounted);
-            HorizontalAlignment alignment = isMounted ? 
-                ModConfigManager.getClient().healthTextAlign :
-                ModConfigManager.getClient().staminaTextAlign;
+            HorizontalAlignment alignment = ModConfigManager.getClient().staminaTextAlign;
 
             int baseX = barRect.x();
             if (alignment == HorizontalAlignment.CENTER) {
