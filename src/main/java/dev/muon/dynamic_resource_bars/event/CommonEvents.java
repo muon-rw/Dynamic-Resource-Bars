@@ -86,7 +86,7 @@ public class CommonEvents {
         }
 
         if (airBehavior == BarRenderBehavior.CUSTOM) {
-            AirBarRenderer.render(guiGraphics, player);
+            AirBarRenderer.render(guiGraphics, player, deltaTracker);
             ClientAbstractions.INSTANCE.addGuiRightHeight(minecraft.gui, config.airBackgroundHeight + 1);
         }
         return EventResult.INTERRUPT;

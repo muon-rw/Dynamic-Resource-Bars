@@ -50,6 +50,12 @@ blahaj {
 		if (project.hasProperty("farmersdelight_forge")) { deps.modImplementation("maven.modrinth:farmers-delight:$mc-${property("farmersdelight_forge")}-$loader") }
 		if (project.hasProperty("farmersdelight_fabric")) { deps.modImplementation("vectorwing:FarmersDelight:$mc-${property("farmersdelight_fabric")}+refabricated") }
 
+		// Bewitchment
+		//if (project.hasProperty("bewitchment")) { deps.modImplementation("maven.modrinth:bewitchment:${property("bewitchment")}") }
+
+		// RPGMana
+
+
 		// Publishing
 		addRequiredMod("puzzles-lib")
 			.modrinth("puzzles-lib") // override with Modrinth URL slug

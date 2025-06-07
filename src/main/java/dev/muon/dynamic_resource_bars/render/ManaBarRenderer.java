@@ -22,6 +22,7 @@ import dev.muon.dynamic_resource_bars.util.SubElementType;
 import dev.muon.dynamic_resource_bars.util.DraggableElement;
 import dev.muon.dynamic_resource_bars.util.HorizontalAlignment;
 import dev.muon.dynamic_resource_bars.util.FillDirection;
+import dev.muon.dynamic_resource_bars.config.ClientConfig;
 
 public class ManaBarRenderer {
     private static float lastMana = -1;
@@ -66,6 +67,13 @@ public class ManaBarRenderer {
                                       y + ModConfigManager.getClient().manaOverlayYOffset, 
                                       ModConfigManager.getClient().manaOverlayWidth,
                                       ModConfigManager.getClient().manaOverlayHeight);
+            case TEXT:
+                // Text area roughly matches bar area but with text offsets
+                ScreenRect barRect = getSubElementRect(SubElementType.BAR_MAIN, player);
+                return new ScreenRect(barRect.x() + ModConfigManager.getClient().manaTextXOffset, 
+                                      barRect.y() + ModConfigManager.getClient().manaTextYOffset, 
+                                      barRect.width(), 
+                                      barRect.height());
             default:
                 return new ScreenRect(0,0,0,0); 
         }
@@ -121,20 +129,22 @@ public class ManaBarRenderer {
 
         // Text Rendering
         if (shouldRenderManaText(manaProvider.getCurrentMana(), manaProvider.getMaxMana())) {
+            ScreenRect textRect = getSubElementRect(SubElementType.TEXT, player);
+            int textX = textRect.x() + (textRect.width() / 2);
+            int textY = textRect.y() + (textRect.height() / 2);
+            
             int color = getManaTextColor(manaProvider.getCurrentMana(), manaProvider.getMaxMana(), currentAlphaForRender);
             HorizontalAlignment alignment = ModConfigManager.getClient().manaTextAlign;
 
-            int baseX = barRect.x();
+            int baseX = textRect.x();
             if (alignment == HorizontalAlignment.CENTER) {
-                baseX = barRect.x() + (barRect.width() / 2);
+                baseX = textX;
             } else if (alignment == HorizontalAlignment.RIGHT) {
-                baseX = barRect.x() + barRect.width();
+                baseX = textRect.x() + textRect.width();
             }
 
-            int baseY = barRect.y() + (barRect.height() / 2);
-
             RenderUtil.renderText((float) manaProvider.getCurrentMana(), manaProvider.getMaxMana(), graphics,
-                                baseX, baseY, color, alignment);
+                                baseX, textY, color, alignment);
         }
 
         RenderSystem.setShaderColor(1.0f, 1.0f, 1.0f, 1.0f);
@@ -276,19 +286,20 @@ public class ManaBarRenderer {
 
     private static int getManaTextColor(double currentMana, float maxMana, float barRenderAlpha) {
         TextBehavior textBehavior = ModConfigManager.getClient().showManaText;
-        int baseColor = 0xFFFFFF; // White
-        int alpha = (int) (barRenderAlpha * 255);
+        ClientConfig config = ModConfigManager.getClient();
+        int baseColor = config.manaTextColor & 0xFFFFFF;
+        int alpha = config.manaTextOpacity; // Start with base configured opacity
 
         if (textBehavior == TextBehavior.WHEN_NOT_FULL && currentMana >= maxMana) {
             long timeSinceFull = Minecraft.getInstance().level.getGameTime() - fullManaStartTime;
-            if (timeSinceFull >= RenderUtil.TEXT_DISPLAY_DURATION) {
-                alpha = 0; // Fade out text completely after duration if bar itself isn't fading
-            } else if (!barSetVisible) { // If bar is fading, text alpha is already handled by barRenderAlpha
-                 // If bar is NOT fading (i.e. fadeManaWhenFull is false), but text is WHEN_NOT_FULL,
-                 // then text should fade independently after becoming full.
-                 alpha = RenderUtil.calculateTextAlpha(timeSinceFull);
-            }
+            // Calculate the fade factor for the text itself (0.0 to 1.0)
+            float textOwnFadeMultiplier = RenderUtil.calculateTextAlpha(timeSinceFull) / (float)RenderUtil.BASE_TEXT_ALPHA;
+            alpha = (int)(alpha * textOwnFadeMultiplier); // Apply text's own fade
         }
+
+        // Now apply the bar's overall render alpha to the (potentially already faded) text alpha
+        alpha = (int) (alpha * barRenderAlpha);
+
         alpha = Math.min(255, Math.max(0, alpha)); // Clamp alpha
         return (alpha << 24) | baseColor;
     }
@@ -299,6 +310,11 @@ public class ManaBarRenderer {
 
     private static boolean shouldRenderManaText(double currentMana, float maxMana) {
         TextBehavior behavior = ModConfigManager.getClient().showManaText;
+        if (EditModeManager.isEditModeEnabled()) {
+            if (behavior == TextBehavior.ALWAYS || behavior == TextBehavior.WHEN_NOT_FULL) {
+                return true;
+            }
+        }
         if (behavior == TextBehavior.NEVER) {
             return false;
         }

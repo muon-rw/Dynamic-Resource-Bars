@@ -1,3 +1,11 @@
+## 0.5.0
+- Bars will now always render while in editing mode
+- Text is now a draggable element
+- Text color/size/max opacity can be changed via edit boxes
+- Armor/air icons are now draggable elements
+- Air and armor background/foregrounds can now be properly moved/resized
+- Updated the default textures of the armor/air bars: `air_bar` is now an animated texture
+
 ## 0.4.0
 - Add mount health bar. Replaces stamina bar when mounted, but uses health text settings.
 - Added `stamina_bar_mounted`

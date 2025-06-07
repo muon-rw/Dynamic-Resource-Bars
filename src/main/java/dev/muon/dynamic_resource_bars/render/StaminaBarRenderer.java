@@ -19,6 +19,7 @@ import dev.muon.dynamic_resource_bars.compat.AppleSkinCompat;
 
 
 import vectorwing.farmersdelight.common.registry.ModEffects;
+import dev.muon.dynamic_resource_bars.config.ClientConfig;
 
 public class StaminaBarRenderer {
     private static final float CRITICAL_THRESHOLD = 6.0f;
@@ -101,6 +102,13 @@ public class StaminaBarRenderer {
                         y + ModConfigManager.getClient().staminaOverlayYOffset,
                         ModConfigManager.getClient().staminaOverlayWidth,
                         ModConfigManager.getClient().staminaOverlayHeight);
+            case TEXT:
+                // Text area roughly matches bar area but with text offsets
+                ScreenRect barRect = getSubElementRect(SubElementType.BAR_MAIN, player);
+                return new ScreenRect(barRect.x() + ModConfigManager.getClient().staminaTextXOffset, 
+                                      barRect.y() + ModConfigManager.getClient().staminaTextYOffset, 
+                                      barRect.width(), 
+                                      barRect.height());
             default:
                 return new ScreenRect(0, 0, 0, 0);
         }
@@ -201,19 +209,21 @@ public class StaminaBarRenderer {
         RenderSystem.setShaderColor(1.0f, 1.0f, 1.0f, 1.0f);
 
         if (shouldRenderStaminaText(currentValue, maxValue, player, isMounted)) {
+            ScreenRect textRect = getSubElementRect(SubElementType.TEXT, player);
+            int textX = textRect.x() + (textRect.width() / 2);
+            int textY = textRect.y() + (textRect.height() / 2);
+            
             int color = getStaminaTextColor(currentValue, maxValue, isMounted);
             HorizontalAlignment alignment = ModConfigManager.getClient().staminaTextAlign;
 
-            int baseX = barRect.x();
+            int baseX = textRect.x();
             if (alignment == HorizontalAlignment.CENTER) {
-                baseX = barRect.x() + (barRect.width() / 2);
+                baseX = textX;
             } else if (alignment == HorizontalAlignment.RIGHT) {
-                baseX = barRect.x() + barRect.width();
+                baseX = textRect.x() + textRect.width();
             }
 
-            int baseY = barRect.y() + (barRect.height() / 2);
-
-            RenderUtil.renderText(currentValue, maxValue, graphics, baseX, baseY, color, alignment);
+            RenderUtil.renderText(currentValue, maxValue, graphics, baseX, textY, color, alignment);
         }
 
         if (EditModeManager.isEditModeEnabled()) {
@@ -298,7 +308,12 @@ public class StaminaBarRenderer {
         TextBehavior textBehavior = isMounted ? 
             ModConfigManager.getClient().showHealthText : 
             ModConfigManager.getClient().showStaminaText;
-            
+
+        if (EditModeManager.isEditModeEnabled()) {
+            if (textBehavior == TextBehavior.ALWAYS || textBehavior == TextBehavior.WHEN_NOT_FULL) {
+                return true;
+            }
+        }
         if (textBehavior == TextBehavior.NEVER) {
             return false;
         }
@@ -345,8 +360,17 @@ public class StaminaBarRenderer {
         TextBehavior textBehavior = isMounted ? 
             ModConfigManager.getClient().showHealthText : 
             ModConfigManager.getClient().showStaminaText;
-        int baseColor = 0xFFFFFF; // White
-        int alpha = RenderUtil.BASE_TEXT_ALPHA;
+        ClientConfig config = ModConfigManager.getClient();
+        int baseColor;
+        int alpha;
+
+        if (isMounted) {
+            baseColor = config.healthTextColor & 0xFFFFFF;
+            alpha = config.healthTextOpacity;
+        } else {
+            baseColor = config.staminaTextColor & 0xFFFFFF;
+            alpha = config.staminaTextOpacity;
+        }
 
         if (textBehavior == TextBehavior.WHEN_NOT_FULL && currentValue >= maxValue) {
             long timeSinceFull;
@@ -355,11 +379,11 @@ public class StaminaBarRenderer {
             } else {
                 timeSinceFull = System.currentTimeMillis() - fullStaminaStartTime;
             }
-            alpha = RenderUtil.calculateTextAlpha(timeSinceFull);
+            alpha = (int)(alpha * (RenderUtil.calculateTextAlpha(timeSinceFull) / (float)RenderUtil.BASE_TEXT_ALPHA));
         }
 
         alpha = (int) (alpha * getStaminaBarAlpha()); // Modulate with bar alpha
-        alpha = Math.max(10, alpha); // Ensure minimum visibility
+        alpha = Math.max(10, Math.min(255, alpha)); // Ensure minimum visibility
         return (alpha << 24) | baseColor;
     }
 

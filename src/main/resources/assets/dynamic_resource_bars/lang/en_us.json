@@ -95,5 +95,9 @@
   "gui.dynamic_resource_bars.resize.label.bar_width": "Bar Width (Max 256):",
   "gui.dynamic_resource_bars.resize.label.bar_height": "Bar Height (Max 32):",
   "gui.dynamic_resource_bars.resize.label.overlay_width": "Overlay Width:",
-  "gui.dynamic_resource_bars.resize.label.overlay_height": "Overlay Height:"
+  "gui.dynamic_resource_bars.resize.label.overlay_height": "Overlay Height:",
+
+  "gui.dynamic_resource_bars.config.label.text_color": "Text Color:",
+  "gui.dynamic_resource_bars.config.label.text_opacity": "Max Text Opacity:",
+  "gui.dynamic_resource_bars.config.label.text_size": "Text Scaling:"
 }

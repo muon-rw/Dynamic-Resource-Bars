@@ -4,6 +4,7 @@ package dev.muon.dynamic_resource_bars.render;
 import com.mojang.blaze3d.systems.RenderSystem;
 import dev.muon.dynamic_resource_bars.DynamicResourceBars;
 import dev.muon.dynamic_resource_bars.config.ModConfigManager;
+import dev.muon.dynamic_resource_bars.config.ClientConfig;
 import dev.muon.dynamic_resource_bars.util.*;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
@@ -89,6 +90,20 @@ public class HealthBarRenderer {
                                       y + ModConfigManager.getClient().healthOverlayYOffset, 
                                       ModConfigManager.getClient().healthOverlayWidth,
                                       ModConfigManager.getClient().healthOverlayHeight);
+            case TEXT:
+                // Text area roughly matches bar area but with text offsets
+                ScreenRect barRect = getSubElementRect(SubElementType.BAR_MAIN, player);
+                return new ScreenRect(barRect.x() + ModConfigManager.getClient().healthTextXOffset, 
+                                      barRect.y() + ModConfigManager.getClient().healthTextYOffset, 
+                                      barRect.width(), 
+                                      barRect.height());
+            case ABSORPTION_TEXT:
+                // Absorption text is positioned relative to the main bar
+                ScreenRect mainBarRect = getSubElementRect(SubElementType.BAR_MAIN, player);
+                return new ScreenRect(mainBarRect.x() + mainBarRect.width() + ModConfigManager.getClient().healthAbsorptionTextXOffset, 
+                                      mainBarRect.y() + ModConfigManager.getClient().healthAbsorptionTextYOffset, 
+                                      50, // Approximate width for absorption text
+                                      mainBarRect.height());
             default:
                 return new ScreenRect(0,0,0,0);
         }
@@ -157,33 +172,41 @@ public class HealthBarRenderer {
         renderBackgroundOverlays(graphics, player, xPos, yPos, backgroundWidth, backgroundHeight);
         RenderSystem.setShaderColor(1.0f, 1.0f, 1.0f, 1.0f);
 
-        int textX = mainBarRect.x() + (mainBarRect.width() / 2);
-        int textY = mainBarRect.y() + (mainBarRect.height() / 2);
-
+        // Update text rendering to use draggable position
         if (shouldRenderHealthText(actualHealth, maxHealth, player)) {
+            ScreenRect textRect = getSubElementRect(SubElementType.TEXT, player);
+            int textX = textRect.x() + (textRect.width() / 2);
+            int textY = textRect.y() + (textRect.height() / 2);
+            
             int color = getHealthTextColor(actualHealth, maxHealth);
             HorizontalAlignment alignment = ModConfigManager.getClient().healthTextAlign;
 
-            int baseX = mainBarRect.x();
+            int baseX = textRect.x();
             if (alignment == HorizontalAlignment.CENTER) {
                 baseX = textX;
             } else if (alignment == HorizontalAlignment.RIGHT) {
-                baseX = mainBarRect.x() + mainBarRect.width();
+                baseX = textRect.x() + textRect.width();
             }
 
             RenderUtil.renderText(actualHealth, maxHealth,
                     graphics, baseX, textY, color, alignment);
         }
 
-        if (absorptionAmount > 0) {
-            String absorptionText = "+" + absorptionAmount;
-            Minecraft mc = Minecraft.getInstance();
-            float scalingFactor = (float) ModConfigManager.getClient().textScalingFactor;
-            int unscaledTextWidth = mc.font.width(absorptionText);
+        if (absorptionAmount > 0 || EditModeManager.isEditModeEnabled()) {
+            String absorptionText = "+" + (EditModeManager.isEditModeEnabled() && absorptionAmount == 0 ? "8" : absorptionAmount);
+            
+            ScreenRect absorptionRect = getSubElementRect(SubElementType.ABSORPTION_TEXT, player);
+            int absorptionTextX = absorptionRect.x();
+            int absorptionTextY = absorptionRect.y() + (absorptionRect.height() / 2);
 
-            int absorptionTextX = complexRect.x() + backgroundWidth - (int)(unscaledTextWidth * scalingFactor) - 2;
+            ClientConfig config = ModConfigManager.getClient();
+            int baseAbsorptionColor = config.healthTextColor & 0xFFFFFF;
+            int absorptionAlpha = (int) (config.healthTextOpacity * currentAlphaForRender);
+            absorptionAlpha = Math.max(10, Math.min(255, absorptionAlpha)); // Ensure visibility
+            int absorptionFinalColor = (absorptionAlpha << 24) | baseAbsorptionColor;
 
-            RenderUtil.renderAdditionText(absorptionText, graphics, absorptionTextX, textY, ((int)(RenderUtil.BASE_TEXT_ALPHA * currentAlphaForRender) << 24) | 0xFFFFFF);
+            RenderUtil.renderAdditionText(absorptionText, graphics, absorptionTextX, absorptionTextY, 
+                    absorptionFinalColor);
         }
 
         if (EditModeManager.isEditModeEnabled()) {
@@ -200,6 +223,15 @@ public class HealthBarRenderer {
                     ScreenRect fgRect = getSubElementRect(SubElementType.FOREGROUND_DETAIL, player);
                     graphics.renderOutline(fgRect.x()-1, fgRect.y()-1, fgRect.width()+2, fgRect.height()+2, 0xA0FF00FF);
                 }
+                
+                // Outline for absorption text
+                ScreenRect absorptionRect = getSubElementRect(SubElementType.ABSORPTION_TEXT, player);
+                if (absorptionRect != null && absorptionRect.width() > 0 && absorptionRect.height() > 0) {
+                    graphics.renderOutline(absorptionRect.x() - 1, absorptionRect.y() - 1,
+                                           absorptionRect.width() + 2, absorptionRect.height() + 2,
+                                           0x60FFFFFF); // Same semi-transparent white as other text
+                }
+                
                 graphics.renderOutline(complexRect.x()-2, complexRect.y()-2, complexRect.width()+4, complexRect.height()+4, 0x80FFFFFF);
             } else {
                 int borderColor = 0x80FFFFFF;
@@ -430,22 +462,31 @@ public class HealthBarRenderer {
 
     private static int getHealthTextColor(float currentHealth, float maxHealth) {
         TextBehavior behavior = ModConfigManager.getClient().showHealthText;
-        // Alpha will be combined with the color later. Here we just get the base color.
-        int baseColor = 0xFFFFFF; // White
+        ClientConfig config = ModConfigManager.getClient();
+        
+        // Use configured text color instead of hardcoded white
+        int baseColor = config.healthTextColor & 0xFFFFFF;
 
-        int alpha = RenderUtil.BASE_TEXT_ALPHA;
+        int alpha = config.healthTextOpacity;
         if (behavior == TextBehavior.WHEN_NOT_FULL && currentHealth >= maxHealth) {
             long timeSinceFull = System.currentTimeMillis() - fullHealthStartTime;
-            alpha = RenderUtil.calculateTextAlpha(timeSinceFull);
+            alpha = (int)(alpha * (RenderUtil.calculateTextAlpha(timeSinceFull) / (float)RenderUtil.BASE_TEXT_ALPHA));
         }
         alpha = (int) (alpha * getHealthBarAlpha()); // Modulate with bar alpha
-        alpha = Math.max(10, alpha);
+        alpha = Math.max(10, Math.min(255, alpha));
 
         return (alpha << 24) | baseColor;
     }
 
     private static boolean shouldRenderHealthText(float currentHealth, float maxHealth, Player player) {
         TextBehavior behavior = ModConfigManager.getClient().showHealthText;
+
+        if (EditModeManager.isEditModeEnabled()) {
+            if (behavior == TextBehavior.ALWAYS || behavior == TextBehavior.WHEN_NOT_FULL) {
+                return true;
+            }
+        }
+        
         if (behavior == TextBehavior.NEVER) {
             return false;
         }

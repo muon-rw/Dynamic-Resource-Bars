@@ -28,6 +28,16 @@ public class ClientConfig {
     // General
     public static final float DEFAULT_TEXT_SCALING_FACTOR = 0.5f;
     public double textScalingFactor = DEFAULT_TEXT_SCALING_FACTOR;
+    
+    // Global text defaults
+    public static final int DEFAULT_TEXT_COLOR = 0xFFFFFF; // White
+    public static final int DEFAULT_TEXT_OPACITY = 200; // Out of 255
+    public static final float DEFAULT_TEXT_SIZE = 1.0f;
+    
+    // Global text fields
+    public int globalTextColor = DEFAULT_TEXT_COLOR;
+    public int globalTextOpacity = DEFAULT_TEXT_OPACITY;
+    public float globalTextSize = DEFAULT_TEXT_SIZE;
 
     // Health Defaults & Fields
     public static final boolean DEFAULT_ENABLE_HEALTH_BAR = true;
@@ -54,6 +64,13 @@ public class ClientConfig {
     public static final int DEFAULT_HEALTH_OVERLAY_Y_OFFSET = -3;
     public static final int DEFAULT_HEALTH_BACKGROUND_X_OFFSET = 0;
     public static final int DEFAULT_HEALTH_BACKGROUND_Y_OFFSET = 0;
+    public static final int DEFAULT_HEALTH_TEXT_X_OFFSET = 0;
+    public static final int DEFAULT_HEALTH_TEXT_Y_OFFSET = 0;
+    public static final int DEFAULT_HEALTH_TEXT_COLOR = DEFAULT_TEXT_COLOR;
+    public static final int DEFAULT_HEALTH_TEXT_OPACITY = DEFAULT_TEXT_OPACITY;
+    public static final float DEFAULT_HEALTH_TEXT_SIZE = DEFAULT_TEXT_SIZE;
+    public static final int DEFAULT_HEALTH_ABSORPTION_TEXT_X_OFFSET = -9;
+    public static final int DEFAULT_HEALTH_ABSORPTION_TEXT_Y_OFFSET = 0;
 
     public boolean enableHealthBar;
     public HUDPositioning.BarPlacement healthBarAnchor;
@@ -79,6 +96,13 @@ public class ClientConfig {
     public int healthOverlayYOffset;
     public int healthBackgroundXOffset;
     public int healthBackgroundYOffset;
+    public int healthTextXOffset;
+    public int healthTextYOffset;
+    public int healthTextColor;
+    public int healthTextOpacity;
+    public float healthTextSize;
+    public int healthAbsorptionTextXOffset;
+    public int healthAbsorptionTextYOffset;
 
     // Stamina Defaults & Fields
     public static final boolean DEFAULT_ENABLE_STAMINA_BAR = true;
@@ -105,6 +129,11 @@ public class ClientConfig {
     public static final int DEFAULT_STAMINA_TOTAL_Y_OFFSET = 0;
     public static final int DEFAULT_STAMINA_BACKGROUND_X_OFFSET = 0;
     public static final int DEFAULT_STAMINA_BACKGROUND_Y_OFFSET = 0;
+    public static final int DEFAULT_STAMINA_TEXT_X_OFFSET = 0;
+    public static final int DEFAULT_STAMINA_TEXT_Y_OFFSET = 0;
+    public static final int DEFAULT_STAMINA_TEXT_COLOR = DEFAULT_TEXT_COLOR;
+    public static final int DEFAULT_STAMINA_TEXT_OPACITY = DEFAULT_TEXT_OPACITY;
+    public static final float DEFAULT_STAMINA_TEXT_SIZE = DEFAULT_TEXT_SIZE;
 
     public boolean enableStaminaBar;
     public HUDPositioning.BarPlacement staminaBarAnchor;
@@ -130,6 +159,11 @@ public class ClientConfig {
     public int staminaTotalYOffset;
     public int staminaBackgroundXOffset;
     public int staminaBackgroundYOffset;
+    public int staminaTextXOffset;
+    public int staminaTextYOffset;
+    public int staminaTextColor;
+    public int staminaTextOpacity;
+    public float staminaTextSize;
 
     // Mana Defaults & Fields
     public static final boolean DEFAULT_ENABLE_MANA_BAR = true;
@@ -156,6 +190,11 @@ public class ClientConfig {
     public static final int DEFAULT_MANA_OVERLAY_Y_OFFSET = -3;
     public static final int DEFAULT_MANA_BACKGROUND_X_OFFSET = 0;
     public static final int DEFAULT_MANA_BACKGROUND_Y_OFFSET = 0;
+    public static final int DEFAULT_MANA_TEXT_X_OFFSET = 0;
+    public static final int DEFAULT_MANA_TEXT_Y_OFFSET = 0;
+    public static final int DEFAULT_MANA_TEXT_COLOR = DEFAULT_TEXT_COLOR;
+    public static final int DEFAULT_MANA_TEXT_OPACITY = DEFAULT_TEXT_OPACITY;
+    public static final float DEFAULT_MANA_TEXT_SIZE = DEFAULT_TEXT_SIZE;
 
     public boolean enableManaBar;
     public HUDPositioning.BarPlacement manaBarAnchor;
@@ -181,6 +220,11 @@ public class ClientConfig {
     public int manaOverlayYOffset;
     public int manaBackgroundXOffset;
     public int manaBackgroundYOffset;
+    public int manaTextXOffset;
+    public int manaTextYOffset;
+    public int manaTextColor;
+    public int manaTextOpacity;
+    public float manaTextSize;
 
     // Armor Defaults & Fields
     public static final BarRenderBehavior DEFAULT_ARMOR_BAR_BEHAVIOR = BarRenderBehavior.HIDDEN;
@@ -199,8 +243,17 @@ public class ClientConfig {
     public static final int DEFAULT_ARMOR_ICON_SIZE = 16;
     public static final int DEFAULT_PROT_OVERLAY_ANIMATION_CYCLES = 16;
     public static final int DEFAULT_PROT_OVERLAY_FRAME_HEIGHT = 4;
-    public static final int DEFAULT_ARMOR_ICON_X_OFFSET = 0;
+    public static final int DEFAULT_ARMOR_ICON_X_OFFSET = 3;
     public static final int DEFAULT_ARMOR_ICON_Y_OFFSET = 0;
+    public static final int DEFAULT_ARMOR_TEXT_X_OFFSET = 0;
+    public static final int DEFAULT_ARMOR_TEXT_Y_OFFSET = 0;
+    public static final int DEFAULT_ARMOR_TEXT_COLOR = DEFAULT_TEXT_COLOR;
+    public static final int DEFAULT_ARMOR_TEXT_OPACITY = DEFAULT_TEXT_OPACITY;
+    public static final float DEFAULT_ARMOR_TEXT_SIZE = DEFAULT_TEXT_SIZE;
+    public static final TextBehavior DEFAULT_SHOW_ARMOR_TEXT = TextBehavior.NEVER;
+    public static final HorizontalAlignment DEFAULT_ARMOR_TEXT_ALIGN = HorizontalAlignment.CENTER;
+    public static final int DEFAULT_ARMOR_BACKGROUND_X_OFFSET = 0;
+    public static final int DEFAULT_ARMOR_BACKGROUND_Y_OFFSET = 0;
 
     public BarRenderBehavior armorBarBehavior;
     public HUDPositioning.BarPlacement armorBarAnchor;
@@ -220,6 +273,15 @@ public class ClientConfig {
     public int protOverlayFrameHeight;
     public int armorIconXOffset;
     public int armorIconYOffset;
+    public int armorTextXOffset;
+    public int armorTextYOffset;
+    public int armorTextColor;
+    public int armorTextOpacity;
+    public float armorTextSize;
+    public TextBehavior showArmorText;
+    public HorizontalAlignment armorTextAlign;
+    public int armorBackgroundXOffset;
+    public int armorBackgroundYOffset;
 
     // Air Defaults & Fields
     public static final BarRenderBehavior DEFAULT_AIR_BAR_BEHAVIOR = BarRenderBehavior.VANILLA;
@@ -234,8 +296,20 @@ public class ClientConfig {
     public static final int DEFAULT_AIR_TOTAL_Y_OFFSET = 0;
     public static final boolean DEFAULT_ENABLE_AIR_ICON = true;
     public static final int DEFAULT_AIR_ICON_SIZE = 16;
-    public static final int DEFAULT_AIR_ICON_X_OFFSET = 0;
+    public static final int DEFAULT_AIR_ICON_X_OFFSET = 71;
     public static final int DEFAULT_AIR_ICON_Y_OFFSET = 0;
+    public static final int DEFAULT_AIR_TEXT_X_OFFSET = 0;
+    public static final int DEFAULT_AIR_TEXT_Y_OFFSET = 0;
+    public static final int DEFAULT_AIR_TEXT_COLOR = DEFAULT_TEXT_COLOR;
+    public static final int DEFAULT_AIR_TEXT_OPACITY = DEFAULT_TEXT_OPACITY;
+    public static final float DEFAULT_AIR_TEXT_SIZE = DEFAULT_TEXT_SIZE;
+    public static final TextBehavior DEFAULT_SHOW_AIR_TEXT = TextBehavior.NEVER;
+    public static final HorizontalAlignment DEFAULT_AIR_TEXT_ALIGN = HorizontalAlignment.CENTER;
+    public static final int DEFAULT_AIR_BACKGROUND_X_OFFSET = 0;
+    public static final int DEFAULT_AIR_BACKGROUND_Y_OFFSET = 0;
+    public static final int DEFAULT_AIR_BAR_ANIMATION_CYCLES = 32;
+    public static final int DEFAULT_AIR_BAR_FRAME_HEIGHT = 32;
+    public static final FillDirection DEFAULT_AIR_FILL_DIRECTION = FillDirection.HORIZONTAL;
 
     public BarRenderBehavior airBarBehavior;
     public HUDPositioning.BarPlacement airBarAnchor;
@@ -251,12 +325,27 @@ public class ClientConfig {
     public int airIconSize;
     public int airIconXOffset;
     public int airIconYOffset;
+    public int airTextXOffset;
+    public int airTextYOffset;
+    public int airTextColor;
+    public int airTextOpacity;
+    public float airTextSize;
+    public TextBehavior showAirText;
+    public HorizontalAlignment airTextAlign;
+    public int airBackgroundXOffset;
+    public int airBackgroundYOffset;
+    public int airBarAnimationCycles;
+    public int airBarFrameHeight;
+    public FillDirection airFillDirection;
 
     private static transient ClientConfig instance; // Marked transient so GSON doesn't try to save it
 
     // Private constructor to enforce singleton via getInstance and initialize defaults
     private ClientConfig() {
         this.textScalingFactor = DEFAULT_TEXT_SCALING_FACTOR;
+        this.globalTextColor = DEFAULT_TEXT_COLOR;
+        this.globalTextOpacity = DEFAULT_TEXT_OPACITY;
+        this.globalTextSize = DEFAULT_TEXT_SIZE;
 
         this.enableHealthBar = DEFAULT_ENABLE_HEALTH_BAR;
         this.healthBarAnchor = DEFAULT_HEALTH_BAR_ANCHOR;
@@ -282,6 +371,13 @@ public class ClientConfig {
         this.healthOverlayYOffset = DEFAULT_HEALTH_OVERLAY_Y_OFFSET;
         this.healthBackgroundXOffset = DEFAULT_HEALTH_BACKGROUND_X_OFFSET;
         this.healthBackgroundYOffset = DEFAULT_HEALTH_BACKGROUND_Y_OFFSET;
+        this.healthTextXOffset = DEFAULT_HEALTH_TEXT_X_OFFSET;
+        this.healthTextYOffset = DEFAULT_HEALTH_TEXT_Y_OFFSET;
+        this.healthTextColor = DEFAULT_HEALTH_TEXT_COLOR;
+        this.healthTextOpacity = DEFAULT_HEALTH_TEXT_OPACITY;
+        this.healthTextSize = DEFAULT_HEALTH_TEXT_SIZE;
+        this.healthAbsorptionTextXOffset = DEFAULT_HEALTH_ABSORPTION_TEXT_X_OFFSET;
+        this.healthAbsorptionTextYOffset = DEFAULT_HEALTH_ABSORPTION_TEXT_Y_OFFSET;
 
         this.enableStaminaBar = DEFAULT_ENABLE_STAMINA_BAR;
         this.staminaBarAnchor = DEFAULT_STAMINA_BAR_ANCHOR;
@@ -307,6 +403,11 @@ public class ClientConfig {
         this.staminaTotalYOffset = DEFAULT_STAMINA_TOTAL_Y_OFFSET;
         this.staminaBackgroundXOffset = DEFAULT_STAMINA_BACKGROUND_X_OFFSET;
         this.staminaBackgroundYOffset = DEFAULT_STAMINA_BACKGROUND_Y_OFFSET;
+        this.staminaTextXOffset = DEFAULT_STAMINA_TEXT_X_OFFSET;
+        this.staminaTextYOffset = DEFAULT_STAMINA_TEXT_Y_OFFSET;
+        this.staminaTextColor = DEFAULT_STAMINA_TEXT_COLOR;
+        this.staminaTextOpacity = DEFAULT_STAMINA_TEXT_OPACITY;
+        this.staminaTextSize = DEFAULT_STAMINA_TEXT_SIZE;
 
         this.enableManaBar = DEFAULT_ENABLE_MANA_BAR;
         this.manaBarAnchor = DEFAULT_MANA_BAR_ANCHOR;
@@ -332,6 +433,11 @@ public class ClientConfig {
         this.manaOverlayYOffset = DEFAULT_MANA_OVERLAY_Y_OFFSET;
         this.manaBackgroundXOffset = DEFAULT_MANA_BACKGROUND_X_OFFSET;
         this.manaBackgroundYOffset = DEFAULT_MANA_BACKGROUND_Y_OFFSET;
+        this.manaTextXOffset = DEFAULT_MANA_TEXT_X_OFFSET;
+        this.manaTextYOffset = DEFAULT_MANA_TEXT_Y_OFFSET;
+        this.manaTextColor = DEFAULT_MANA_TEXT_COLOR;
+        this.manaTextOpacity = DEFAULT_MANA_TEXT_OPACITY;
+        this.manaTextSize = DEFAULT_MANA_TEXT_SIZE;
 
         this.armorBarBehavior = DEFAULT_ARMOR_BAR_BEHAVIOR;
         this.armorBarAnchor = DEFAULT_ARMOR_BAR_ANCHOR;
@@ -351,6 +457,15 @@ public class ClientConfig {
         this.protOverlayFrameHeight = DEFAULT_PROT_OVERLAY_FRAME_HEIGHT;
         this.armorIconXOffset = DEFAULT_ARMOR_ICON_X_OFFSET;
         this.armorIconYOffset = DEFAULT_ARMOR_ICON_Y_OFFSET;
+        this.armorTextXOffset = DEFAULT_ARMOR_TEXT_X_OFFSET;
+        this.armorTextYOffset = DEFAULT_ARMOR_TEXT_Y_OFFSET;
+        this.armorTextColor = DEFAULT_ARMOR_TEXT_COLOR;
+        this.armorTextOpacity = DEFAULT_ARMOR_TEXT_OPACITY;
+        this.armorTextSize = DEFAULT_ARMOR_TEXT_SIZE;
+        this.showArmorText = DEFAULT_SHOW_ARMOR_TEXT;
+        this.armorTextAlign = DEFAULT_ARMOR_TEXT_ALIGN;
+        this.armorBackgroundXOffset = DEFAULT_ARMOR_BACKGROUND_X_OFFSET;
+        this.armorBackgroundYOffset = DEFAULT_ARMOR_BACKGROUND_Y_OFFSET;
 
         this.airBarBehavior = DEFAULT_AIR_BAR_BEHAVIOR;
         this.airBarAnchor = DEFAULT_AIR_BAR_ANCHOR;
@@ -366,6 +481,18 @@ public class ClientConfig {
         this.airIconSize = DEFAULT_AIR_ICON_SIZE;
         this.airIconXOffset = DEFAULT_AIR_ICON_X_OFFSET;
         this.airIconYOffset = DEFAULT_AIR_ICON_Y_OFFSET;
+        this.airTextXOffset = DEFAULT_AIR_TEXT_X_OFFSET;
+        this.airTextYOffset = DEFAULT_AIR_TEXT_Y_OFFSET;
+        this.airTextColor = DEFAULT_AIR_TEXT_COLOR;
+        this.airTextOpacity = DEFAULT_AIR_TEXT_OPACITY;
+        this.airTextSize = DEFAULT_AIR_TEXT_SIZE;
+        this.showAirText = DEFAULT_SHOW_AIR_TEXT;
+        this.airTextAlign = DEFAULT_AIR_TEXT_ALIGN;
+        this.airBackgroundXOffset = DEFAULT_AIR_BACKGROUND_X_OFFSET;
+        this.airBackgroundYOffset = DEFAULT_AIR_BACKGROUND_Y_OFFSET;
+        this.airBarAnimationCycles = DEFAULT_AIR_BAR_ANIMATION_CYCLES;
+        this.airBarFrameHeight = DEFAULT_AIR_BAR_FRAME_HEIGHT;
+        this.airFillDirection = DEFAULT_AIR_FILL_DIRECTION;
     }
 
     public static void setConfigPath(Path path) {
@@ -472,10 +599,15 @@ public class ClientConfig {
         // Armor
         if (cfg.armorBarBehavior == null) { cfg.armorBarBehavior = DEFAULT_ARMOR_BAR_BEHAVIOR; modified = true; }
         if (cfg.armorBarAnchor == null) { cfg.armorBarAnchor = DEFAULT_ARMOR_BAR_ANCHOR; modified = true; }
+        if (cfg.showArmorText == null) { cfg.showArmorText = DEFAULT_SHOW_ARMOR_TEXT; modified = true; }
+        if (cfg.armorTextAlign == null) { cfg.armorTextAlign = DEFAULT_ARMOR_TEXT_ALIGN; modified = true; }
         
         // Air
         if (cfg.airBarBehavior == null) { cfg.airBarBehavior = DEFAULT_AIR_BAR_BEHAVIOR; modified = true; }
         if (cfg.airBarAnchor == null) { cfg.airBarAnchor = DEFAULT_AIR_BAR_ANCHOR; modified = true; }
+        if (cfg.showAirText == null) { cfg.showAirText = DEFAULT_SHOW_AIR_TEXT; modified = true; }
+        if (cfg.airTextAlign == null) { cfg.airTextAlign = DEFAULT_AIR_TEXT_ALIGN; modified = true; }
+        if (cfg.airFillDirection == null) { cfg.airFillDirection = DEFAULT_AIR_FILL_DIRECTION; modified = true; }
 
         // Primitive types like int, boolean, double will have their Java defaults (0, false, 0.0)
         // if not present in JSON and not initialized by GSON to the POJO's initialized values.

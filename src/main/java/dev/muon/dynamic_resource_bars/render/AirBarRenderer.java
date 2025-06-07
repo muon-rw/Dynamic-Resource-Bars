@@ -1,5 +1,6 @@
 package dev.muon.dynamic_resource_bars.render;
 
+import com.mojang.blaze3d.systems.RenderSystem;
 import dev.muon.dynamic_resource_bars.DynamicResourceBars;
 import dev.muon.dynamic_resource_bars.config.ModConfigManager;
 import dev.muon.dynamic_resource_bars.config.ClientConfig;
@@ -11,10 +12,23 @@ import dev.muon.dynamic_resource_bars.util.ScreenRect;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.world.entity.player.Player;
 import dev.muon.dynamic_resource_bars.util.SubElementType;
+import dev.muon.dynamic_resource_bars.util.EditModeManager;
+import dev.muon.dynamic_resource_bars.util.HorizontalAlignment;
+import dev.muon.dynamic_resource_bars.util.TextBehavior;
+import net.minecraft.client.Minecraft;
+import dev.muon.dynamic_resource_bars.util.FillDirection;
+
+#if NEWER_THAN_20_1
+import net.minecraft.client.DeltaTracker;
+#endif
 
 public class AirBarRenderer {
     private static long airTextStartTime = 0;
     private static boolean shouldShowAirText = false;
+    
+    // Fade behavior tracking
+    private static boolean airBarSetVisible = true;
+    private static long airBarDisabledStartTime = 0L;
 
     private enum AirIcon {
         NONE("air_0"),
@@ -96,7 +110,8 @@ public class AirBarRenderer {
 
         switch (type) {
             case BACKGROUND:
-                return new ScreenRect(x, y,
+                return new ScreenRect(x + config.airBackgroundXOffset, 
+                                      y + config.airBackgroundYOffset,
                                       config.airBackgroundWidth,
                                       config.airBackgroundHeight);
             case BAR_MAIN:
@@ -104,17 +119,48 @@ public class AirBarRenderer {
                                       y + config.airBarYOffset,
                                       config.airBarWidth,
                                       config.airBarHeight);
+            case TEXT:
+                // Text area roughly matches bar area but with text offsets
+                ScreenRect barRect = getSubElementRect(SubElementType.BAR_MAIN, player);
+                return new ScreenRect(barRect.x() + config.airTextXOffset, 
+                                      barRect.y() + config.airTextYOffset, 
+                                      barRect.width(), 
+                                      barRect.height());
+            case ICON:
+                // Icon positioned at the left side of the bar, not the background
+                ScreenRect barRectForIcon = getSubElementRect(SubElementType.BAR_MAIN, player);
+                return new ScreenRect(barRectForIcon.x() - config.airIconSize / 2 + config.airIconXOffset, 
+                                      barRectForIcon.y() + (barRectForIcon.height() - config.airIconSize) / 2 + config.airIconYOffset, 
+                                      config.airIconSize, 
+                                      config.airIconSize);
             default:
                 return new ScreenRect(0, 0, 0, 0);
         }
     }
 
-    public static void render(GuiGraphics graphics, Player player) {
+    public static void render(GuiGraphics graphics, Player player, #if NEWER_THAN_20_1 DeltaTracker deltaTracker #else float partialTicks #endif) {
         ClientConfig config = ModConfigManager.getClient();
 
         int maxAir = player.getMaxAirSupply();
         int currentAir = player.getAirSupply();
-        if (currentAir >= maxAir && !player.isUnderWater()) return;
+        
+        // Set visibility based on air status (fade when full) unless in edit mode or underwater
+        setAirBarVisibility(currentAir < maxAir || player.isUnderWater() || EditModeManager.isEditModeEnabled());
+        
+        // Don't render if fully faded and not in edit mode
+        if (!isAirBarVisible() && !EditModeManager.isEditModeEnabled() && 
+            (System.currentTimeMillis() - airBarDisabledStartTime) > RenderUtil.BAR_FADEOUT_DURATION) {
+            return;
+        }
+        
+        // Get current alpha for rendering
+        float currentAlphaForRender = getAirBarAlpha();
+        if (EditModeManager.isEditModeEnabled() && !isAirBarVisible()) {
+            currentAlphaForRender = 1.0f; // Show fully in edit mode
+        }
+        
+        RenderSystem.enableBlend();
+        RenderSystem.setShaderColor(1.0f, 1.0f, 1.0f, currentAlphaForRender);
 
         Position airPos = HUDPositioning.getPositionFromAnchor(config.airBarAnchor);
         boolean isRightAnchored = config.airBarAnchor.getSide() == HUDPositioning.AnchorSide.RIGHT;
@@ -129,83 +175,209 @@ public class AirBarRenderer {
         int barOnlyYOffset = config.airBarYOffset;
         int iconSize = config.airIconSize;
 
+        // Animation config
+        int animationCycles = config.airBarAnimationCycles;
+        int frameHeightForAnim = config.airBarFrameHeight; // This is the V-offset step in texture per animation cycle
+        FillDirection fillDirection = config.airFillDirection;
+
         int xPos = airPos.x();
         int yPos = airPos.y();
 
+        // Calculate animation offset
+        float ticks = player.tickCount + (#if NEWER_THAN_20_1 deltaTracker.getGameTimeDeltaTicks() #else partialTicks #endif);
+        int animOffset = (int) ((ticks / 3) % animationCycles) * frameHeightForAnim;
+
         graphics.blit(
                 DynamicResourceBars.loc("textures/gui/air_background.png"),
-                xPos, yPos, 0, 0, backgroundWidth, backgroundHeight, 256, 256
+                xPos + config.airBackgroundXOffset, 
+                yPos + config.airBackgroundYOffset, 
+                0, 0, backgroundWidth, backgroundHeight, 256, 256
         );
 
-        float airPercent = Math.min(1.0f, (float) currentAir / maxAir);
-        int filledWidth = Math.round(barWidth * airPercent);
+        float airPercent = (maxAir == 0) ? 0.0f : Math.min(1.0f, (float) currentAir / maxAir);
 
-        if (filledWidth > 0) {
-            int barX = xPos + barOnlyXOffset;
-            if (isRightAnchored) {
-                barX = xPos + barOnlyXOffset + barWidth - filledWidth;
+        if (fillDirection == FillDirection.VERTICAL) {
+            int filledHeight = Math.round(barHeight * airPercent);
+            if (currentAir > 0 && filledHeight == 0) filledHeight = 1; // Ensure 1 pixel visible if there's air
+
+            if (filledHeight > 0) {
+                int barRenderX = xPos + barOnlyXOffset;
+                int barRenderY = yPos + barOnlyYOffset + (barHeight - filledHeight); // Fill from bottom up
+                // Texture V offset needs to match the visible portion of the bar's animation frame
+                // and step through the animation strip.
+                int textureVOffset = animOffset + (barHeight - filledHeight);
+
+                graphics.blit(
+                        DynamicResourceBars.loc("textures/gui/air_bar.png"),
+                        barRenderX, barRenderY,
+                        0, textureVOffset,       // uOffset, vOffset
+                        barWidth, filledHeight,   // imageWidth, imageHeight (drawn size)
+                        256, 1024                // textureSheetWidth, textureSheetHeight
+                );
+            }
+        } else { // HORIZONTAL
+            int filledWidth = Math.round(barWidth * airPercent);
+            if (currentAir > 0 && filledWidth == 0) filledWidth = 1; // Ensure 1 pixel visible if there's air
+
+            if (filledWidth > 0) {
+                int barRenderX = xPos + barOnlyXOffset;
+                if (isRightAnchored) {
+                    barRenderX = xPos + barOnlyXOffset + barWidth - filledWidth;
+                }
+
+                graphics.blit(
+                        DynamicResourceBars.loc("textures/gui/air_bar.png"),
+                        barRenderX, yPos + barOnlyYOffset,
+                        0, animOffset,             // uOffset, vOffset (animOffset is the start of the current animation frame)
+                        filledWidth, barHeight,     // imageWidth, imageHeight (drawn size)
+                        256, 1024                  // textureSheetWidth, textureSheetHeight
+                );
+            }
+        }
+
+        if (shouldRenderText() || EditModeManager.isEditModeEnabled()) {
+            ScreenRect textRect = getSubElementRect(SubElementType.TEXT, player);
+            int textX = textRect.x() + (textRect.width() / 2);
+            int textY = textRect.y() + (textRect.height() / 2);
+            int color = getTextColor();
+            HorizontalAlignment alignment = config.airTextAlign;
+
+            int baseX = textRect.x();
+            if (alignment == HorizontalAlignment.CENTER) {
+                baseX = textX;
+            } else if (alignment == HorizontalAlignment.RIGHT) {
+                baseX = textRect.x() + textRect.width();
             }
 
-            graphics.blit(
-                    DynamicResourceBars.loc("textures/gui/air_bar.png"),
-                    barX,
-                    yPos + barOnlyYOffset,
-                    0, 0,
-                    filledWidth,
-                    barHeight,
-                    256, 256
-            );
-        }
-
-        if (shouldRenderText()) {
-            int textX = (xPos + (backgroundWidth / 2));
-            int textY = (yPos + barOnlyYOffset);
-            int color = getTextColor();
-
             RenderUtil.renderText(currentAir, maxAir,
-                    graphics, textX, textY, color);
+                    graphics, baseX, textY, color, alignment);
         }
 
-        if (config.enableAirIcon) {
-            AirIcon icon = AirIcon.fromAirValue(currentAir, maxAir);
-            int iconX = isRightAnchored ?
-                    xPos + backgroundWidth - iconSize + config.airIconXOffset :
-                    xPos - 1 + config.airIconXOffset;
-
+        if (config.enableAirIcon || EditModeManager.isEditModeEnabled()) {
+            int displayAir = EditModeManager.isEditModeEnabled() && currentAir >= maxAir ? maxAir / 2 : currentAir;
+            AirIcon icon = AirIcon.fromAirValue(displayAir, maxAir);
+            ScreenRect iconRect = getSubElementRect(SubElementType.ICON, player);
+            
             graphics.blit(
                     DynamicResourceBars.loc("textures/gui/air/" + icon.getTexture() + ".png"),
-                    iconX,
-                    yPos + (backgroundHeight - iconSize) / 2 - 2 + config.airIconYOffset,
+                    iconRect.x(),
+                    iconRect.y(),
                     0, 0,
-                    iconSize, iconSize,
-                    iconSize, iconSize
+                    iconRect.width(), iconRect.height(),
+                    iconRect.width(), iconRect.height()
             );
         }
+        
+        // Add focus mode outline rendering
+        if (EditModeManager.isEditModeEnabled()) {
+            ScreenRect complexRect = getScreenRect(player);
+            if (EditModeManager.getFocusedElement() == dev.muon.dynamic_resource_bars.util.DraggableElement.AIR_BAR) {
+                int focusedBorderColor = 0xA0FFFF00;
+                ScreenRect bgRect = getSubElementRect(SubElementType.BACKGROUND, player);
+                graphics.renderOutline(bgRect.x()-1, bgRect.y()-1, bgRect.width()+2, bgRect.height()+2, focusedBorderColor);
+                
+                ScreenRect barRect = getSubElementRect(SubElementType.BAR_MAIN, player);
+                graphics.renderOutline(barRect.x()-1, barRect.y()-1, barRect.width()+2, barRect.height()+2, 0xA0ADD8E6);
+                
+                graphics.renderOutline(complexRect.x()-2, complexRect.y()-2, complexRect.width()+4, complexRect.height()+4, 0x80FFFFFF);
+            } else {
+                int borderColor = 0x80FFFFFF;
+                graphics.renderOutline(complexRect.x()-1, complexRect.y()-1, complexRect.width()+2, complexRect.height()+2, borderColor);
+            }
+        }
+        
+        RenderSystem.setShaderColor(1.0f, 1.0f, 1.0f, 1.0f);
+        RenderSystem.disableBlend();
     }
 
     private static int getTextColor() {
-        long timeSinceTextTrigger = airTextStartTime > 0 ?
+        ClientConfig config = ModConfigManager.getClient();
+        TextBehavior behavior = config.showAirText;
+        long timeSinceNotFull = airTextStartTime > 0 ?
                 System.currentTimeMillis() - airTextStartTime : 0;
 
-        int alpha = RenderUtil.calculateTextAlpha(timeSinceTextTrigger);
-        alpha = Math.max(10, alpha);
+        int baseColor = config.airTextColor & 0xFFFFFF;
+        int alpha = config.airTextOpacity;
 
-        return (alpha << 24) | 0xFFFFFF;
+        if (behavior == TextBehavior.WHEN_NOT_FULL && shouldShowAirText) {
+             // Already handled by shouldRenderText logic, just render with full alpha
+        } else if (behavior == TextBehavior.WHEN_NOT_FULL && !shouldShowAirText) {
+            alpha = (int)(alpha * (RenderUtil.calculateTextAlpha(timeSinceNotFull) / (float)RenderUtil.BASE_TEXT_ALPHA));
+        }
+        
+        alpha = (int) (alpha * getAirBarAlpha()); // Modulate with bar alpha
+        alpha = Math.max(10, Math.min(255, alpha));
+
+        return (alpha << 24) | baseColor;
     }
 
     private static boolean shouldRenderText() {
-        long timeSinceTextTrigger = airTextStartTime > 0 ?
-                System.currentTimeMillis() - airTextStartTime : 0;
-        return shouldShowAirText ||
-                (airTextStartTime > 0 && timeSinceTextTrigger < RenderUtil.TEXT_DISPLAY_DURATION);
+        TextBehavior behavior = ModConfigManager.getClient().showAirText;
+
+        if (EditModeManager.isEditModeEnabled()) {
+            if (behavior == TextBehavior.ALWAYS || behavior == TextBehavior.WHEN_NOT_FULL) {
+                return true;
+            }
+        }
+        if (behavior == TextBehavior.NEVER) {
+            return false;
+        }
+        if (behavior == TextBehavior.ALWAYS) {
+            return true;
+        }
+
+        // WHEN_NOT_FULL logic
+        int currentAir = Minecraft.getInstance().player.getAirSupply();
+        int maxAir = Minecraft.getInstance().player.getMaxAirSupply();
+        boolean isNotFull = currentAir < maxAir;
+
+        if (isNotFull) {
+            shouldShowAirText = true;
+            airTextStartTime = System.currentTimeMillis(); // Keep resetting timer while not full
+            return true;
+        } else {
+            // Was not full, but now is. Fade out.
+            if (shouldShowAirText) {
+                shouldShowAirText = false; // Stop persistent rendering
+            }
+            long timeSinceFull = System.currentTimeMillis() - airTextStartTime;
+            return timeSinceFull < RenderUtil.TEXT_DISPLAY_DURATION;
+        }
     }
 
     public static void triggerTextDisplay() {
+        // This method may no longer be necessary with the new logic, but keeping for now
         airTextStartTime = System.currentTimeMillis();
         shouldShowAirText = true;
     }
 
     public static void stopTextDisplay() {
+        // This method may no longer be necessary with the new logic, but keeping for now
         shouldShowAirText = false;
+    }
+
+    // New fade behavior methods
+    private static void setAirBarVisibility(boolean visible) {
+        if (airBarSetVisible != visible) {
+            if (!visible) {
+                airBarDisabledStartTime = System.currentTimeMillis();
+            }
+            airBarSetVisible = visible;
+        }
+    }
+
+    private static boolean isAirBarVisible() {
+        return airBarSetVisible;
+    }
+
+    private static float getAirBarAlpha() {
+        if (isAirBarVisible()) {
+            return 1.0f;
+        }
+        long timeSinceDisabled = System.currentTimeMillis() - airBarDisabledStartTime;
+        if (timeSinceDisabled >= RenderUtil.BAR_FADEOUT_DURATION) {
+            return 0.0f;
+        }
+        return Math.max(0.0f, 1.0f - (timeSinceDisabled / (float) RenderUtil.BAR_FADEOUT_DURATION));
     }
 }

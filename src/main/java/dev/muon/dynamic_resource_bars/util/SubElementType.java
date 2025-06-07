@@ -4,5 +4,7 @@ public enum SubElementType {
     BACKGROUND,
     BAR_MAIN,       // The main resource bar (health, mana, stamina)
     FOREGROUND_DETAIL, // The detailed overlay often called "detail_overlay.png"
-    // Potential future additions: ICON (for armor/air), TEXT_AREA
+    TEXT,           // The text display (e.g., "100 / 100")
+    ICON,           // Icons like armor tier or air level
+    ABSORPTION_TEXT // Absorption amount text (e.g., "+8")
 } 

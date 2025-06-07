@@ -109,7 +109,7 @@ public abstract class GuiMixin {
         // TODO: Maybe use more precise mixin targets. Low priority because the target method fills me with rage.
         if (player != null && config.enableStaminaBar) {
             StaminaBarRenderer.render(guiGraphics, player, this.minecraft.getFrameTime());
-            AirBarRenderer.render(guiGraphics, player);
+            AirBarRenderer.render(guiGraphics, player, this.minecraft.getFrameTime());
             ci.cancel();
         }
     }

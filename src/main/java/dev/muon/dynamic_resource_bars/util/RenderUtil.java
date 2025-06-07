@@ -18,15 +18,17 @@ public class RenderUtil {
         PoseStack poseStack = graphics.pose();
         poseStack.pushPose();
         float scalingFactor = (float) ModConfigManager.getClient().textScalingFactor;
+        float globalTextSize = ModConfigManager.getClient().globalTextSize;
+        float finalScale = scalingFactor * globalTextSize;
 
         // Apply scaling
-        poseStack.scale(scalingFactor, scalingFactor, 1.0f);
-        int scaledX = (int) (baseX / scalingFactor);
+        poseStack.scale(finalScale, finalScale, 1.0f);
+        int scaledX = (int) (baseX / finalScale);
         // Adjust Y for vertical centering. Font height is 9, so half is 4.5, round to 4 or 5.
         // Minecraft's drawString typically treats y as the top of the text.
         // To center, we need to shift it up by half the text height.
         // Font.lineHeight is usually 9.
-        int scaledY = (int) (baseY / scalingFactor) - (minecraft.font.lineHeight / 2);
+        int scaledY = (int) (baseY / finalScale) - (minecraft.font.lineHeight / 2);
 
 
         String currentText = String.valueOf((int)current);
@@ -58,25 +60,29 @@ public class RenderUtil {
         PoseStack poseStack = graphics.pose();
         poseStack.pushPose();
         float scalingFactor = (float) ModConfigManager.getClient().textScalingFactor;
+        float globalTextSize = ModConfigManager.getClient().globalTextSize;
+        float finalScale = scalingFactor * globalTextSize;
 
-        int xPos = (int) (baseX / scalingFactor);
-        int yPos = (int) (baseY / scalingFactor) - (minecraft.font.lineHeight / 2);
-        poseStack.scale(scalingFactor, scalingFactor, 1.0f);
+        int xPos = (int) (baseX / finalScale);
+        int yPos = (int) (baseY / finalScale) - (minecraft.font.lineHeight / 2);
+        poseStack.scale(finalScale, finalScale, 1.0f);
 
         graphics.drawString(minecraft.font, text, xPos, yPos, color, true);
 
         poseStack.popPose();
     }
 
-    public static void renderArmorText(float value, GuiGraphics graphics, int baseX, int baseY, int color) {
+    public static void renderArmorText(float value, GuiGraphics graphics, int baseX, int baseY, int color, HorizontalAlignment alignment) {
         Minecraft minecraft = Minecraft.getInstance();
         PoseStack poseStack = graphics.pose();
         poseStack.pushPose();
         float scalingFactor = (float) ModConfigManager.getClient().textScalingFactor;
+        float globalTextSize = ModConfigManager.getClient().globalTextSize;
+        float finalScale = scalingFactor * globalTextSize;
 
-        int xPos = (int) (baseX / scalingFactor);
-        int yPos = (int) (baseY / scalingFactor) - (minecraft.font.lineHeight / 2); // Added vertical centering
-        poseStack.scale(scalingFactor, scalingFactor, 1.0f);
+        int scaledX = (int) (baseX / finalScale);
+        int scaledY = (int) (baseY / finalScale) - (minecraft.font.lineHeight / 2); // Added vertical centering
+        poseStack.scale(finalScale, finalScale, 1.0f);
 
         String text;
         if (Math.abs(value - Math.floor(value)) < 0.1f) {
@@ -84,11 +90,22 @@ public class RenderUtil {
         } else {
             text = String.format("%.1f", value);
         }
-
+        
         int textWidth = minecraft.font.width(text);
-        graphics.drawString(minecraft.font, text, xPos - (textWidth / 2), yPos, color, true); // Assumes armor text is always centered
+        int actualX = scaledX;
+        if (alignment == HorizontalAlignment.CENTER) {
+            actualX = scaledX - (textWidth / 2);
+        } else if (alignment == HorizontalAlignment.RIGHT) {
+            actualX = scaledX - textWidth;
+        }
+
+        graphics.drawString(minecraft.font, text, actualX, scaledY, color, true);
 
         poseStack.popPose();
+    }
+
+    public static void renderArmorText(float value, GuiGraphics graphics, int baseX, int baseY, int color) {
+        renderArmorText(value, graphics, baseX, baseY, color, HorizontalAlignment.CENTER);
     }
 
     public static int calculateTextAlpha(long timeSinceEvent) {

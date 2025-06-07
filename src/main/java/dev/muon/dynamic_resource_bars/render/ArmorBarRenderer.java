@@ -28,10 +28,17 @@ import net.minecraft.client.DeltaTracker;
 
 import dev.muon.dynamic_resource_bars.util.SubElementType;
 import dev.muon.dynamic_resource_bars.util.TickHandler;
+import dev.muon.dynamic_resource_bars.util.EditModeManager;
+import dev.muon.dynamic_resource_bars.util.HorizontalAlignment;
+import dev.muon.dynamic_resource_bars.util.TextBehavior;
 
 public class ArmorBarRenderer {
     private static long armorTextStartTime = 0;
     private static boolean shouldShowArmorText = false;
+    
+    // Fade behavior tracking
+    private static boolean armorBarSetVisible = true;
+    private static long armorBarDisabledStartTime = 0L;
 
     private enum ArmorIcon {
         NONE("tier_0"),
@@ -90,7 +97,8 @@ public class ArmorBarRenderer {
 
         switch (type) {
             case BACKGROUND:
-                return new ScreenRect(x, y,
+                return new ScreenRect(x + config.armorBackgroundXOffset, 
+                                      y + config.armorBackgroundYOffset,
                                       config.armorBackgroundWidth,
                                       config.armorBackgroundHeight);
             case BAR_MAIN:
@@ -98,6 +106,20 @@ public class ArmorBarRenderer {
                                       y + config.armorBarYOffset,
                                       config.armorBarWidth,
                                       config.armorBarHeight);
+            case TEXT:
+                // Text area roughly matches bar area but with text offsets
+                ScreenRect barRect = getSubElementRect(SubElementType.BAR_MAIN, player);
+                return new ScreenRect(barRect.x() + config.armorTextXOffset, 
+                                      barRect.y() + config.armorTextYOffset, 
+                                      barRect.width(), 
+                                      barRect.height());
+            case ICON:
+                // Icon positioned at the left side of the bar, not the background
+                ScreenRect barRectForIcon = getSubElementRect(SubElementType.BAR_MAIN, player);
+                return new ScreenRect(barRectForIcon.x() - config.armorIconSize / 2 + config.armorIconXOffset, 
+                                      barRectForIcon.y() + (barRectForIcon.height() - config.armorIconSize) / 2 + config.armorIconYOffset, 
+                                      config.armorIconSize, 
+                                      config.armorIconSize);
             default:
                 return new ScreenRect(0, 0, 0, 0);
         }
@@ -108,6 +130,32 @@ public class ArmorBarRenderer {
         if (config.armorBarBehavior != BarRenderBehavior.CUSTOM) {
             return;
         }
+        
+        int armorValue = player.getArmorValue();
+        
+        // Use a dummy value in edit mode for visibility
+        if (EditModeManager.isEditModeEnabled() && armorValue == 0) {
+            armorValue = config.maxExpectedArmor; 
+        }
+        
+        // Set visibility based on armor value (fade when empty) unless in edit mode
+        setArmorBarVisibility(armorValue > 0 || EditModeManager.isEditModeEnabled());
+        
+        // Don't render if fully faded and not in edit mode
+        if (!isArmorBarVisible() && !EditModeManager.isEditModeEnabled() && 
+            (System.currentTimeMillis() - armorBarDisabledStartTime) > RenderUtil.BAR_FADEOUT_DURATION) {
+            return;
+        }
+        
+        // Get current alpha for rendering
+        float currentAlphaForRender = getArmorBarAlpha();
+        if (EditModeManager.isEditModeEnabled() && !isArmorBarVisible()) {
+            currentAlphaForRender = 1.0f; // Show fully in edit mode
+        }
+        
+        RenderSystem.enableBlend();
+        RenderSystem.setShaderColor(1.0f, 1.0f, 1.0f, currentAlphaForRender);
+        
         Position armorPos = HUDPositioning.getPositionFromAnchor(config.armorBarAnchor)
                 .offset(config.armorTotalXOffset, config.armorTotalYOffset);
 
@@ -124,10 +172,12 @@ public class ArmorBarRenderer {
         int yPos = armorPos.y();
 
         graphics.blit(
-                DynamicResourceBars.loc("textures/gui/armor_background.png"), xPos, yPos, 0, 0, backgroundWidth, backgroundHeight, 256, 256
+                DynamicResourceBars.loc("textures/gui/armor_background.png"), 
+                xPos + config.armorBackgroundXOffset, 
+                yPos + config.armorBackgroundYOffset, 
+                0, 0, backgroundWidth, backgroundHeight, 256, 256
         );
 
-        int armorValue = player.getArmorValue();
         float armorPercent = Math.min(1.0f, (float) armorValue / config.maxExpectedArmor);
 
         int filledWidth = Math.round((barWidth - (float) iconSize / 2) * armorPercent);
@@ -152,31 +202,59 @@ public class ArmorBarRenderer {
             );
         }
 
-        if (shouldRenderText()) {
-            int textX = (xPos + (backgroundWidth / 2));
-            int textY = (yPos + barOnlyYOffset);
+        if (shouldRenderText() || EditModeManager.isEditModeEnabled()) {
+            ScreenRect textRect = getSubElementRect(SubElementType.TEXT, player);
+            int textX = textRect.x() + (textRect.width() / 2);
+            int textY = textRect.y() + (textRect.height() / 2);
             int color = getTextColor();
+            HorizontalAlignment alignment = config.armorTextAlign;
+            
+            int baseX = textRect.x();
+            if (alignment == HorizontalAlignment.CENTER) {
+                baseX = textX;
+            } else if (alignment == HorizontalAlignment.RIGHT) {
+                baseX = textRect.x() + textRect.width();
+            }
 
             RenderUtil.renderArmorText(armorValue,
-                    graphics, textX, textY, color);
+                    graphics, baseX, textY, color, alignment);
         }
         renderProtectionOverlay(graphics, player, config, xPos, yPos, barWidth, barHeight, barOnlyXOffset, barOnlyYOffset, iconSize);
 
-        if (config.enableArmorIcon) {
+        if (config.enableArmorIcon || EditModeManager.isEditModeEnabled()) {
             ArmorIcon icon = ArmorIcon.fromArmorValue(armorValue);
-            int iconX = isRightAnchored ?
-                    xPos + backgroundWidth - iconSize + config.armorIconXOffset :
-                    xPos - 1 + config.armorIconXOffset;
-
+            ScreenRect iconRect = getSubElementRect(SubElementType.ICON, player);
+            
             graphics.blit(
                     DynamicResourceBars.loc("textures/gui/armors/" + icon.getTexture() + ".png"),
-                    iconX,
-                    yPos + (backgroundHeight - iconSize) / 2 - 2 + config.armorIconYOffset,
+                    iconRect.x(),
+                    iconRect.y(),
                     0, 0,
-                    iconSize, iconSize,
-                    iconSize, iconSize
+                    iconRect.width(), iconRect.height(),
+                    iconRect.width(), iconRect.height()
             );
         }
+        
+        // Add focus mode outline rendering
+        if (EditModeManager.isEditModeEnabled()) {
+            ScreenRect complexRect = getScreenRect(player);
+            if (EditModeManager.getFocusedElement() == dev.muon.dynamic_resource_bars.util.DraggableElement.ARMOR_BAR) {
+                int focusedBorderColor = 0xA0FFFF00;
+                ScreenRect bgRect = getSubElementRect(SubElementType.BACKGROUND, player);
+                graphics.renderOutline(bgRect.x()-1, bgRect.y()-1, bgRect.width()+2, bgRect.height()+2, focusedBorderColor);
+                
+                ScreenRect barRect = getSubElementRect(SubElementType.BAR_MAIN, player);
+                graphics.renderOutline(barRect.x()-1, barRect.y()-1, barRect.width()+2, barRect.height()+2, 0xA0C0C0C0);
+                
+                graphics.renderOutline(complexRect.x()-2, complexRect.y()-2, complexRect.width()+4, complexRect.height()+4, 0x80FFFFFF);
+            } else {
+                int borderColor = 0x80FFFFFF;
+                graphics.renderOutline(complexRect.x()-1, complexRect.y()-1, complexRect.width()+2, complexRect.height()+2, borderColor);
+            }
+        }
+        
+        RenderSystem.setShaderColor(1.0f, 1.0f, 1.0f, 1.0f);
+        RenderSystem.disableBlend();
     }
 
     private static void renderProtectionOverlay(GuiGraphics graphics, Player player, ClientConfig config,
@@ -221,20 +299,55 @@ public class ArmorBarRenderer {
 
 
     private static int getTextColor() {
+        ClientConfig config = ModConfigManager.getClient();
         long timeSinceTextTrigger = armorTextStartTime > 0 ?
                 System.currentTimeMillis() - armorTextStartTime : 0;
 
-        int alpha = RenderUtil.calculateTextAlpha(timeSinceTextTrigger);
-        alpha = Math.max(10, alpha);
+        int baseColor = config.armorTextColor & 0xFFFFFF;
+        int alpha = config.armorTextOpacity;
+        
+        if (!shouldShowArmorText && armorTextStartTime > 0) {
+            alpha = (int)(alpha * (RenderUtil.calculateTextAlpha(timeSinceTextTrigger) / (float)RenderUtil.BASE_TEXT_ALPHA));
+        }
+        
+        alpha = (int) (alpha * getArmorBarAlpha()); // Modulate with bar alpha
+        alpha = Math.max(10, Math.min(255, alpha));
 
-        return (alpha << 24) | 0xFFFFFF;
+        return (alpha << 24) | baseColor;
     }
 
     private static boolean shouldRenderText() {
-        long timeSinceTextTrigger = armorTextStartTime > 0 ?
-                System.currentTimeMillis() - armorTextStartTime : 0;
-        return shouldShowArmorText ||
-                (armorTextStartTime > 0 && timeSinceTextTrigger < RenderUtil.TEXT_DISPLAY_DURATION);
+        if (EditModeManager.isEditModeEnabled()) {
+            return true;
+        }
+        
+        TextBehavior behavior = ModConfigManager.getClient().showArmorText;
+        if (EditModeManager.isEditModeEnabled()) {
+            if (behavior == TextBehavior.ALWAYS || behavior == TextBehavior.WHEN_NOT_FULL) {
+                return true;
+            }
+        }
+        if (behavior == TextBehavior.NEVER) {
+            return false;
+        }
+        if (behavior == TextBehavior.ALWAYS) {
+            return true;
+        }
+        
+        // WHEN_NOT_FULL logic - for armor, we can interpret this as "when armor is not 0"
+        int armorValue = Minecraft.getInstance().player.getArmorValue();
+        boolean hasArmor = armorValue > 0;
+        
+        if (!hasArmor) {
+            if (armorTextStartTime == 0) { // Just lost armor
+                armorTextStartTime = System.currentTimeMillis();
+            }
+            // Show for a short duration after losing armor
+            return (System.currentTimeMillis() - armorTextStartTime) < RenderUtil.TEXT_DISPLAY_DURATION;
+        } else {
+            armorTextStartTime = 0; // Reset timer when armor is present
+            return true; // Has armor, so show
+        }
     }
 
     public static void triggerTextDisplay() {
@@ -263,5 +376,30 @@ public class ArmorBarRenderer {
         }
         #endif
         return false;
+    }
+
+    // New fade behavior methods
+    private static void setArmorBarVisibility(boolean visible) {
+        if (armorBarSetVisible != visible) {
+            if (!visible) {
+                armorBarDisabledStartTime = System.currentTimeMillis();
+            }
+            armorBarSetVisible = visible;
+        }
+    }
+
+    private static boolean isArmorBarVisible() {
+        return armorBarSetVisible;
+    }
+
+    private static float getArmorBarAlpha() {
+        if (isArmorBarVisible()) {
+            return 1.0f;
+        }
+        long timeSinceDisabled = System.currentTimeMillis() - armorBarDisabledStartTime;
+        if (timeSinceDisabled >= RenderUtil.BAR_FADEOUT_DURATION) {
+            return 0.0f;
+        }
+        return Math.max(0.0f, 1.0f - (timeSinceDisabled / (float) RenderUtil.BAR_FADEOUT_DURATION));
     }
 }

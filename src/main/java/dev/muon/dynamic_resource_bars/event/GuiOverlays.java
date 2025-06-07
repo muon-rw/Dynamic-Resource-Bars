@@ -39,7 +39,7 @@ public class GuiOverlays {
         }
 
         if (config.airBarBehavior == BarRenderBehavior.CUSTOM) {
-            AirBarRenderer.render(graphics, player);
+            AirBarRenderer.render(graphics, player, partialTick);
             gui.rightHeight += config.airBackgroundHeight + 1;
         }
 
