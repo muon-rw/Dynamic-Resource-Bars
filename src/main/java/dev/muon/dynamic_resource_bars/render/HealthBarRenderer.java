@@ -91,19 +91,17 @@ public class HealthBarRenderer {
                                       ModConfigManager.getClient().healthOverlayWidth,
                                       ModConfigManager.getClient().healthOverlayHeight);
             case TEXT:
-                // Text area roughly matches bar area but with text offsets
-                ScreenRect barRect = getSubElementRect(SubElementType.BAR_MAIN, player);
-                return new ScreenRect(barRect.x() + ModConfigManager.getClient().healthTextXOffset, 
-                                      barRect.y() + ModConfigManager.getClient().healthTextYOffset, 
-                                      barRect.width(), 
-                                      barRect.height());
+                // Text area now positioned relative to complexRect, using healthBarWidth/Height for its dimensions
+                return new ScreenRect(x + ModConfigManager.getClient().healthTextXOffset, 
+                                      y + ModConfigManager.getClient().healthTextYOffset, 
+                                      ModConfigManager.getClient().healthBarWidth, 
+                                      ModConfigManager.getClient().healthBarHeight);
             case ABSORPTION_TEXT:
-                // Absorption text is positioned relative to the main bar
-                ScreenRect mainBarRect = getSubElementRect(SubElementType.BAR_MAIN, player);
-                return new ScreenRect(mainBarRect.x() + mainBarRect.width() + ModConfigManager.getClient().healthAbsorptionTextXOffset, 
-                                      mainBarRect.y() + ModConfigManager.getClient().healthAbsorptionTextYOffset, 
+                // Absorption text positioned relative to complexRect, with fixed width and healthBarHeight
+                return new ScreenRect(x + ModConfigManager.getClient().healthAbsorptionTextXOffset, 
+                                      y + ModConfigManager.getClient().healthAbsorptionTextYOffset, 
                                       50, // Approximate width for absorption text
-                                      mainBarRect.height());
+                                      ModConfigManager.getClient().healthBarHeight); // Height based on bar height
             default:
                 return new ScreenRect(0,0,0,0);
         }
@@ -152,16 +150,17 @@ public class HealthBarRenderer {
         int animOffset = (int) (((player.tickCount + #if NEWER_THAN_20_1 deltaTracker.getGameTimeDeltaTicks() #else partialTicks #endif) / 3) % animationCycles) * frameHeight;
 
         ScreenRect mainBarRect = getSubElementRect(SubElementType.BAR_MAIN, player);
+        boolean isRightAnchored = ModConfigManager.getClient().healthBarAnchor.getSide() == HUDPositioning.AnchorSide.RIGHT;
         renderBaseBar(graphics, player, maxHealth, actualHealth, 
                       mainBarRect.x(), mainBarRect.y(), mainBarRect.width(), mainBarRect.height(), 
                       0, 0,
-                      animOffset);
+                      animOffset, isRightAnchored);
 
         // Render AppleSkin estimated health overlay
         if (AppleSkinCompat.isLoaded()) {
             ItemStack heldFood = getHeldFood(player);
             if (!heldFood.isEmpty()) {
-                renderHealthRestoredOverlay(graphics, player, heldFood, actualHealth, maxHealth, mainBarRect, animOffset);
+                renderHealthRestoredOverlay(graphics, player, heldFood, actualHealth, maxHealth, mainBarRect, animOffset, isRightAnchored);
             }
         }
 
@@ -245,15 +244,14 @@ public class HealthBarRenderer {
     private static void renderBaseBar(GuiGraphics graphics, Player player, float maxHealth, float actualHealth,
                                       int barAbsX, int barAbsY, int barAbsWidth, int barAbsHeight, 
                                       int barXOffsetWithinTexture, int barYOffsetWithinTexture,
-                                      int animOffset) {
+                                      int animOffset, boolean isRightAnchored) {
         BarType barType = BarType.fromPlayerState(player);
-        int partialBarWidth = (int) (barAbsWidth * (actualHealth / maxHealth));
-        if (partialBarWidth <= 0 && actualHealth > 0) partialBarWidth = 1;
+        float currentHealthRatio = (maxHealth == 0) ? 0.0f : (actualHealth / maxHealth);
 
         FillDirection fillDirection = ModConfigManager.getClient().healthFillDirection;
 
         if (fillDirection == FillDirection.VERTICAL) {
-            int partialBarHeight = (int) (barAbsHeight * (actualHealth / maxHealth));
+            int partialBarHeight = (int) (barAbsHeight * currentHealthRatio);
             if (partialBarHeight <= 0 && actualHealth > 0) partialBarHeight = 1;
             if (partialBarHeight > 0) {
                 graphics.blit(
@@ -265,11 +263,21 @@ public class HealthBarRenderer {
                 );
             }
         } else { // HORIZONTAL (current behavior)
+            int partialBarWidth = (int) (barAbsWidth * currentHealthRatio);
+            if (partialBarWidth <= 0 && actualHealth > 0) partialBarWidth = 1;
             if (partialBarWidth > 0) {
+                int renderBarX = barAbsX;
+                int uTexOffset = barXOffsetWithinTexture;
+
+                if (isRightAnchored) {
+                    renderBarX = barAbsX + barAbsWidth - partialBarWidth;
+                    uTexOffset = barXOffsetWithinTexture + barAbsWidth - partialBarWidth;
+                }
+
                 graphics.blit(
                         DynamicResourceBars.loc("textures/gui/" + barType.getTexture() + ".png"),
-                        barAbsX, barAbsY,
-                        barXOffsetWithinTexture, animOffset + barYOffsetWithinTexture,
+                        renderBarX, barAbsY,
+                        uTexOffset, animOffset + barYOffsetWithinTexture,
                         partialBarWidth, barAbsHeight,
                         256, 1024
                 );
@@ -550,7 +558,7 @@ public class HealthBarRenderer {
     
     private static void renderHealthRestoredOverlay(GuiGraphics graphics, Player player, ItemStack heldFood,
                                                    float currentHealth, float maxHealth,
-                                                   ScreenRect barRect, int animOffset) {
+                                                   ScreenRect barRect, int animOffset, boolean isRightAnchored) {
         if (!AppleSkinCompat.isLoaded()) {
             return;
         }
@@ -593,10 +601,27 @@ public class HealthBarRenderer {
             int overlayWidth = restoredWidth - currentWidth;
             
             if (overlayWidth > 0) {
+                int xDrawPos;
+                int uTexOffset;
+
+                if (isRightAnchored) {
+                    // Overlay is to the left of the current filled portion, extending further left.
+                    // The restored portion effectively starts at (barRect.width - restoredWidth)
+                    // The current portion starts at (barRect.width - currentWidth)
+                    // The overlay starts at (barRect.width - restoredWidth) and has width (restoredWidth - currentWidth)
+                    xDrawPos = barRect.x() + barRect.width() - restoredWidth;
+                    // We want to sample the portion of the texture that represents the *additional* health.
+                    // This would be the segment from (barRect.width - restoredWidth) to (barRect.width - currentWidth) in the texture.
+                    uTexOffset = barRect.width() - restoredWidth; 
+                } else {
+                    xDrawPos = barRect.x() + currentWidth;
+                    uTexOffset = currentWidth; // Sample from where the current health ends in the texture
+                }
+
                 graphics.blit(
                     DynamicResourceBars.loc("textures/gui/" + barType.getTexture() + ".png"),
-                    barRect.x() + currentWidth, barRect.y(),
-                    currentWidth, animOffset,
+                    xDrawPos, barRect.y(),
+                    uTexOffset, animOffset,
                     overlayWidth, barRect.height(),
                     256, 1024
                 );

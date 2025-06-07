@@ -120,17 +120,15 @@ public class AirBarRenderer {
                                       config.airBarWidth,
                                       config.airBarHeight);
             case TEXT:
-                // Text area roughly matches bar area but with text offsets
-                ScreenRect barRect = getSubElementRect(SubElementType.BAR_MAIN, player);
-                return new ScreenRect(barRect.x() + config.airTextXOffset, 
-                                      barRect.y() + config.airTextYOffset, 
-                                      barRect.width(), 
-                                      barRect.height());
+                // Text area now positioned relative to complexRect, using airBarWidth/Height for its dimensions
+                return new ScreenRect(x + config.airTextXOffset, 
+                                      y + config.airTextYOffset, 
+                                      config.airBarWidth, // Text area width based on bar width
+                                      config.airBarHeight); // Text area height based on bar height
             case ICON:
-                // Icon positioned at the left side of the bar, not the background
-                ScreenRect barRectForIcon = getSubElementRect(SubElementType.BAR_MAIN, player);
-                return new ScreenRect(barRectForIcon.x() - config.airIconSize / 2 + config.airIconXOffset, 
-                                      barRectForIcon.y() + (barRectForIcon.height() - config.airIconSize) / 2 + config.airIconYOffset, 
+                // Icon positioned relative to complexRect top-left
+                return new ScreenRect(x + config.airIconXOffset, 
+                                      y + config.airIconYOffset, 
                                       config.airIconSize, 
                                       config.airIconSize);
             default:
@@ -220,15 +218,21 @@ public class AirBarRenderer {
             if (currentAir > 0 && filledWidth == 0) filledWidth = 1; // Ensure 1 pixel visible if there's air
 
             if (filledWidth > 0) {
-                int barRenderX = xPos + barOnlyXOffset;
+                int barRenderX; // Screen X position for blitting
+                int uTexOffset; // Texture U offset for sampling
+
                 if (isRightAnchored) {
                     barRenderX = xPos + barOnlyXOffset + barWidth - filledWidth;
+                    uTexOffset = barWidth - filledWidth; // Sample the right part of the texture
+                } else { // Left-anchored
+                    barRenderX = xPos + barOnlyXOffset;
+                    uTexOffset = 0; // Sample the left part of the texture
                 }
 
                 graphics.blit(
                         DynamicResourceBars.loc("textures/gui/air_bar.png"),
                         barRenderX, yPos + barOnlyYOffset,
-                        0, animOffset,             // uOffset, vOffset (animOffset is the start of the current animation frame)
+                        uTexOffset, animOffset,     // uOffset, vOffset (animOffset is the start of the current animation frame)
                         filledWidth, barHeight,     // imageWidth, imageHeight (drawn size)
                         256, 1024                  // textureSheetWidth, textureSheetHeight
                 );

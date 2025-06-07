@@ -107,17 +107,15 @@ public class ArmorBarRenderer {
                                       config.armorBarWidth,
                                       config.armorBarHeight);
             case TEXT:
-                // Text area roughly matches bar area but with text offsets
-                ScreenRect barRect = getSubElementRect(SubElementType.BAR_MAIN, player);
-                return new ScreenRect(barRect.x() + config.armorTextXOffset, 
-                                      barRect.y() + config.armorTextYOffset, 
-                                      barRect.width(), 
-                                      barRect.height());
+                // Text area now positioned relative to complexRect, using armorBarWidth/Height for its dimensions
+                return new ScreenRect(x + config.armorTextXOffset, 
+                                      y + config.armorTextYOffset, 
+                                      config.armorBarWidth, 
+                                      config.armorBarHeight);
             case ICON:
-                // Icon positioned at the left side of the bar, not the background
-                ScreenRect barRectForIcon = getSubElementRect(SubElementType.BAR_MAIN, player);
-                return new ScreenRect(barRectForIcon.x() - config.armorIconSize / 2 + config.armorIconXOffset, 
-                                      barRectForIcon.y() + (barRectForIcon.height() - config.armorIconSize) / 2 + config.armorIconYOffset, 
+                // Icon positioned relative to complexRect top-left
+                return new ScreenRect(x + config.armorIconXOffset, 
+                                      y + config.armorIconYOffset, 
                                       config.armorIconSize, 
                                       config.armorIconSize);
             default:
@@ -183,19 +181,35 @@ public class ArmorBarRenderer {
         int filledWidth = Math.round((barWidth - (float) iconSize / 2) * armorPercent);
         if (filledWidth > 0) {
             int barX = xPos + barOnlyXOffset;
+            // Determine the actual width of the bar texture portion, considering the icon.
+            float actualBarTexturePortionWidth = config.armorBarWidth;
+            if (config.enableArmorIcon) {
+                actualBarTexturePortionWidth -= (float)config.armorIconSize / 2.0f;
+            }
+
+            int uTexOffset = 0;
             if (config.enableArmorIcon) {
                 if (isRightAnchored) {
                     barX += barWidth - filledWidth - iconSize / 2;
+                    uTexOffset = Math.round(actualBarTexturePortionWidth) - filledWidth;
                 } else {
                     barX += iconSize / 2;
+                    // uTexOffset remains 0 for left-anchored
                 }
+            } else { // No icon
+                if (isRightAnchored) {
+                    barX += barWidth - filledWidth;
+                    uTexOffset = config.armorBarWidth - filledWidth;
+                }
+                // else: barX is xPos + barOnlyXOffset, uTexOffset is 0 for left-anchored
             }
+            if (uTexOffset < 0) uTexOffset = 0; // Prevent negative texture offset
 
             graphics.blit(
                     DynamicResourceBars.loc("textures/gui/armor_bar.png"),
                     barX,
                     yPos + barOnlyYOffset,
-                    0, 0,
+                    uTexOffset, 0, // Use calculated uTexOffset, vOffset is 0 for armor bar
                     filledWidth,
                     barHeight,
                     256, 256

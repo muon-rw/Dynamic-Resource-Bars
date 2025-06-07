@@ -15,6 +15,7 @@ import dev.muon.dynamic_resource_bars.util.HUDPositioning;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Gui;
 import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.tags.TagKey;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.resources.ResourceLocation;
@@ -96,23 +97,7 @@ public abstract class GuiMixin {
         }
     }
 
-    @Inject(
-            method = "renderPlayerHealth",
-            at = @At(value = "INVOKE", target = "Lnet/minecraft/client/gui/Gui;getPlayerVehicleWithHealth()Lnet/minecraft/world/entity/LivingEntity;"),
-            cancellable = true
-    )
-    private void replaceFoodAndAir(GuiGraphics guiGraphics, CallbackInfo ci) {
-        Player player = this.minecraft.player;
-        ClientConfig config = ModConfigManager.getClient();
 
-        // On Fabric 1.20.1, this toggle will be combined into one config value.
-        // TODO: Maybe use more precise mixin targets. Low priority because the target method fills me with rage.
-        if (player != null && config.enableStaminaBar) {
-            StaminaBarRenderer.render(guiGraphics, player, this.minecraft.getFrameTime());
-            AirBarRenderer.render(guiGraphics, player, this.minecraft.getFrameTime());
-            ci.cancel();
-        }
-    }
 
     @ModifyExpressionValue(
         method = "renderPlayerHealth(Lnet/minecraft/client/gui/GuiGraphics;)V",
@@ -135,5 +120,82 @@ public abstract class GuiMixin {
             ci.cancel();
         }
     }
+
+    @Inject(
+            method = "renderPlayerHealth(Lnet/minecraft/client/gui/GuiGraphics;)V",
+            at = @At(value = "INVOKE", target = "Lnet/minecraft/client/gui/Gui;getVehicleMaxHearts(Lnet/minecraft/world/entity/LivingEntity;)I", shift = At.Shift.BEFORE)
+    )
+    private void renderStaminaBeforeFood(GuiGraphics guiGraphics, CallbackInfo ci) {
+        ClientConfig config = ModConfigManager.getClient();
+        if (config.enableStaminaBar) {
+            Player player = this.minecraft.player;
+            if (player != null) {
+                StaminaBarRenderer.render(guiGraphics, player, this.minecraft.getFrameTime());
+            }
+        }
+    }
+    
+    @ModifyExpressionValue(
+            method = "renderPlayerHealth(Lnet/minecraft/client/gui/GuiGraphics;)V",
+            at = @At(value = "INVOKE", target = "Lnet/minecraft/client/gui/Gui;getVehicleMaxHearts(Lnet/minecraft/world/entity/LivingEntity;)I")
+    )
+    private int hideFoodWhenStaminaEnabled(int vehicleHearts) {
+        ClientConfig config = ModConfigManager.getClient();
+        if (config.enableStaminaBar) {
+            // Return non-zero to skip food rendering (since food only renders when vehicleHearts == 0)
+            return 1;
+        }
+        return vehicleHearts;
+    }
+    
+    @Inject(
+            method = "renderPlayerHealth(Lnet/minecraft/client/gui/GuiGraphics;)V",
+            at = @At(value = "INVOKE", target = "Lnet/minecraft/world/entity/player/Player;isEyeInFluid(Lnet/minecraft/tags/TagKey;)Z", shift = At.Shift.BEFORE)
+    )
+    private void renderCustomAirBeforeVanilla(GuiGraphics guiGraphics, CallbackInfo ci) {
+        ClientConfig config = ModConfigManager.getClient();
+        BarRenderBehavior airBehavior = config.airBarBehavior;
+        
+        if (airBehavior == BarRenderBehavior.CUSTOM) {
+            Player player = this.minecraft.player;
+            if (player != null) {
+                AirBarRenderer.render(guiGraphics, player, this.minecraft.getFrameTime());
+            }
+        }
+    }
+    
+    @WrapOperation(
+            method = "renderPlayerHealth(Lnet/minecraft/client/gui/GuiGraphics;)V",
+            at = @At(value = "INVOKE", target = "Lnet/minecraft/world/entity/player/Player;isEyeInFluid(Lnet/minecraft/tags/TagKey;)Z")
+    )
+    private boolean hideAirWhenCustom(Player instance, TagKey tagKey, Operation<Boolean> original) {
+        ClientConfig config = ModConfigManager.getClient();
+        BarRenderBehavior airBehavior = config.airBarBehavior;
+        
+        if (airBehavior == BarRenderBehavior.CUSTOM || airBehavior == BarRenderBehavior.HIDDEN) {
+            // Return false to skip vanilla air rendering (the condition needs to be false)
+            return false;
+        }
+        return original.call(instance, tagKey);
+    }
+
+    @WrapOperation(
+            method = "renderPlayerHealth(Lnet/minecraft/client/gui/GuiGraphics;)V",
+            at = @At(value = "INVOKE", target = "Lnet/minecraft/world/entity/player/Player;getAirSupply()I", ordinal = 0)
+    )
+    private int hideAirByModifyingSupply(Player instance, Operation<Integer> original) {
+        ClientConfig config = ModConfigManager.getClient();
+        BarRenderBehavior airBehavior = config.airBarBehavior;
+        
+        if (airBehavior == BarRenderBehavior.CUSTOM || airBehavior == BarRenderBehavior.HIDDEN) {
+            // Return max air to make the vanilla condition (z < y) false
+            Player player = this.minecraft.player;
+            if (player != null) {
+                return player.getMaxAirSupply();
+            }
+        }
+        return original.call(instance);
+    }
+
     #endif
 }

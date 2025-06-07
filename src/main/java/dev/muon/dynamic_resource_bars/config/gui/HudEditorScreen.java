@@ -198,20 +198,11 @@ public class HudEditorScreen extends Screen {
             addRenderableWidget(cycleArmorBehaviorButton);
             currentX += twoColButtonWidth + colSpacing;
 
-            #if !(UPTO_20_1 && FABRIC)
             cycleAirBehaviorButton = Button.builder(getBarBehaviorComponent(config.airBarBehavior, "air"), (b) -> {
                 config.airBarBehavior = getNextBarBehavior(config.airBarBehavior);
                 rebuildEditorWidgets();
             }).bounds(currentX, currentY, twoColButtonWidth, gridButtonHeight).build();
             addRenderableWidget(cycleAirBehaviorButton);
-            #else
-            cycleAirBehaviorButton = Button.builder(getBarBehaviorComponent(config.airBarBehavior, "air"), (b) -> {
-                // No-op
-            }).bounds(currentX, currentY, twoColButtonWidth, gridButtonHeight).build();
-            cycleAirBehaviorButton.active = false;
-            cycleAirBehaviorButton.setTooltip(Tooltip.create(Component.translatable("gui.dynamic_resource_bars.hud_editor.tooltip.air_tied_to_stamina")));
-            addRenderableWidget(cycleAirBehaviorButton);
-            #endif
 
             currentY += gridButtonHeight + rowSpacing;
             currentX = twoColStartX;
@@ -226,11 +217,7 @@ public class HudEditorScreen extends Screen {
             openAirSettingsButton = Button.builder(Component.translatable("gui.dynamic_resource_bars.hud_editor.button.air_settings"), (b) -> {
                 if (b.active) { EditModeManager.setFocusedElement(DraggableElement.AIR_BAR); rebuildEditorWidgets(); }
             }).bounds(currentX, currentY, twoColButtonWidth, gridButtonHeight).build();
-            #if !(UPTO_20_1 && FABRIC)
             openAirSettingsButton.active = config.airBarBehavior == BarRenderBehavior.CUSTOM;
-            #else
-            openAirSettingsButton.active = config.enableStaminaBar;
-            #endif
             addRenderableWidget(openAirSettingsButton);
             
             // Reset All Button - Positioned below all sections

@@ -5,7 +5,10 @@
   "minVersion": "0.8",
   "mixins": [
     "InventoryMixin",
-    "ItemStackMixin"
+    "ItemStackMixin",
+    "compat.farmersdelight.BaseOverlayMixin",
+    "compat.farmersdelight.ComfortHealthOverlayMixin",
+    "compat.farmersdelight.NourishmentHungerOverlayMixin"
   ],
   "injectors": {
     "defaultRequire": 1

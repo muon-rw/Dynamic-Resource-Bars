@@ -68,12 +68,11 @@ public class ManaBarRenderer {
                                       ModConfigManager.getClient().manaOverlayWidth,
                                       ModConfigManager.getClient().manaOverlayHeight);
             case TEXT:
-                // Text area roughly matches bar area but with text offsets
-                ScreenRect barRect = getSubElementRect(SubElementType.BAR_MAIN, player);
-                return new ScreenRect(barRect.x() + ModConfigManager.getClient().manaTextXOffset, 
-                                      barRect.y() + ModConfigManager.getClient().manaTextYOffset, 
-                                      barRect.width(), 
-                                      barRect.height());
+                // Text area now positioned relative to complexRect, using manaBarWidth/Height for its dimensions
+                return new ScreenRect(x + ModConfigManager.getClient().manaTextXOffset, 
+                                      y + ModConfigManager.getClient().manaTextYOffset, 
+                                      ModConfigManager.getClient().manaBarWidth, 
+                                      ModConfigManager.getClient().manaBarHeight);
             default:
                 return new ScreenRect(0,0,0,0); 
         }
@@ -217,7 +216,7 @@ public class ManaBarRenderer {
                         barX, barY,
                         0, textureVOffset, // Use 0 for U, adjusted V for vertical fill
                         totalBarWidth, filledHeight, // Use full width, partial height
-                        256, 256);
+                        256, 1024);
             }
         } else { // HORIZONTAL
             int filledWidth = (int) (totalBarWidth * (currentMana / maxManaTotal));
@@ -226,17 +225,20 @@ public class ManaBarRenderer {
 
             int barX = barAreaRect.x();
             int barY = barAreaRect.y();
+            int uTexOffset = 0; // Default for left-anchored
 
             if (isRightAnchored) {
                 barX = barAreaRect.x() + totalBarWidth - filledWidth;
+                uTexOffset = totalBarWidth - filledWidth; // Sample the right part of the texture
             }
+            if (uTexOffset < 0) uTexOffset = 0; // Prevent negative texture offset
 
             if (filledWidth > 0) {
                 graphics.blit(DynamicResourceBars.loc("textures/gui/mana_bar.png"),
                         barX, barY,
-                        0, animOffset,
+                        uTexOffset, animOffset, // Use calculated uTexOffset
                         filledWidth, barHeight,
-                        256, 256);
+                        256, 1024); // Standard animated texture sheet size
             }
         }
     }

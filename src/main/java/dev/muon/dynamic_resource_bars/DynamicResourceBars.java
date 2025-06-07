@@ -90,9 +90,7 @@ public class DynamicResourceBars #if FABRIC implements ClientModInitializer, Mod
         ModConfigManager.initializeConfig();
         #if FABRIC
         ClientTickEvents.END_CLIENT_TICK.register(client -> TickHandler.onClientTick());
-            #if NEWER_THAN_20_1
-            AppleSkinFabricEventHandler.init();
-            #endif
+        AppleSkinFabricEventHandler.init();
         #endif
     }
 

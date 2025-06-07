@@ -1,11 +1,11 @@
 package dev.muon.dynamic_resource_bars.compat;
 
-#if FABRIC && NEWER_THAN_20_1
+#if FABRIC
 import dev.muon.dynamic_resource_bars.config.ModConfigManager;
 import squeek.appleskin.api.event.HUDOverlayEvent;
 #endif
 public class AppleSkinFabricEventHandler {
-    #if FABRIC && NEWER_THAN_20_1
+    #if FABRIC
 
     public static void init() {
         if (!AppleSkinCompat.isLoaded()) {

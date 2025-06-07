@@ -1,0 +1,9 @@
+---
+description: 
+globs: 
+alwaysApply: true
+---
+Linter errors will likely appear due to manifold preprocessor directives or unavailable mod imports. These are a limitation of Cursor (our interface), as it does not support Manifold and frequently fails to download assets, and can be safely ignored. 
+
+
+Nonetheless, when creating new code, follow the existing preprocessor structure in the project, if present and applicable. 

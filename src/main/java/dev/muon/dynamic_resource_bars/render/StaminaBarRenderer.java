@@ -12,6 +12,12 @@ import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
 import dev.muon.dynamic_resource_bars.compat.AppleSkinCompat;
+#if UPTO_20_1 && FABRIC
+// Bewitchment imports here
+import moriyashiine.bewitchment.api.BewitchmentAPI;
+import moriyashiine.bewitchment.common.registry.BWComponents;
+import moriyashiine.bewitchment.api.component.BloodComponent;
+#endif
 
 #if NEWER_THAN_20_1
     import net.minecraft.client.DeltaTracker;
@@ -35,6 +41,7 @@ public class StaminaBarRenderer {
 
     private enum BarType {
         NORMAL("stamina_bar"),
+        BLOOD("stamina_bar_blood"),
         NOURISHED("stamina_bar_nourished"),
         HUNGER("stamina_bar_hunger"),
         CRITICAL("stamina_bar_critical"),
@@ -58,7 +65,11 @@ public class StaminaBarRenderer {
                 }
                 return MOUNTED;
             }
-            
+            #if UPTO_20_1 && FABRIC
+            if (PlatformUtil.isModLoaded("bewitchment") && BewitchmentAPI.isVampire(player, true)) {
+                return BLOOD;
+            }
+            #endif
             if (PlatformUtil.isModLoaded("farmersdelight") && hasNourishmentEffect(player)) {
                 return NOURISHED;
             }
@@ -103,28 +114,22 @@ public class StaminaBarRenderer {
                         ModConfigManager.getClient().staminaOverlayWidth,
                         ModConfigManager.getClient().staminaOverlayHeight);
             case TEXT:
-                // Text area roughly matches bar area but with text offsets
-                ScreenRect barRect = getSubElementRect(SubElementType.BAR_MAIN, player);
-                return new ScreenRect(barRect.x() + ModConfigManager.getClient().staminaTextXOffset, 
-                                      barRect.y() + ModConfigManager.getClient().staminaTextYOffset, 
-                                      barRect.width(), 
-                                      barRect.height());
+                // Text area now positioned relative to complexRect, using staminaBarWidth/Height for its dimensions
+                return new ScreenRect(x + ModConfigManager.getClient().staminaTextXOffset, 
+                                      y + ModConfigManager.getClient().staminaTextYOffset, 
+                                      ModConfigManager.getClient().staminaBarWidth, 
+                                      ModConfigManager.getClient().staminaBarHeight);
             default:
                 return new ScreenRect(0, 0, 0, 0);
         }
     }
 
     public static void render(GuiGraphics graphics, Player player, #if NEWER_THAN_20_1 DeltaTracker deltaTracker #else float partialTicks #endif ) {
-        // Check if player is mounted on a living entity
-        net.minecraft.world.entity.LivingEntity mount = null;
-        boolean isMounted = false;
-        if (player.getVehicle() instanceof net.minecraft.world.entity.LivingEntity livingMount) {
-            mount = livingMount;
-            isMounted = true;
-        }
+        // Determine the bar values based on player state
+        BarValues values = getBarValues(player);
         
-        // Only apply fade logic when not mounted
-        boolean shouldFade = !isMounted && ModConfigManager.getClient().fadeStaminaWhenFull && player.getFoodData().getFoodLevel() >= 20;
+        // Determine fade behavior
+        boolean shouldFade = shouldBarFade(player, values);
         setStaminaBarVisibility(!shouldFade || EditModeManager.isEditModeEnabled());
 
         if (!isStaminaBarVisible() && !EditModeManager.isEditModeEnabled() && (System.currentTimeMillis() - staminaBarDisabledStartTime) > RenderUtil.BAR_FADEOUT_DURATION) {
@@ -159,24 +164,17 @@ public class StaminaBarRenderer {
             );
         }
 
-        float maxValue = 20f;
-        float currentValue = player.getFoodData().getFoodLevel();
-
-        if (isMounted) {
-            maxValue = mount.getMaxHealth();
-            currentValue = mount.getHealth();
-        }
-        
         ScreenRect barRect = getSubElementRect(SubElementType.BAR_MAIN, player);
-        renderBaseBar(graphics, player, currentValue, maxValue,
+        renderBaseBar(graphics, player, values.current, values.max,
                 barRect,
                 animOffset, isRightAnchored);
 
-        if (!isMounted) {
+        // Overlays should not show for vampires or when mounted
+        if (values.type == BarValueType.FOOD && !values.isMounted) {
             if (AppleSkinCompat.isLoaded()) {
                 ItemStack heldFood = getHeldFood(player);
-                renderHungerRestoredOverlay(graphics, player, heldFood, barRect, #if NEWER_THAN_20_1 deltaTracker.getGameTimeDeltaTicks() #else partialTicks #endif , animOffset);
-                renderSaturationOverlay(graphics, player, barRect, animOffset);
+                renderHungerRestoredOverlay(graphics, player, heldFood, barRect, #if NEWER_THAN_20_1 deltaTracker.getGameTimeDeltaTicks() #else partialTicks #endif , animOffset, isRightAnchored);
+                renderSaturationOverlay(graphics, player, barRect, animOffset, isRightAnchored);
             }
 
             if (PlatformUtil.isModLoaded("farmersdelight") && hasNourishmentEffect(player)) {
@@ -208,12 +206,12 @@ public class StaminaBarRenderer {
 
         RenderSystem.setShaderColor(1.0f, 1.0f, 1.0f, 1.0f);
 
-        if (shouldRenderStaminaText(currentValue, maxValue, player, isMounted)) {
+        if (shouldRenderStaminaText(values.current, values.max, player, values.isMounted)) {
             ScreenRect textRect = getSubElementRect(SubElementType.TEXT, player);
             int textX = textRect.x() + (textRect.width() / 2);
             int textY = textRect.y() + (textRect.height() / 2);
             
-            int color = getStaminaTextColor(currentValue, maxValue, isMounted);
+            int color = getStaminaTextColor(values.current, values.max, values.isMounted);
             HorizontalAlignment alignment = ModConfigManager.getClient().staminaTextAlign;
 
             int baseX = textRect.x();
@@ -223,7 +221,7 @@ public class StaminaBarRenderer {
                 baseX = textRect.x() + textRect.width();
             }
 
-            RenderUtil.renderText(currentValue, maxValue, graphics, baseX, textY, color, alignment);
+            RenderUtil.renderText(values.current, values.max, graphics, baseX, textY, color, alignment);
         }
 
         if (EditModeManager.isEditModeEnabled()) {
@@ -252,17 +250,72 @@ public class StaminaBarRenderer {
         RenderSystem.disableBlend();
     }
 
+    // Helper class to hold bar values
+    private static class BarValues {
+        float current;
+        float max;
+        BarValueType type;
+        boolean isMounted;
+        
+        BarValues(float current, float max, BarValueType type, boolean isMounted) {
+            this.current = current;
+            this.max = max;
+            this.type = type;
+            this.isMounted = isMounted;
+        }
+    }
+    
+    private enum BarValueType {
+        FOOD,
+        BLOOD,
+        MOUNT_HEALTH
+    }
+    
+    // Clean method to determine bar values based on player state
+    private static BarValues getBarValues(Player player) {
+        // Check if mounted first (highest priority)
+        if (player.getVehicle() instanceof LivingEntity mount) {
+            return new BarValues(mount.getHealth(), mount.getMaxHealth(), BarValueType.MOUNT_HEALTH, true);
+        }
+        
+        // Check if vampire
+        #if UPTO_20_1 && FABRIC
+        if (PlatformUtil.isModLoaded("bewitchment") && BewitchmentAPI.isVampire(player, true)) {
+            float bloodCurrent = BWComponents.BLOOD_COMPONENT.get(player).getBlood();
+            float bloodMax = BloodComponent.MAX_BLOOD;
+            return new BarValues(bloodCurrent, bloodMax, BarValueType.BLOOD, false);
+        }
+        #endif
+        
+        // Default to food
+        return new BarValues(player.getFoodData().getFoodLevel(), 20f, BarValueType.FOOD, false);
+    }
+    
+    // Clean method to determine fade behavior
+    private static boolean shouldBarFade(Player player, BarValues values) {
+        switch (values.type) {
+            case MOUNT_HEALTH:
+                return ModConfigManager.getClient().fadeHealthWhenFull && values.current >= values.max;
+            case BLOOD:
+            case FOOD:
+                return ModConfigManager.getClient().fadeStaminaWhenFull && values.current >= values.max;
+            default:
+                return false;
+        }
+    }
+
     private static void renderBaseBar(GuiGraphics graphics, Player player, float currentStamina, float maxStamina,
                                       ScreenRect barAreaRect,
                                       int animOffset, boolean isRightAnchored) {
         BarType barType = BarType.fromPlayerState(player, currentStamina);
         int totalBarWidth = barAreaRect.width();
         int barHeight = barAreaRect.height();
+        float currentStaminaRatio = (maxStamina == 0) ? 0.0f : (currentStamina / maxStamina);
 
         FillDirection fillDirection = ModConfigManager.getClient().staminaFillDirection;
 
         if (fillDirection == FillDirection.VERTICAL) {
-            int partialBarHeight = (int) (barHeight * (currentStamina / maxStamina));
+            int partialBarHeight = (int) (barHeight * currentStaminaRatio);
             if (partialBarHeight <= 0 && currentStamina > 0) partialBarHeight = 1;
             if (partialBarHeight > barHeight) partialBarHeight = barHeight;
 
@@ -281,22 +334,25 @@ public class StaminaBarRenderer {
                 );
             }
         } else { // HORIZONTAL
-            int partialBarWidth = (int) (totalBarWidth * (currentStamina / maxStamina));
+            int partialBarWidth = (int) (totalBarWidth * currentStaminaRatio);
             if (partialBarWidth <= 0 && currentStamina > 0) partialBarWidth = 1;
             if (partialBarWidth > totalBarWidth) partialBarWidth = totalBarWidth;
 
-            int barX = barAreaRect.x();
-            int barY = barAreaRect.y();
+            int barRenderX = barAreaRect.x();
+            int barRenderY = barAreaRect.y();
+            int uTexOffset = 0; // Default for left-anchored
 
             if (isRightAnchored) {
-                barX = barAreaRect.x() + totalBarWidth - partialBarWidth;
+                barRenderX = barAreaRect.x() + totalBarWidth - partialBarWidth;
+                uTexOffset = totalBarWidth - partialBarWidth; // Sample the right part of the texture
             }
+            if (uTexOffset < 0) uTexOffset = 0; // Prevent negative texture offset
 
             if (partialBarWidth > 0) {
                 graphics.blit(
                         DynamicResourceBars.loc("textures/gui/" + barType.getTexture() + ".png"),
-                        barX, barY,
-                        0, animOffset,
+                        barRenderX, barRenderY,
+                        uTexOffset, animOffset, // Use calculated uTexOffset
                         partialBarWidth, barHeight,
                         256, 1024
                 );
@@ -412,7 +468,7 @@ public class StaminaBarRenderer {
         return Math.max(0.0f, 1.0f - (timeSinceDisabled / (float) RenderUtil.BAR_FADEOUT_DURATION));
     }
 
-    private static void renderSaturationOverlay(GuiGraphics graphics, Player player, ScreenRect barRect, int animOffset) {
+    private static void renderSaturationOverlay(GuiGraphics graphics, Player player, ScreenRect barRect, int animOffset, boolean isRightAnchored) {
         if (!AppleSkinCompat.isLoaded()) {
             return;
         }
@@ -425,7 +481,6 @@ public class StaminaBarRenderer {
 
         float saturationPercent = Math.min(1.0f, saturation / 20f);
         FillDirection fillDirection = ModConfigManager.getClient().staminaFillDirection;
-        boolean isRightAnchored = ModConfigManager.getClient().staminaBarAnchor.getSide() == HUDPositioning.AnchorSide.RIGHT;
 
         // Use pulsing opacity instead of frame animation
         float pulseAlpha = 0.5f + (TickHandler.getOverlayFlashAlpha() * 0.5f); // Range from 0.5 to 1.0
@@ -446,14 +501,21 @@ public class StaminaBarRenderer {
         } else { // HORIZONTAL
             int overlayWidth = (int) (barRect.width() * saturationPercent);
             if (overlayWidth > 0) {
-                int xPos = isRightAnchored ?
-                        barRect.x() + barRect.width() - overlayWidth :
-                        barRect.x();
+                int xPos;
+                int uTexOffset;
+                if (isRightAnchored) {
+                    xPos = barRect.x() + barRect.width() - overlayWidth;
+                    uTexOffset = barRect.width() - overlayWidth; // Sample rightmost part of the texture
+                } else {
+                    xPos = barRect.x();
+                    uTexOffset = 0; // Sample leftmost part of the texture
+                }
+                if (uTexOffset < 0) uTexOffset = 0;
 
                 graphics.blit(
                         DynamicResourceBars.loc("textures/gui/protection_overlay.png"), // Placeholder texture
                         xPos, barRect.y(),
-                        0, 0,
+                        uTexOffset, 0, // Use calculated uTexOffset, vOffset usually 0 for horizontal overlays unless animated differently
                         overlayWidth, barRect.height(),
                         256, 256
                 );
@@ -465,7 +527,7 @@ public class StaminaBarRenderer {
     }
 
     private static void renderHungerRestoredOverlay(GuiGraphics graphics, Player player, ItemStack heldFood,
-                                                    ScreenRect barRect, float partialTicks, int animOffset) {
+                                                    ScreenRect barRect, float partialTicks, int animOffset, boolean isRightAnchored) {
         if (!AppleSkinCompat.isLoaded()) {
             return;
         }
@@ -489,7 +551,6 @@ public class StaminaBarRenderer {
         FillDirection fillDirection = ModConfigManager.getClient().staminaFillDirection;
         // Use the bar type that would apply at the restored hunger level
         BarType barType = BarType.fromPlayerState(player, restoredHunger);
-        boolean isRightAnchored = ModConfigManager.getClient().staminaBarAnchor.getSide() == HUDPositioning.AnchorSide.RIGHT;
 
         if (fillDirection == FillDirection.VERTICAL) {
             int currentHeight = (int) (barRect.height() * (currentHunger / 20f));
@@ -514,21 +575,22 @@ public class StaminaBarRenderer {
             int overlayWidth = restoredWidth - currentWidth;
 
             if (overlayWidth > 0) {
-                int xPos;
+                int xDrawPos;
+                int uTexOffset;
+
                 if (isRightAnchored) {
-                    // For right-anchored bars, we need to position from the right
-                    int currentFromRight = barRect.width() - currentWidth;
-                    int restoredFromRight = barRect.width() - restoredWidth;
-                    xPos = barRect.x() + restoredFromRight;
+                    xDrawPos = barRect.x() + barRect.width() - restoredWidth;
+                    uTexOffset = barRect.width() - restoredWidth; 
                 } else {
-                    // For left-anchored bars, overlay starts where current ends
-                    xPos = barRect.x() + currentWidth;
+                    xDrawPos = barRect.x() + currentWidth;
+                    uTexOffset = currentWidth;
                 }
+                if (uTexOffset < 0) uTexOffset = 0;
 
                 graphics.blit(
                         DynamicResourceBars.loc("textures/gui/" + barType.getTexture() + ".png"),
-                        xPos, barRect.y(),
-                        isRightAnchored ? 0 : currentWidth, animOffset,
+                        xDrawPos, barRect.y(),
+                        uTexOffset, animOffset, // Use the calculated uTexOffset
                         overlayWidth, barRect.height(),
                         256, 1024
                 );
@@ -566,5 +628,14 @@ public class StaminaBarRenderer {
             #else
         return false;
             #endif
+    }
+
+    private static boolean isVampire(Player player) {
+        #if UPTO_20_1 && FABRIC
+            return BewitchmentAPI.isVampire(player, true);
+        #else
+            // TODO: More vampire transformation mods here
+            return false;
+        #endif
     }
 }

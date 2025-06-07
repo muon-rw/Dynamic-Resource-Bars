@@ -1,10 +1,20 @@
 ## 0.5.0
+**BREAKING CONFIG CHANGES** (Sorry!) 
+
+*Users will either need to use the "reset all" button and start over, or manually move icons+text to their desired positions*
+- Bewitchment compatibility! Added `stamina_bar_blood` for vampires
 - Bars will now always render while in editing mode
 - Text is now a draggable element
 - Text color/size/max opacity can be changed via edit boxes
 - Armor/air icons are now draggable elements
 - Air and armor background/foregrounds can now be properly moved/resized
-- Updated the default textures of the armor/air bars: `air_bar` is now an animated texture
+- Updated default `protection_overlay`, `absorption_overlay`, `saturation_overlay` textures
+- Updated the default textures of the `armor_bar`, `air_bar`
+- `air_bar` is now an animated texture
+- Fixed the "Reset All" button not resetting everything
+- Fixed improper U offset for right-anchored animated bars
+- Air can now be toggled separately from stamina on 1.20.1 Fabric
+- Fixed Bewitchment magic bar rendering conflict on 1.20.1 Fabric, and likely many other 1.20.1 Fabric HUD altering mods
 
 ## 0.4.0
 - Add mount health bar. Replaces stamina bar when mounted, but uses health text settings.
