@@ -1,3 +1,6 @@
+## 0.5.1
+- Hide air bar for Bewitchment vampires
+
 ## 0.5.0
 **BREAKING CONFIG CHANGES** (Sorry!) 
 

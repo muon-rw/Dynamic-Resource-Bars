@@ -13,7 +13,6 @@ import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
 import dev.muon.dynamic_resource_bars.compat.AppleSkinCompat;
 #if UPTO_20_1 && FABRIC
-// Bewitchment imports here
 import moriyashiine.bewitchment.api.BewitchmentAPI;
 import moriyashiine.bewitchment.common.registry.BWComponents;
 import moriyashiine.bewitchment.api.component.BloodComponent;

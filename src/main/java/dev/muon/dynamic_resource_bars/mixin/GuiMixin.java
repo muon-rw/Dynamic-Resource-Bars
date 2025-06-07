@@ -12,6 +12,7 @@ import dev.muon.dynamic_resource_bars.render.StaminaBarRenderer;
 import dev.muon.dynamic_resource_bars.render.ArmorBarRenderer;
 import dev.muon.dynamic_resource_bars.util.BarRenderBehavior;
 import dev.muon.dynamic_resource_bars.util.HUDPositioning;
+import dev.muon.dynamic_resource_bars.util.PlatformUtil;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Gui;
 import net.minecraft.client.gui.GuiGraphics;
@@ -28,6 +29,10 @@ import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.ModifyArg;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
+
+#if UPTO_20_1 && FABRIC
+import moriyashiine.bewitchment.api.BewitchmentAPI;
+#endif
 
 #if NEWER_THAN_20_1
     import net.minecraft.client.DeltaTracker;
@@ -159,6 +164,9 @@ public abstract class GuiMixin {
         if (airBehavior == BarRenderBehavior.CUSTOM) {
             Player player = this.minecraft.player;
             if (player != null) {
+                if (PlatformUtil.isModLoaded("bewitchment") && BewitchmentAPI.isVampire(player, true)) {
+                    return;
+                }
                 AirBarRenderer.render(guiGraphics, player, this.minecraft.getFrameTime());
             }
         }
