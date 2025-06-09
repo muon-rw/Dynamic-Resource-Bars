@@ -8,6 +8,7 @@ import dev.muon.dynamic_resource_bars.util.HorizontalAlignment;
 import dev.muon.dynamic_resource_bars.util.TextBehavior;
 import dev.muon.dynamic_resource_bars.util.BarRenderBehavior;
 import dev.muon.dynamic_resource_bars.util.FillDirection;
+import dev.muon.dynamic_resource_bars.util.ManaBarBehavior;
 
 import java.io.Reader;
 import java.io.Writer;
@@ -166,43 +167,40 @@ public class ClientConfig {
     public float staminaTextSize;
 
     // Mana Defaults & Fields
-    public static final boolean DEFAULT_ENABLE_MANA_BAR = true;
+    public static final ManaBarBehavior DEFAULT_MANA_BAR_BEHAVIOR = ManaBarBehavior.OFF;
     public static final HUDPositioning.BarPlacement DEFAULT_MANA_BAR_ANCHOR = HUDPositioning.BarPlacement.ABOVE_UTILITIES;
+    public static final boolean DEFAULT_ENABLE_MANA_BACKGROUND = true;
+    public static final boolean DEFAULT_ENABLE_MANA_FOREGROUND = true;
     public static final boolean DEFAULT_FADE_MANA_WHEN_FULL = true;
     public static final TextBehavior DEFAULT_SHOW_MANA_TEXT = TextBehavior.WHEN_NOT_FULL;
     public static final HorizontalAlignment DEFAULT_MANA_TEXT_ALIGN = HorizontalAlignment.CENTER;
-    public static final boolean DEFAULT_ENABLE_MANA_FOREGROUND = true;
-    public static final boolean DEFAULT_ENABLE_MANA_BACKGROUND = true;
     public static final FillDirection DEFAULT_MANA_FILL_DIRECTION = FillDirection.HORIZONTAL;
-    public static final int DEFAULT_MANA_BACKGROUND_WIDTH = 80;
-    public static final int DEFAULT_MANA_BACKGROUND_HEIGHT = 10;
-    public static final int DEFAULT_MANA_BAR_WIDTH = 74;
-    public static final int DEFAULT_MANA_BAR_HEIGHT = 4;
-    public static final int DEFAULT_MANA_BAR_ANIMATION_CYCLES = 32;
-    public static final int DEFAULT_MANA_BAR_FRAME_HEIGHT = 32;
-    public static final int DEFAULT_MANA_OVERLAY_WIDTH = 80;
-    public static final int DEFAULT_MANA_OVERLAY_HEIGHT = 10;
-    public static final int DEFAULT_MANA_BAR_X_OFFSET = 3;
-    public static final int DEFAULT_MANA_BAR_Y_OFFSET = 3;
     public static final int DEFAULT_MANA_TOTAL_X_OFFSET = -40;
     public static final int DEFAULT_MANA_TOTAL_Y_OFFSET = 0;
-    public static final int DEFAULT_MANA_OVERLAY_X_OFFSET = 0;
-    public static final int DEFAULT_MANA_OVERLAY_Y_OFFSET = -3;
     public static final int DEFAULT_MANA_BACKGROUND_X_OFFSET = 0;
     public static final int DEFAULT_MANA_BACKGROUND_Y_OFFSET = 0;
+    public static final int DEFAULT_MANA_BACKGROUND_WIDTH = 80;
+    public static final int DEFAULT_MANA_BACKGROUND_HEIGHT = 10;
+    public static final int DEFAULT_MANA_BAR_X_OFFSET = 3;
+    public static final int DEFAULT_MANA_BAR_Y_OFFSET = 3;
+    public static final int DEFAULT_MANA_BAR_WIDTH = 74;
+    public static final int DEFAULT_MANA_BAR_HEIGHT = 4;
+    public static final int DEFAULT_MANA_BAR_FRAME_HEIGHT = 32;
+    public static final int DEFAULT_MANA_BAR_ANIMATION_CYCLES = 32;
+    public static final int DEFAULT_MANA_OVERLAY_X_OFFSET = 0;
+    public static final int DEFAULT_MANA_OVERLAY_Y_OFFSET = -3;
+    public static final int DEFAULT_MANA_OVERLAY_WIDTH = 81;
+    public static final int DEFAULT_MANA_OVERLAY_HEIGHT = 9;
     public static final int DEFAULT_MANA_TEXT_X_OFFSET = 3;
     public static final int DEFAULT_MANA_TEXT_Y_OFFSET = 3;
-    public static final int DEFAULT_MANA_TEXT_COLOR = DEFAULT_TEXT_COLOR;
-    public static final int DEFAULT_MANA_TEXT_OPACITY = DEFAULT_TEXT_OPACITY;
-    public static final float DEFAULT_MANA_TEXT_SIZE = DEFAULT_TEXT_SIZE;
 
-    public boolean enableManaBar;
-    public HUDPositioning.BarPlacement manaBarAnchor;
+    public ManaBarBehavior manaBarBehavior = DEFAULT_MANA_BAR_BEHAVIOR;
+    public HUDPositioning.BarPlacement manaBarAnchor = DEFAULT_MANA_BAR_ANCHOR;
+    public boolean enableManaBackground = DEFAULT_ENABLE_MANA_BACKGROUND;
+    public boolean enableManaForeground = DEFAULT_ENABLE_MANA_FOREGROUND;
     public boolean fadeManaWhenFull;
     public TextBehavior showManaText;
     public HorizontalAlignment manaTextAlign;
-    public boolean enableManaForeground;
-    public boolean enableManaBackground;
     public FillDirection manaFillDirection;
     public int manaBackgroundWidth;
     public int manaBackgroundHeight;
@@ -409,7 +407,7 @@ public class ClientConfig {
         this.staminaTextOpacity = DEFAULT_STAMINA_TEXT_OPACITY;
         this.staminaTextSize = DEFAULT_STAMINA_TEXT_SIZE;
 
-        this.enableManaBar = DEFAULT_ENABLE_MANA_BAR;
+        this.manaBarBehavior = DEFAULT_MANA_BAR_BEHAVIOR;
         this.manaBarAnchor = DEFAULT_MANA_BAR_ANCHOR;
         this.fadeManaWhenFull = DEFAULT_FADE_MANA_WHEN_FULL;
         this.showManaText = DEFAULT_SHOW_MANA_TEXT;
@@ -435,9 +433,9 @@ public class ClientConfig {
         this.manaBackgroundYOffset = DEFAULT_MANA_BACKGROUND_Y_OFFSET;
         this.manaTextXOffset = DEFAULT_MANA_TEXT_X_OFFSET;
         this.manaTextYOffset = DEFAULT_MANA_TEXT_Y_OFFSET;
-        this.manaTextColor = DEFAULT_MANA_TEXT_COLOR;
-        this.manaTextOpacity = DEFAULT_MANA_TEXT_OPACITY;
-        this.manaTextSize = DEFAULT_MANA_TEXT_SIZE;
+        this.manaTextColor = DEFAULT_TEXT_COLOR;
+        this.manaTextOpacity = DEFAULT_TEXT_OPACITY;
+        this.manaTextSize = DEFAULT_TEXT_SIZE;
 
         this.armorBarBehavior = DEFAULT_ARMOR_BAR_BEHAVIOR;
         this.armorBarAnchor = DEFAULT_ARMOR_BAR_ANCHOR;
@@ -589,6 +587,7 @@ public class ClientConfig {
         if (cfg.showManaText == null) { cfg.showManaText = DEFAULT_SHOW_MANA_TEXT; modified = true; }
         if (cfg.manaTextAlign == null) { cfg.manaTextAlign = DEFAULT_MANA_TEXT_ALIGN; modified = true; }
         if (cfg.manaFillDirection == null) { cfg.manaFillDirection = DEFAULT_MANA_FILL_DIRECTION; modified = true; }
+        if (cfg.manaBarBehavior == null) { cfg.manaBarBehavior = DEFAULT_MANA_BAR_BEHAVIOR; modified = true; }
         
         // Ensure mana overlay dimensions are within valid ranges
         if (cfg.manaOverlayWidth > 256) { cfg.manaOverlayWidth = 256; modified = true; }

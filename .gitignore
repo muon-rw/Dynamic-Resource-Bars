@@ -28,6 +28,8 @@ build.properties
 
 .settings/
 .vscode/
+.cursor/
+/.cursor/
 bin/
 .classpath
 .project

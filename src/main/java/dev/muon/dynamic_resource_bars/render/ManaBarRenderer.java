@@ -83,11 +83,27 @@ public class ManaBarRenderer {
             return;
         }
 
-        if (ModConfigManager.getClient().fadeManaWhenFull && manaProvider.getCurrentMana() >= manaProvider.getMaxMana()) {
-            setBarVisibility(false);
+        boolean visibilityDecision;
+        ClientConfig clientConfig = ModConfigManager.getClient();
+
+        if (!clientConfig.fadeManaWhenFull) {
+            // Rule 1: fadeManaWhenFull is OFF - always show.
+            visibilityDecision = true;
         } else {
-            setBarVisibility(true);
+            // Rule 2: fadeManaWhenFull is ON.
+            if (manaProvider.hasSpecificVisibilityLogic()) {
+                // Provider has a comprehensive method that dictates visibility (e.g., Ars Nouveau).
+                // This method is expected to handle all its own conditions, including mana levels if relevant to its logic.
+                visibilityDecision = manaProvider.shouldDisplayBarOverride(player);
+            } else {
+                // Generic provider or provider that wants to add conditions (e.g., RPGMana, ManaAttributes).
+                // Show if (provider forces show via forceShowBarConditions) OR (mana is not full).
+                boolean providerForcesShow = manaProvider.forceShowBarConditions(player);
+                boolean manaIsNotFull = manaProvider.getCurrentMana() < manaProvider.getMaxMana();
+                visibilityDecision = providerForcesShow || manaIsNotFull;
+            }
         }
+        setBarVisibility(visibilityDecision);
 
         if (!isVisible() && !EditModeManager.isEditModeEnabled()) {
             return;

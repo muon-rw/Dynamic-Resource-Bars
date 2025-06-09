@@ -4,8 +4,12 @@ import dev.muon.dynamic_resource_bars.config.ModConfigManager;
 import dev.muon.dynamic_resource_bars.render.ArmorBarRenderer;
 import dev.muon.dynamic_resource_bars.render.HealthBarRenderer;
 import dev.muon.dynamic_resource_bars.render.StaminaBarRenderer;
+import dev.muon.dynamic_resource_bars.render.ManaBarRenderer;
 import dev.muon.dynamic_resource_bars.render.AirBarRenderer;
 import dev.muon.dynamic_resource_bars.util.BarRenderBehavior;
+import dev.muon.dynamic_resource_bars.compat.ManaProviderManager;
+import dev.muon.dynamic_resource_bars.util.ManaBarBehavior;
+import dev.muon.dynamic_resource_bars.util.ManaProvider;
 #if FORGE
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;

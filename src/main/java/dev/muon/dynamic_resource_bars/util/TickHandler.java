@@ -9,7 +9,7 @@ public class TickHandler {
     private static float flashAlpha = 0f;
     private static byte alphaDir = 1;
     
-    // TODO: Maybe tie this to deltaTracker/frameTime instead. Not sure.
+    // TODO: Migrate to deltaTracker/frameTime instead of tickEvent
     /**
      * Called once per client tick to update time-based animations and effects
      */

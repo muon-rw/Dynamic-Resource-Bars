@@ -55,6 +55,7 @@
   "gui.dynamic_resource_bars.hud_editor.button.cycle_text_behavior_format": "Text: %s",
   "gui.dynamic_resource_bars.hud_editor.button.cycle_text_align_format": "Text Align: %s",
   "gui.dynamic_resource_bars.hud_editor.button.cycle_anchor_format": "Anchor: %s",
+  "gui.dynamic_resource_bars.hud_editor.button.mana_behavior_format": "Mana: %s",
   "gui.dynamic_resource_bars.hud_editor.button.resize_bar": "Change Sizes",
   "gui.dynamic_resource_bars.hud_editor.button.stop_resizing_bar": "Stop Resizing",
   "gui.dynamic_resource_bars.hud_editor.button.reset_position": "Reset Position",
@@ -99,5 +100,11 @@
 
   "gui.dynamic_resource_bars.config.label.text_color": "Text Color:",
   "gui.dynamic_resource_bars.config.label.text_opacity": "Max Text Opacity:",
-  "gui.dynamic_resource_bars.config.label.text_size": "Text Scaling:"
+  "gui.dynamic_resource_bars.config.label.text_size": "Text Scaling:",
+
+  "gui.dynamic_resource_bars.mana_behavior.off": "Off",
+  "gui.dynamic_resource_bars.mana_behavior.rpg_mana": "RPGMana",
+  "gui.dynamic_resource_bars.mana_behavior.ars_nouveau": "Ars Nouveau",
+  "gui.dynamic_resource_bars.mana_behavior.irons_spellbooks": "Iron's Spellbooks",
+  "gui.dynamic_resource_bars.mana_behavior.mana_attributes": "Mana Attributes"
 }

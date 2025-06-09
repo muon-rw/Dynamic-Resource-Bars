@@ -1,3 +1,11 @@
+## 0.6.0
+Mana mod support!
+- RPGMana (1.20.1 Fabric)
+- Mana Attributes (1.21.1 Fabric) *Forg if you're reading this please port RPGMana to 1.21.1 <3*
+- Ars Nouveau (1.20.1 Forge, 1.21.1 Neoforge)
+- Iron's Spellbooks (1.20.1 Forge, 1.21.1 Neoforge)
+- Fix Appleskin being required on Forge/Neoforge (#19)
+
 ## 0.5.1
 - Hide air bar for Bewitchment vampires
 

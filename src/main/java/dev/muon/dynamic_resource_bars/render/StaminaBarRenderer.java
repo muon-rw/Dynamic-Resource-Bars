@@ -170,7 +170,7 @@ public class StaminaBarRenderer {
 
         // Overlays should not show for vampires or when mounted
         if (values.type == BarValueType.FOOD && !values.isMounted) {
-            if (AppleSkinCompat.isLoaded()) {
+            if (PlatformUtil.isModLoaded("appleskin")) {
                 ItemStack heldFood = getHeldFood(player);
                 renderHungerRestoredOverlay(graphics, player, heldFood, barRect, #if NEWER_THAN_20_1 deltaTracker.getGameTimeDeltaTicks() #else partialTicks #endif , animOffset, isRightAnchored);
                 renderSaturationOverlay(graphics, player, barRect, animOffset, isRightAnchored);
@@ -468,7 +468,7 @@ public class StaminaBarRenderer {
     }
 
     private static void renderSaturationOverlay(GuiGraphics graphics, Player player, ScreenRect barRect, int animOffset, boolean isRightAnchored) {
-        if (!AppleSkinCompat.isLoaded()) {
+        if (!PlatformUtil.isModLoaded("appleskin")) {
             return;
         }
 
@@ -527,7 +527,7 @@ public class StaminaBarRenderer {
 
     private static void renderHungerRestoredOverlay(GuiGraphics graphics, Player player, ItemStack heldFood,
                                                     ScreenRect barRect, float partialTicks, int animOffset, boolean isRightAnchored) {
-        if (!AppleSkinCompat.isLoaded()) {
+        if (!PlatformUtil.isModLoaded("appleskin")) {
             return;
         }
 

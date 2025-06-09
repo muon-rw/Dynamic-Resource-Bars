@@ -4,6 +4,9 @@ import dev.muon.dynamic_resource_bars.compat.AppleSkinFabricEventHandler;
 import dev.muon.dynamic_resource_bars.config.gui.ModConfigScreen;
 import dev.muon.dynamic_resource_bars.config.ModConfigManager;
 import dev.muon.dynamic_resource_bars.util.TickHandler;
+import dev.muon.dynamic_resource_bars.compat.ManaProviderManager;
+import dev.muon.dynamic_resource_bars.util.PlatformUtil;
+import dev.muon.dynamic_resource_bars.compat.AppleSkinEventHandler;
 import net.minecraft.resources.ResourceLocation;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -88,9 +91,18 @@ public class DynamicResourceBars #if FABRIC implements ClientModInitializer, Mod
     #if FABRIC @Override #endif
     public void onInitializeClient() {
         ModConfigManager.initializeConfig();
+        ManaProviderManager.initialize();
+        
         #if FABRIC
         ClientTickEvents.END_CLIENT_TICK.register(client -> TickHandler.onClientTick());
-        AppleSkinFabricEventHandler.init();
+        if (PlatformUtil.isModLoaded("appleskin")) {
+            AppleSkinFabricEventHandler.init();
+        }
+        #elif FORGELIKE
+        if (PlatformUtil.isModLoaded("appleskin")) {
+            AppleSkinEventHandler.register();
+            LOGGER.info("AppleSkin detected, registering event handlers.");
+        }
         #endif
     }
 

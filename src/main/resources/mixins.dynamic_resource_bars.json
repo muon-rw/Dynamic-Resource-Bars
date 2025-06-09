@@ -3,17 +3,20 @@
   "package": "dev.muon.dynamic_resource_bars.mixin",
   "compatibilityLevel": "JAVA_17",
   "minVersion": "0.8",
+  "plugin": "dev.muon.dynamic_resource_bars.MixinConfigPlugin",
   "mixins": [
     "InventoryMixin",
     "ItemStackMixin",
     "compat.farmersdelight.BaseOverlayMixin",
     "compat.farmersdelight.ComfortHealthOverlayMixin",
-    "compat.farmersdelight.NourishmentHungerOverlayMixin"
+    "compat.farmersdelight.NourishmentHungerOverlayMixin",
+    "compat.rpgmana.InGameHudMixin"
   ],
   "injectors": {
     "defaultRequire": 1
   },
   "client": [
-    "GuiMixin"
+    "GuiMixin",
+    "compat.manaattributes.ClientEventsRegistryMixin"
   ]
 }

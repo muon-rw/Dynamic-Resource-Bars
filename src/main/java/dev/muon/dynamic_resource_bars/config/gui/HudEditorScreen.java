@@ -8,6 +8,7 @@ import dev.muon.dynamic_resource_bars.render.HealthBarRenderer;
 import dev.muon.dynamic_resource_bars.render.ManaBarRenderer;
 import dev.muon.dynamic_resource_bars.render.StaminaBarRenderer;
 import dev.muon.dynamic_resource_bars.util.*;
+import dev.muon.dynamic_resource_bars.compat.ManaProviderManager;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.AbstractWidget;
@@ -76,7 +77,7 @@ public class HudEditorScreen extends Screen {
     // Buttons for Non-Focus Mode (Grid)
     private Button toggleHealthBarButton;
     private Button toggleStaminaBarButton;
-    private Button toggleManaBarButton;
+    private Button cycleManaBarBehaviorButton;
     private Button cycleArmorBehaviorButton;
     private Button cycleAirBehaviorButton;
     private Button openHealthSettingsButton; 
@@ -114,8 +115,7 @@ public class HudEditorScreen extends Screen {
         toggleBackgroundButton = null; toggleForegroundButton = null; toggleFadeFullButton = null;
         cycleTextBehaviorButton = null; cycleTextAlignButton = null; cycleAnchorButton = null;
         resetPositionButton = null; resetSizeButton = null;
-        toggleHealthBarButton = null; toggleStaminaBarButton = null; toggleManaBarButton = null;
-        cycleFillDirectionButton = null;
+        toggleHealthBarButton = null; toggleStaminaBarButton = null; cycleManaBarBehaviorButton = null;
         cycleArmorBehaviorButton = null; cycleAirBehaviorButton = null;
         openHealthSettingsButton = null; openStaminaSettingsButton = null; openManaSettingsButton = null;
         openArmorSettingsButton = null; openAirSettingsButton = null;
@@ -143,17 +143,20 @@ public class HudEditorScreen extends Screen {
             addRenderableWidget(toggleHealthBarButton);
             currentX += threeColButtonWidth + colSpacing;
 
-            boolean hasManaProvider = ManaProviderRegistry.hasProviders();
-            toggleManaBarButton = Button.builder(Component.translatable("gui.dynamic_resource_bars.hud_editor.button.mana_toggle_format", 
-                config.enableManaBar ? Component.translatable("gui.dynamic_resource_bars.behavior.custom_simple") : Component.translatable("gui.dynamic_resource_bars.behavior.vanilla_simple")),
+            boolean hasManaProvider = ManaProviderManager.hasAnyManaMods();
+            cycleManaBarBehaviorButton = Button.builder(getManaBarBehaviorComponent(config.manaBarBehavior),
                 (b) -> { 
-                if(b.active) { config.enableManaBar = !config.enableManaBar; rebuildEditorWidgets(); }
+                if(b.active) { 
+                    config.manaBarBehavior = getNextAvailableManaBarBehavior(config.manaBarBehavior);
+                    ManaProviderManager.updateActiveProvider();
+                    rebuildEditorWidgets();
+                }
             }).bounds(currentX, currentY, threeColButtonWidth, gridButtonHeight).build();
-            toggleManaBarButton.active = hasManaProvider;
+            cycleManaBarBehaviorButton.active = hasManaProvider;
             if (!hasManaProvider) {
-                toggleManaBarButton.setTooltip(Tooltip.create(Component.translatable("gui.dynamic_resource_bars.hud_editor.tooltip.no_mana_provider")));
+                cycleManaBarBehaviorButton.setTooltip(Tooltip.create(Component.translatable("gui.dynamic_resource_bars.hud_editor.tooltip.no_mana_provider")));
             }
-            addRenderableWidget(toggleManaBarButton);
+            addRenderableWidget(cycleManaBarBehaviorButton);
             currentX += threeColButtonWidth + colSpacing;
 
             toggleStaminaBarButton = Button.builder(Component.translatable("gui.dynamic_resource_bars.hud_editor.button.stamina_toggle_format", 
@@ -173,7 +176,7 @@ public class HudEditorScreen extends Screen {
             openManaSettingsButton = Button.builder(Component.translatable("gui.dynamic_resource_bars.hud_editor.button.mana_settings"), (b) -> { 
                 if(b.active) { EditModeManager.setFocusedElement(DraggableElement.MANA_BAR); rebuildEditorWidgets(); }
             }).bounds(currentX, currentY, threeColButtonWidth, gridButtonHeight).build();
-            openManaSettingsButton.active = config.enableManaBar && hasManaProvider;
+            openManaSettingsButton.active = config.manaBarBehavior != ManaBarBehavior.OFF && hasManaProvider;
              if (!hasManaProvider) {
                 openManaSettingsButton.setTooltip(Tooltip.create(Component.translatable("gui.dynamic_resource_bars.hud_editor.tooltip.no_mana_provider")));
             }
@@ -328,11 +331,15 @@ public class HudEditorScreen extends Screen {
                     fillDirectionCycler = () -> {}; // Not supported for armor
                     anchorCycler = () -> {
                         HUDPositioning.BarPlacement nextAnchor = getNextBarPlacement(config.armorBarAnchor); config.armorBarAnchor = nextAnchor;
-                        int bgWidth = config.armorBackgroundWidth; int newDefaultXOffset = 0;
-                        if (nextAnchor == HUDPositioning.BarPlacement.ABOVE_UTILITIES) { newDefaultXOffset = -bgWidth / 2; } else if (nextAnchor.getSide() == HUDPositioning.AnchorSide.RIGHT) { newDefaultXOffset = -bgWidth; }
-                        config.armorTotalXOffset = newDefaultXOffset; config.armorTotalYOffset = 0; rebuildEditorWidgets();
+                        int bgWidth = config.armorBackgroundWidth;
+                        int newDefaultXOffset = 0;
+                        if (nextAnchor == HUDPositioning.BarPlacement.ABOVE_UTILITIES) { newDefaultXOffset = -bgWidth / 2; }
+                        else if (nextAnchor.getSide() == HUDPositioning.AnchorSide.RIGHT) { newDefaultXOffset = -bgWidth; }
+                        config.armorTotalXOffset = newDefaultXOffset; config.armorTotalYOffset = 0;
+                        rebuildEditorWidgets();
                     };
-                    anchorSupported = true; bgSupported = false; textSupported = true;
+                    fgSupported = true; textSupported = true; anchorSupported = true; fadeSupported = true; bgSupported = true;
+                    fillDirectionSupported = true;
                     break;
                 case AIR_BAR:
                     bgGetter = () -> true;
@@ -714,7 +721,7 @@ public class HudEditorScreen extends Screen {
     }
 
     @Override
-    public void renderBackground(GuiGraphics graphics#if NEWER_THAN_20_1, int mouseX, int mouseY, float partialTicks#endif) {
+    public void renderBackground(GuiGraphics graphics #if NEWER_THAN_20_1, int mouseX, int mouseY, float partialTicks#endif) {
         // Do nothing here to prevent the default background dim/dirt.
     }
     /**
@@ -1647,7 +1654,7 @@ public class HudEditorScreen extends Screen {
                 config.staminaFillDirection = ClientConfig.DEFAULT_STAMINA_FILL_DIRECTION;
                 break;
             case MANA_BAR:
-                config.enableManaBar = ClientConfig.DEFAULT_ENABLE_MANA_BAR;
+                config.manaBarBehavior = ClientConfig.DEFAULT_MANA_BAR_BEHAVIOR;
                 config.enableManaBackground = ClientConfig.DEFAULT_ENABLE_MANA_BACKGROUND;
                 config.enableManaForeground = ClientConfig.DEFAULT_ENABLE_MANA_FOREGROUND;
                 config.fadeManaWhenFull = ClientConfig.DEFAULT_FADE_MANA_WHEN_FULL;
@@ -1719,4 +1726,43 @@ public class HudEditorScreen extends Screen {
                 return 0xFFFFFFFF;
         }
     }
-} 
+
+    private ManaBarBehavior getNextAvailableManaBarBehavior(ManaBarBehavior current) {
+        ManaBarBehavior next = current;
+        int attempts = 0;
+        do {
+            next = next.getNext();
+            attempts++;
+            // Prevent infinite loop if no mods are loaded
+            if (attempts > ManaBarBehavior.values().length) {
+                return ManaBarBehavior.OFF;
+            }
+        } while (next != ManaBarBehavior.OFF && !isManaModAvailable(next));
+        
+        return next;
+    }
+    
+    private boolean isManaModAvailable(ManaBarBehavior behavior) {
+        switch (behavior) {
+            case OFF:
+                return true;
+            case IRONS_SPELLBOOKS:
+                return PlatformUtil.isModLoaded("irons_spellbooks");
+            case ARS_NOUVEAU:
+                return PlatformUtil.isModLoaded("ars_nouveau");
+            case RPG_MANA:
+                return PlatformUtil.isModLoaded("rpgmana");
+            case MANA_ATTRIBUTES:
+                return PlatformUtil.isModLoaded("manaattributes");
+            default:
+                return false;
+        }
+    }
+
+    private Component getManaBarBehaviorComponent(ManaBarBehavior behavior) {
+        return Component.translatable(
+            "gui.dynamic_resource_bars.hud_editor.button.mana_behavior_format", 
+            Component.translatable(behavior.getTranslationKey())
+        );
+    }
+}

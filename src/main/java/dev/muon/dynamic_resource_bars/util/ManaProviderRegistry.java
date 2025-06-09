@@ -20,10 +20,8 @@ public class ManaProviderRegistry {
         // TODO: Log registration?
     }
 
-    // In a multi-provider scenario, this would involve user choice
-    private static void setActiveProvider(@Nullable ManaProvider provider) {
+    public static void setActiveProvider(@Nullable ManaProvider provider) {
         activeProvider = provider;
-        // TODO: Log activation?
     }
     
     @Nullable

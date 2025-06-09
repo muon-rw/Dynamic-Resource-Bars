@@ -157,7 +157,7 @@ public class HealthBarRenderer {
                       animOffset, isRightAnchored);
 
         // Render AppleSkin estimated health overlay
-        if (AppleSkinCompat.isLoaded()) {
+        if (PlatformUtil.isModLoaded("appleskin")) {
             ItemStack heldFood = getHeldFood(player);
             if (!heldFood.isEmpty()) {
                 renderHealthRestoredOverlay(graphics, player, heldFood, actualHealth, maxHealth, mainBarRect, animOffset, isRightAnchored);
@@ -559,7 +559,7 @@ public class HealthBarRenderer {
     private static void renderHealthRestoredOverlay(GuiGraphics graphics, Player player, ItemStack heldFood,
                                                    float currentHealth, float maxHealth,
                                                    ScreenRect barRect, int animOffset, boolean isRightAnchored) {
-        if (!AppleSkinCompat.isLoaded()) {
+        if (!PlatformUtil.isModLoaded("appleskin")) {
             return;
         }
         

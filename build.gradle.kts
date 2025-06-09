@@ -53,8 +53,17 @@ blahaj {
 		// Bewitchment
 		if (project.hasProperty("bewitchment")) { deps.modCompileOnly("maven.modrinth:bewitchment:${property("bewitchment")}") }
 
-		// RPGMana
+		// Ars Nouveau
+		if (project.hasProperty("ars_nouveau")) { deps.modCompileOnly("com.hollingsworth.ars_nouveau:ars_nouveau-$mc:${property("ars_nouveau")}") }
 
+		// Iron's Spellbooks
+		if (project.hasProperty("irons_spellbooks")) { deps.modCompileOnly("io.redspace:irons_spellbooks:${property("irons_spellbooks")}") }
+		if (project.hasProperty("ironsspellbooks")) { deps.modCompileOnly("io.redspace.ironsspellbooks:irons_spellbooks:${property("ironsspellbooks")}") }
+
+		// RPGMana + Mana Attributes
+		if (project.hasProperty("spell_engine")) { deps.modCompileOnly("maven.modrinth:spell-engine:${property("spell_engine")}-fabric")}
+		if (project.hasProperty("rpgmana")) { deps.modCompileOnly("curse.maven:rpgmana-1021902:${property("rpgmana")}")}
+		if (project.hasProperty("mana_attributes")) { deps.modCompileOnly("maven.modrinth:mana-attributes:${property("mana_attributes")}") }
 
 		// Publishing
 		addRequiredMod("puzzles-lib")
@@ -72,19 +81,22 @@ repositories {
 	maven("https://dl.cloudsmith.io/public/geckolib3/geckolib/maven/")
 	maven("https://maven.shedaniel.me/")
 	maven("https://maven.terraformersmc.com/releases/")
-	maven("https://maven.kosmx.dev/")
+	maven("https://maven.kosmx.dev/") // Player Animator (required by Iron's)
+	maven("https://maven.blamejared.com/") // Ars Nouveau
+	maven("https://maven.theillusivec4.top/") // Curios (required by Ars + Iron's)
+	maven("https://maven.minecraftforge.net/") // Terrablender (required by Ars)
 
 	// Iron's Spellbooks
 	maven {
 		url = uri("https://code.redspace.io/releases")
 		content {
-			includeGroup("io.redspace")
+			includeGroupByRegex("io.redspace.*")
 		}
 	}
 	maven {
 		url = uri("https://code.redspace.io/snapshots")
 		content {
-			includeGroup("io.redspace")
+			includeGroupByRegex("io.redspace.*")
 		}
 	}
 
