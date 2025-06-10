@@ -629,12 +629,13 @@ public class StaminaBarRenderer {
             #endif
     }
 
-    private static boolean isVampire(Player player) {
+    public static boolean isVampire(Player player) {
         #if UPTO_20_1 && FABRIC
-            return BewitchmentAPI.isVampire(player, true);
-        #else
-            // TODO: More vampire transformation mods here
-            return false;
+            if (PlatformUtil.isModLoaded("bewitchment")) {
+                return BewitchmentAPI.isVampire(player, true);
+            }
         #endif
+            // TODO: More vampire transformation mods here
+        return false;
     }
 }

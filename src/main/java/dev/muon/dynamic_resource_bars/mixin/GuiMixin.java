@@ -164,7 +164,7 @@ public abstract class GuiMixin {
         if (airBehavior == BarRenderBehavior.CUSTOM) {
             Player player = this.minecraft.player;
             if (player != null) {
-                if (PlatformUtil.isModLoaded("bewitchment") && BewitchmentAPI.isVampire(player, true)) {
+                if (PlatformUtil.isModLoaded("bewitchment") && StaminaBarRenderer.isVampire(player)) {
                     return;
                 }
                 AirBarRenderer.render(guiGraphics, player, this.minecraft.getFrameTime());

@@ -1,3 +1,6 @@
+## 0.6.1
+- Fix Bewitchment being required on 1.20.1 Fabric
+
 ## 0.6.0
 Mana mod support!
 - RPGMana (1.20.1 Fabric)
