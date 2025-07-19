@@ -20,6 +20,7 @@ import net.minecraft.tags.TagKey;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.resources.ResourceLocation;
+import dev.muon.dynamic_resource_bars.util.StaminaBarBehavior;
 
 import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
@@ -121,7 +122,7 @@ public abstract class GuiMixin {
             at = @At(value = "HEAD"), cancellable = true)
     private void hideMountHealth(GuiGraphics guiGraphics, CallbackInfo ci) {
         ClientConfig config = ModConfigManager.getClient();
-        if (config.enableStaminaBar) {
+        if (config.mergeMountHealth && config.enableMountHealth) {
             ci.cancel();
         }
     }
@@ -132,7 +133,7 @@ public abstract class GuiMixin {
     )
     private void renderStaminaBeforeFood(GuiGraphics guiGraphics, CallbackInfo ci) {
         ClientConfig config = ModConfigManager.getClient();
-        if (config.enableStaminaBar) {
+        if (config.staminaBarBehavior.equals(StaminaBarBehavior.FOOD)) {
             Player player = this.minecraft.player;
             if (player != null) {
                 StaminaBarRenderer.render(guiGraphics, player, this.minecraft.getFrameTime());
@@ -146,7 +147,7 @@ public abstract class GuiMixin {
     )
     private int hideFoodWhenStaminaEnabled(int vehicleHearts) {
         ClientConfig config = ModConfigManager.getClient();
-        if (config.enableStaminaBar) {
+        if (config.staminaBarBehavior.equals(StaminaBarBehavior.FOOD)) {
             // Return non-zero to skip food rendering (since food only renders when vehicleHearts == 0)
             return 1;
         }

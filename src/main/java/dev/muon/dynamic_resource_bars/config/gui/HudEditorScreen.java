@@ -9,6 +9,7 @@ import dev.muon.dynamic_resource_bars.render.ManaBarRenderer;
 import dev.muon.dynamic_resource_bars.render.StaminaBarRenderer;
 import dev.muon.dynamic_resource_bars.util.*;
 import dev.muon.dynamic_resource_bars.compat.ManaProviderManager;
+import dev.muon.dynamic_resource_bars.compat.StaminaProviderManager;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.AbstractWidget;
@@ -86,6 +87,7 @@ public class HudEditorScreen extends Screen {
     private Button openArmorSettingsButton;
     private Button openAirSettingsButton;
     private Button resetButtonForAllBars;
+    private Button cycleStaminaBarBehaviorButton;
 
     public HudEditorScreen(Screen previous) {
         super(Component.translatable("gui.dynamic_resource_bars.hud_editor.title"));
@@ -159,10 +161,13 @@ public class HudEditorScreen extends Screen {
             addRenderableWidget(cycleManaBarBehaviorButton);
             currentX += threeColButtonWidth + colSpacing;
 
-            toggleStaminaBarButton = Button.builder(Component.translatable("gui.dynamic_resource_bars.hud_editor.button.stamina_toggle_format", 
-                config.enableStaminaBar ? Component.translatable("gui.dynamic_resource_bars.behavior.custom_simple") : Component.translatable("gui.dynamic_resource_bars.behavior.vanilla_simple")),
-                (b) -> { config.enableStaminaBar = !config.enableStaminaBar; rebuildEditorWidgets(); }).bounds(currentX, currentY, threeColButtonWidth, gridButtonHeight).build();
-            addRenderableWidget(toggleStaminaBarButton);
+            cycleStaminaBarBehaviorButton = Button.builder(getStaminaBarBehaviorComponent(config.staminaBarBehavior),
+                (b) -> { 
+                    config.staminaBarBehavior = getNextAvailableStaminaBarBehavior(config.staminaBarBehavior);
+                    StaminaProviderManager.updateActiveProvider();
+                    rebuildEditorWidgets();
+                }).bounds(currentX, currentY, threeColButtonWidth, gridButtonHeight).build();
+            addRenderableWidget(cycleStaminaBarBehaviorButton);
 
             // Row 2: H, M, S Settings
             currentY += gridButtonHeight + rowSpacing;
@@ -184,7 +189,7 @@ public class HudEditorScreen extends Screen {
             currentX += threeColButtonWidth + colSpacing;
 
             openStaminaSettingsButton = Button.builder(Component.translatable("gui.dynamic_resource_bars.hud_editor.button.stamina_settings"), (b) -> { EditModeManager.setFocusedElement(DraggableElement.STAMINA_BAR); rebuildEditorWidgets(); }).bounds(currentX, currentY, threeColButtonWidth, gridButtonHeight).build();
-            openStaminaSettingsButton.active = config.enableStaminaBar;
+            openStaminaSettingsButton.active = config.staminaBarBehavior != StaminaBarBehavior.OFF;
             addRenderableWidget(openStaminaSettingsButton);
 
             // --- Section 2: Armor, Air (2 columns) ---
@@ -1645,7 +1650,7 @@ public class HudEditorScreen extends Screen {
                 config.healthFillDirection = ClientConfig.DEFAULT_HEALTH_FILL_DIRECTION;
                 break;
             case STAMINA_BAR:
-                config.enableStaminaBar = ClientConfig.DEFAULT_ENABLE_STAMINA_BAR;
+                config.staminaBarBehavior = ClientConfig.DEFAULT_STAMINA_BAR_BEHAVIOR;
                 config.enableStaminaBackground = ClientConfig.DEFAULT_ENABLE_STAMINA_BACKGROUND;
                 config.enableStaminaForeground = ClientConfig.DEFAULT_ENABLE_STAMINA_FOREGROUND;
                 config.fadeStaminaWhenFull = ClientConfig.DEFAULT_FADE_STAMINA_WHEN_FULL;
@@ -1760,9 +1765,39 @@ public class HudEditorScreen extends Screen {
     }
 
     private Component getManaBarBehaviorComponent(ManaBarBehavior behavior) {
-        return Component.translatable(
-            "gui.dynamic_resource_bars.hud_editor.button.mana_behavior_format", 
-            Component.translatable(behavior.getTranslationKey())
-        );
+        Component behaviorText = switch (behavior) {
+            case OFF -> Component.translatable("gui.dynamic_resource_bars.behavior.off");
+            case IRONS_SPELLBOOKS -> Component.translatable("gui.dynamic_resource_bars.mana_behavior.irons_spellbooks");
+            case ARS_NOUVEAU -> Component.translatable("gui.dynamic_resource_bars.mana_behavior.ars_nouveau");
+            case RPG_MANA -> Component.translatable("gui.dynamic_resource_bars.mana_behavior.rpg_mana");
+            case MANA_ATTRIBUTES -> Component.translatable("gui.dynamic_resource_bars.mana_behavior.mana_attributes");
+        };
+        return Component.translatable("gui.dynamic_resource_bars.mana_format", behaviorText);
+    }
+    
+    private Component getStaminaBarBehaviorComponent(StaminaBarBehavior behavior) {
+        Component behaviorText = switch (behavior) {
+            case OFF -> Component.translatable("gui.dynamic_resource_bars.behavior.off");
+            case FOOD -> Component.translatable("gui.dynamic_resource_bars.stamina_bar_behavior.food");
+            case STAMINA_ATTRIBUTES -> Component.translatable("gui.dynamic_resource_bars.stamina_bar_behavior.stamina_attributes");
+        };
+        return Component.translatable("gui.dynamic_resource_bars.stamina_format", behaviorText);
+    }
+    
+    private StaminaBarBehavior getNextAvailableStaminaBarBehavior(StaminaBarBehavior current) {
+        StaminaBarBehavior next = current.getNext();
+        int attempts = 0;
+        while (!isStaminaProviderAvailable(next) && attempts < StaminaBarBehavior.values().length) {
+            next = next.getNext();
+            attempts++;
+        }
+        return next;
+    }
+    
+    private boolean isStaminaProviderAvailable(StaminaBarBehavior behavior) {
+        return switch (behavior) {
+            case OFF, FOOD -> true; // Always available
+            case STAMINA_ATTRIBUTES -> StaminaProviderManager.isModLoaded("staminaattributes");
+        };
     }
 }

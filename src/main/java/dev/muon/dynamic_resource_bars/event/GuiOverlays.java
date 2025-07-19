@@ -10,6 +10,7 @@ import dev.muon.dynamic_resource_bars.util.BarRenderBehavior;
 import dev.muon.dynamic_resource_bars.compat.ManaProviderManager;
 import dev.muon.dynamic_resource_bars.util.ManaBarBehavior;
 import dev.muon.dynamic_resource_bars.util.ManaProvider;
+import dev.muon.dynamic_resource_bars.util.StaminaBarBehavior;
 #if FORGE
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
@@ -32,7 +33,7 @@ public class GuiOverlays {
             HealthBarRenderer.render(graphics, player, player.getMaxHealth(), player.getHealth(), (int) player.getAbsorptionAmount(), partialTick);
             gui.leftHeight += config.healthBackgroundHeight + 1;
         }
-        if (config.enableStaminaBar) {
+        if (config.staminaBarBehavior != StaminaBarBehavior.OFF) {
             StaminaBarRenderer.render(graphics, player, partialTick);
             gui.rightHeight += config.staminaBackgroundHeight + 1;
         }

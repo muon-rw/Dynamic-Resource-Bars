@@ -2,6 +2,7 @@ package dev.muon.dynamic_resource_bars.compat;
 
 #if FABRIC
 import dev.muon.dynamic_resource_bars.config.ModConfigManager;
+import dev.muon.dynamic_resource_bars.util.StaminaBarBehavior;
 import squeek.appleskin.api.event.HUDOverlayEvent;
 #endif
 public class AppleSkinFabricEventHandler {
@@ -13,13 +14,13 @@ public class AppleSkinFabricEventHandler {
         }
 
         HUDOverlayEvent.HungerRestored.EVENT.register(event -> {
-            if (ModConfigManager.getClient().enableStaminaBar) {
+            if (ModConfigManager.getClient().staminaBarBehavior.equals(StaminaBarBehavior.FOOD) ) {
                 event.isCanceled = true;
             }
         });
         
         HUDOverlayEvent.Saturation.EVENT.register(event -> {
-            if (ModConfigManager.getClient().enableStaminaBar) {
+            if (ModConfigManager.getClient().staminaBarBehavior.equals(StaminaBarBehavior.FOOD) ) {
                 event.isCanceled = true;
             }
         });
@@ -31,7 +32,7 @@ public class AppleSkinFabricEventHandler {
         });
         
         HUDOverlayEvent.Exhaustion.EVENT.register(event -> {
-            if (ModConfigManager.getClient().enableStaminaBar) {
+            if (ModConfigManager.getClient().staminaBarBehavior.equals(StaminaBarBehavior.FOOD) ) {
                 event.isCanceled = true;
             }
         });

@@ -3,6 +3,7 @@ package dev.muon.dynamic_resource_bars.mixin.compat.farmersdelight;
 
 import net.minecraft.client.Minecraft;
 import org.spongepowered.asm.mixin.Mixin;
+import dev.muon.dynamic_resource_bars.util.StaminaBarBehavior;
 #if UPTO_20_1 && FABRIC
 import dev.muon.dynamic_resource_bars.config.ClientConfig;
 import dev.muon.dynamic_resource_bars.config.ModConfigManager;
@@ -23,7 +24,7 @@ public class ComfortHealthOverlayMixin {
     @Inject(method = "renderComfortOverlay", at = @At("HEAD"), cancellable = true)
     private static void cancelComfortOverlay(Minecraft mc, Gui gui, GuiGraphics graphics, CallbackInfo ci) {
         ClientConfig config = ModConfigManager.getClient();
-        if (config.enableStaminaBar) {
+        if (config.staminaBarBehavior.equals(StaminaBarBehavior.FOOD)) {
             ci.cancel();
         }
     }

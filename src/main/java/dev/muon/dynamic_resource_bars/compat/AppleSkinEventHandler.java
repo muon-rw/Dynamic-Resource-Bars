@@ -2,6 +2,7 @@ package dev.muon.dynamic_resource_bars.compat;
 
 import dev.muon.dynamic_resource_bars.DynamicResourceBars;
 import dev.muon.dynamic_resource_bars.config.ModConfigManager;
+import dev.muon.dynamic_resource_bars.util.StaminaBarBehavior;
 
 #if FORGE
     import net.minecraftforge.api.distmarker.Dist;
@@ -29,14 +30,14 @@ public class AppleSkinEventHandler {
     #if FORGELIKE
     @SubscribeEvent
     public static void onHungerOverlay(HUDOverlayEvent.HungerRestored event) {
-        if (AppleSkinCompat.isLoaded() && ModConfigManager.getClient().enableStaminaBar) {
+        if (AppleSkinCompat.isLoaded() && ModConfigManager.getClient().staminaBarBehavior.equals(StaminaBarBehavior.FOOD)) {
             event.setCanceled(true);
         }
     }
     
     @SubscribeEvent
     public static void onSaturationOverlay(HUDOverlayEvent.Saturation event) {
-        if (AppleSkinCompat.isLoaded() && ModConfigManager.getClient().enableStaminaBar) {
+        if (AppleSkinCompat.isLoaded() && ModConfigManager.getClient().staminaBarBehavior.equals(StaminaBarBehavior.FOOD)) {
             event.setCanceled(true);
         }
     }
@@ -50,7 +51,7 @@ public class AppleSkinEventHandler {
     
     @SubscribeEvent
     public static void onExhaustionOverlay(HUDOverlayEvent.Exhaustion event) {
-        if (AppleSkinCompat.isLoaded() && ModConfigManager.getClient().enableStaminaBar) {
+        if (AppleSkinCompat.isLoaded() && ModConfigManager.getClient().staminaBarBehavior.equals(StaminaBarBehavior.FOOD)) {
             event.setCanceled(true);
         }
     }

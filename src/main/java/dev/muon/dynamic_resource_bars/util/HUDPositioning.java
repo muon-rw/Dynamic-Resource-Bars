@@ -80,7 +80,7 @@ public class HUDPositioning {
     public static Position getAirAnchor() {
         int screenWidth = Minecraft.getInstance().getWindow().getGuiScaledWidth();
         int screenHeight = Minecraft.getInstance().getWindow().getGuiScaledHeight();
-        int staminaHeight = ModConfigManager.getClient().enableStaminaBar ?
+        int staminaHeight = !(ModConfigManager.getClient().staminaBarBehavior.equals(StaminaBarBehavior.OFF)) ?
             ModConfigManager.getClient().staminaBackgroundHeight : 
             getVanillaHungerHeight();
         return new Position(

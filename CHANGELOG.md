@@ -1,3 +1,7 @@
+## 0.7.0
+- Add Stamina Attributes support (soon: Paragliders, Epic Fight)
+- Fix crash if Stamina Bar behavior was changed to vanilla while Farmer's Delight was installed (#22)
+
 ## 0.6.2
 - Ported RPGMana support to 1.21.1 Fabric
 

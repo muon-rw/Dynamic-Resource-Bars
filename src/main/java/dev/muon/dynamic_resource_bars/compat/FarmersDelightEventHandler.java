@@ -3,6 +3,7 @@ package dev.muon.dynamic_resource_bars.compat;
 import dev.muon.dynamic_resource_bars.DynamicResourceBars;
 import dev.muon.dynamic_resource_bars.config.ModConfigManager;
 import net.minecraft.resources.ResourceLocation;
+import dev.muon.dynamic_resource_bars.util.StaminaBarBehavior;
 #if NEO
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.bus.api.EventPriority;
@@ -18,7 +19,7 @@ public class FarmersDelightEventHandler {
     public static void onRenderGuiLayer(RenderGuiLayerEvent.Pre event) {
         ResourceLocation overlay = event.getName();
         if (overlay.getNamespace().equals("farmersdelight")) {
-            if (overlay.getPath().equals("nourishment") && ModConfigManager.getClient().enableStaminaBar) {
+            if (overlay.getPath().equals("nourishment") && ModConfigManager.getClient().staminaBarBehavior.equals(StaminaBarBehavior.FOOD)) {
                 event.setCanceled(true);
             } else if (overlay.getPath().equals("comfort") && ModConfigManager.getClient().enableHealthBar) {
                 event.setCanceled(true);

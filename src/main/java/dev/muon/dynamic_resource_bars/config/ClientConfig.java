@@ -9,6 +9,7 @@ import dev.muon.dynamic_resource_bars.util.TextBehavior;
 import dev.muon.dynamic_resource_bars.util.BarRenderBehavior;
 import dev.muon.dynamic_resource_bars.util.FillDirection;
 import dev.muon.dynamic_resource_bars.util.ManaBarBehavior;
+import dev.muon.dynamic_resource_bars.util.StaminaBarBehavior;
 
 import java.io.Reader;
 import java.io.Writer;
@@ -107,6 +108,9 @@ public class ClientConfig {
 
     // Stamina Defaults & Fields
     public static final boolean DEFAULT_ENABLE_STAMINA_BAR = true;
+    public static final StaminaBarBehavior DEFAULT_STAMINA_BAR_BEHAVIOR = StaminaBarBehavior.FOOD;
+    public static final boolean DEFAULT_MERGE_MOUNT_HEALTH = true;
+    public static final boolean DEFAULT_ENABLE_MOUNT_HEALTH = true;
     public static final HUDPositioning.BarPlacement DEFAULT_STAMINA_BAR_ANCHOR = HUDPositioning.BarPlacement.HUNGER;
     public static final boolean DEFAULT_FADE_STAMINA_WHEN_FULL = false;
     public static final TextBehavior DEFAULT_SHOW_STAMINA_TEXT = TextBehavior.NEVER;
@@ -136,7 +140,9 @@ public class ClientConfig {
     public static final int DEFAULT_STAMINA_TEXT_OPACITY = DEFAULT_TEXT_OPACITY;
     public static final float DEFAULT_STAMINA_TEXT_SIZE = DEFAULT_TEXT_SIZE;
 
-    public boolean enableStaminaBar;
+    public StaminaBarBehavior staminaBarBehavior;
+    public boolean mergeMountHealth;
+    public boolean enableMountHealth;
     public HUDPositioning.BarPlacement staminaBarAnchor;
     public boolean fadeStaminaWhenFull;
     public TextBehavior showStaminaText;
@@ -377,7 +383,9 @@ public class ClientConfig {
         this.healthAbsorptionTextXOffset = DEFAULT_HEALTH_ABSORPTION_TEXT_X_OFFSET;
         this.healthAbsorptionTextYOffset = DEFAULT_HEALTH_ABSORPTION_TEXT_Y_OFFSET;
 
-        this.enableStaminaBar = DEFAULT_ENABLE_STAMINA_BAR;
+        this.staminaBarBehavior = DEFAULT_STAMINA_BAR_BEHAVIOR;
+        this.mergeMountHealth = DEFAULT_MERGE_MOUNT_HEALTH;
+        this.enableMountHealth = DEFAULT_ENABLE_MOUNT_HEALTH;
         this.staminaBarAnchor = DEFAULT_STAMINA_BAR_ANCHOR;
         this.fadeStaminaWhenFull = DEFAULT_FADE_STAMINA_WHEN_FULL;
         this.showStaminaText = DEFAULT_SHOW_STAMINA_TEXT;
@@ -571,6 +579,7 @@ public class ClientConfig {
         if (cfg.healthOverlayHeight < 1) { cfg.healthOverlayHeight = DEFAULT_HEALTH_OVERLAY_HEIGHT; modified = true; }
 
         // Stamina
+        if (cfg.staminaBarBehavior == null) { cfg.staminaBarBehavior = DEFAULT_STAMINA_BAR_BEHAVIOR; modified = true; }
         if (cfg.staminaBarAnchor == null) { cfg.staminaBarAnchor = DEFAULT_STAMINA_BAR_ANCHOR; modified = true; }
         if (cfg.showStaminaText == null) { cfg.showStaminaText = DEFAULT_SHOW_STAMINA_TEXT; modified = true; }
         if (cfg.staminaTextAlign == null) { cfg.staminaTextAlign = DEFAULT_STAMINA_TEXT_ALIGN; modified = true; }

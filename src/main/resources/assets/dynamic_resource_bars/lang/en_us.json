@@ -36,6 +36,7 @@
   "bar_behavior.custom": "Custom",
   "bar_behavior.hidden": "Hidden",
 
+  "gui.dynamic_resource_bars.behavior.off": "Off/Vanilla",
   "gui.dynamic_resource_bars.behavior.custom_simple": "Custom",
   "gui.dynamic_resource_bars.behavior.vanilla_simple": "Vanilla",
 
@@ -106,5 +107,17 @@
   "gui.dynamic_resource_bars.mana_behavior.rpg_mana": "RPGMana",
   "gui.dynamic_resource_bars.mana_behavior.ars_nouveau": "Ars Nouveau",
   "gui.dynamic_resource_bars.mana_behavior.irons_spellbooks": "Iron's Spellbooks",
-  "gui.dynamic_resource_bars.mana_behavior.mana_attributes": "Mana Attributes"
+  "gui.dynamic_resource_bars.mana_behavior.mana_attributes": "Mana Attributes",
+
+  "gui.dynamic_resource_bars.stamina_bar_behavior.food": "Hunger",
+  "gui.dynamic_resource_bars.stamina_bar_behavior.stamina_attributes": "Stamina Attributes",
+  "gui.dynamic_resource_bars.stamina_bar_behavior.off": "Off",
+
+  "gui.dynamic_resource_bars.stamina_source.food": "Hunger",
+  "gui.dynamic_resource_bars.stamina_source.stamina_attributes": "Stamina Attributes",
+
+  "gui.dynamic_resource_bars.merge_mount_health": "Merge Mount Health",
+  
+  "gui.dynamic_resource_bars.mana_format": "Mana: %s",
+  "gui.dynamic_resource_bars.stamina_format": "Stamina: %s"
 }

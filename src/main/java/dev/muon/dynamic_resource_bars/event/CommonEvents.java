@@ -7,6 +7,7 @@ import dev.muon.dynamic_resource_bars.render.ArmorBarRenderer;
 import dev.muon.dynamic_resource_bars.render.HealthBarRenderer;
 import dev.muon.dynamic_resource_bars.render.StaminaBarRenderer;
 import dev.muon.dynamic_resource_bars.util.BarRenderBehavior;
+import dev.muon.dynamic_resource_bars.util.StaminaBarBehavior;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.world.entity.player.Player;
@@ -37,7 +38,7 @@ public class CommonEvents {
 
     public static EventResult onRenderHunger(Minecraft minecraft, GuiGraphics guiGraphics, DeltaTracker deltaTracker) {
         var config = ModConfigManager.getClient();
-        if (!config.enableStaminaBar) {
+        if (!config.staminaBarBehavior.equals(StaminaBarBehavior.FOOD)) {
             return EventResult.PASS;
         }
 
@@ -94,8 +95,7 @@ public class CommonEvents {
 
     public static EventResult onRenderMountHealth(Minecraft minecraft, GuiGraphics guiGraphics, DeltaTracker deltaTracker) {
         var config = ModConfigManager.getClient();
-        // Cancel mount health rendering if stamina bar is enabled (since it handles mount health)
-        if (!config.enableStaminaBar) {
+        if (!config.mergeMountHealth && config.enableMountHealth) {
             return EventResult.PASS;
         }
 

@@ -4,6 +4,7 @@ import dev.muon.dynamic_resource_bars.DynamicResourceBars;
 import dev.muon.dynamic_resource_bars.config.ModConfigManager;
 import dev.muon.dynamic_resource_bars.config.ClientConfig;
 import dev.muon.dynamic_resource_bars.util.BarRenderBehavior;
+import dev.muon.dynamic_resource_bars.util.StaminaBarBehavior;
 #if FORGE
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.client.event.RenderGuiOverlayEvent;
@@ -21,12 +22,12 @@ public class ForgeEvents {
         if (config.enableHealthBar && event.getOverlay() == VanillaGuiOverlay.PLAYER_HEALTH.type()) {
             event.setCanceled(true);
         }
-        if (config.enableStaminaBar && event.getOverlay() == VanillaGuiOverlay.FOOD_LEVEL.type()) {
+        if (config.staminaBarBehavior.equals(StaminaBarBehavior.FOOD) && event.getOverlay() == VanillaGuiOverlay.FOOD_LEVEL.type()) {
             event.setCanceled(true);
         }
         
         // Cancel mount health when stamina bar is enabled (since it renders mount health)
-        if (config.enableStaminaBar && event.getOverlay() == VanillaGuiOverlay.MOUNT_HEALTH.type()) {
+        if (config.mergeMountHealth && config.enableMountHealth && event.getOverlay() == VanillaGuiOverlay.MOUNT_HEALTH.type()) {
             event.setCanceled(true);
         }
         

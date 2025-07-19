@@ -2,7 +2,10 @@ package dev.muon.dynamic_resource_bars.mixin.compat.farmersdelight;
 
 import net.minecraft.client.Minecraft;
 import org.spongepowered.asm.mixin.Mixin;
+import dev.muon.dynamic_resource_bars.util.StaminaBarBehavior;
+
 #if NEWER_THAN_20_1 && FABRIC
+import net.minecraft.client.DeltaTracker;
 import dev.muon.dynamic_resource_bars.config.ClientConfig;
 import dev.muon.dynamic_resource_bars.config.ModConfigManager;
 import net.minecraft.client.gui.Gui;
@@ -19,10 +22,10 @@ import vectorwing.farmersdelight.client.gui.HUDOverlays;
 #endif
 public class BaseOverlayMixin {
     #if NEWER_THAN_20_1 && FABRIC
-    @Inject(method = "render", at = @At("HEAD"), cancellable = true)
-    private static void cancelComfortOverlay(Minecraft mc, Gui gui, GuiGraphics graphics, CallbackInfo ci) {
+    @Inject(method = "Lvectorwing/farmersdelight/client/gui/HUDOverlays$BaseOverlay;render(Lnet/minecraft/client/gui/GuiGraphics;Lnet/minecraft/client/DeltaTracker;)V", at = @At("HEAD"), cancellable = true)
+    private void cancelComfortOverlay(GuiGraphics guiGraphics, DeltaTracker deltaTracker, CallbackInfo ci) {
         ClientConfig config = ModConfigManager.getClient();
-        if (config.enableStaminaBar) {
+        if (config.staminaBarBehavior.equals(StaminaBarBehavior.FOOD)) {
             ci.cancel();
         }
     }

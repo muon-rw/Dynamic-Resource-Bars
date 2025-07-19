@@ -12,11 +12,8 @@ import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
 import dev.muon.dynamic_resource_bars.compat.AppleSkinCompat;
-#if UPTO_20_1 && FABRIC
-import moriyashiine.bewitchment.api.BewitchmentAPI;
-import moriyashiine.bewitchment.common.registry.BWComponents;
-import moriyashiine.bewitchment.api.component.BloodComponent;
-#endif
+import dev.muon.dynamic_resource_bars.compat.StaminaProviderManager;
+import dev.muon.dynamic_resource_bars.compat.BewitchmentCompat;
 
 #if NEWER_THAN_20_1
     import net.minecraft.client.DeltaTracker;
@@ -27,7 +24,6 @@ import vectorwing.farmersdelight.common.registry.ModEffects;
 import dev.muon.dynamic_resource_bars.config.ClientConfig;
 
 public class StaminaBarRenderer {
-    private static final float CRITICAL_THRESHOLD = 6.0f;
     private static float lastStamina = -1;
     private static long fullStaminaStartTime = 0;
     private static boolean staminaBarSetVisible = true; // Default to visible
@@ -37,47 +33,6 @@ public class StaminaBarRenderer {
     private static float lastMountHealth = -1;
     private static float lastMountMaxHealth = -1;
     private static long fullMountHealthStartTime = 0;
-
-    private enum BarType {
-        NORMAL("stamina_bar"),
-        BLOOD("stamina_bar_blood"),
-        NOURISHED("stamina_bar_nourished"),
-        HUNGER("stamina_bar_hunger"),
-        CRITICAL("stamina_bar_critical"),
-        MOUNTED("stamina_bar_mounted");
-
-        private final String texture;
-
-        BarType(String texture) {
-            this.texture = texture;
-        }
-
-        public String getTexture() {
-            return texture;
-        }
-
-        public static BarType fromPlayerState(Player player, float value) {
-            if (player.getVehicle() instanceof LivingEntity mount) {
-                float healthPercentage = value / mount.getMaxHealth();
-                if (healthPercentage <= 0.2f) {
-                    return CRITICAL;
-                }
-                return MOUNTED;
-            }
-            #if UPTO_20_1 && FABRIC
-            if (PlatformUtil.isModLoaded("bewitchment") && BewitchmentAPI.isVampire(player, true)) {
-                return BLOOD;
-            }
-            #endif
-            if (PlatformUtil.isModLoaded("farmersdelight") && hasNourishmentEffect(player)) {
-                return NOURISHED;
-            }
-            if (player.hasEffect(MobEffects.HUNGER)) return HUNGER;
-            if (value <= CRITICAL_THRESHOLD) return CRITICAL;
-            return NORMAL;
-        }
-
-    }
 
     public static ScreenRect getScreenRect(Player player) {
         if (player == null) return new ScreenRect(0, 0, 0, 0);
@@ -124,18 +79,24 @@ public class StaminaBarRenderer {
     }
 
     public static void render(GuiGraphics graphics, Player player, #if NEWER_THAN_20_1 DeltaTracker deltaTracker #else float partialTicks #endif ) {
-        // Determine the bar values based on player state
-        BarValues values = getBarValues(player);
+        if (!Minecraft.getInstance().gameMode.canHurtPlayer() && !EditModeManager.isEditModeEnabled()) {
+            return;
+        }
+        
+        // Get the current stamina provider
+        StaminaProvider staminaProvider = StaminaProviderManager.getCurrentProvider();
+        if (staminaProvider == null) {
+            return;
+        }
+        
+        // Determine the bar values based on player state and config
+        BarValues values = getBarValues(player, staminaProvider);
         
         // Determine fade behavior
         boolean shouldFade = shouldBarFade(player, values);
         setStaminaBarVisibility(!shouldFade || EditModeManager.isEditModeEnabled());
 
         if (!isStaminaBarVisible() && !EditModeManager.isEditModeEnabled() && (System.currentTimeMillis() - staminaBarDisabledStartTime) > RenderUtil.BAR_FADEOUT_DURATION) {
-            return;
-        }
-
-        if (!Minecraft.getInstance().gameMode.canHurtPlayer() && !EditModeManager.isEditModeEnabled()) {
             return;
         }
 
@@ -164,12 +125,12 @@ public class StaminaBarRenderer {
         }
 
         ScreenRect barRect = getSubElementRect(SubElementType.BAR_MAIN, player);
-        renderBaseBar(graphics, player, values.current, values.max,
+        renderBaseBar(graphics, player, values, staminaProvider,
                 barRect,
                 animOffset, isRightAnchored);
 
-        // Overlays should not show for vampires or when mounted
-        if (values.type == BarValueType.FOOD && !values.isMounted) {
+        // Show overlays only if the provider supports them and we're not showing mount health
+        if (staminaProvider.shouldShowOverlays() && !values.isMounted) {
             if (PlatformUtil.isModLoaded("appleskin")) {
                 ItemStack heldFood = getHeldFood(player);
                 renderHungerRestoredOverlay(graphics, player, heldFood, barRect, #if NEWER_THAN_20_1 deltaTracker.getGameTimeDeltaTicks() #else partialTicks #endif , animOffset, isRightAnchored);
@@ -253,69 +214,61 @@ public class StaminaBarRenderer {
     private static class BarValues {
         float current;
         float max;
-        BarValueType type;
         boolean isMounted;
         
-        BarValues(float current, float max, BarValueType type, boolean isMounted) {
+        BarValues(float current, float max, boolean isMounted) {
             this.current = current;
             this.max = max;
-            this.type = type;
             this.isMounted = isMounted;
         }
     }
     
-    private enum BarValueType {
-        FOOD,
-        BLOOD,
-        MOUNT_HEALTH
-    }
-    
     // Clean method to determine bar values based on player state
-    private static BarValues getBarValues(Player player) {
-        // Check if mounted first (highest priority)
-        if (player.getVehicle() instanceof LivingEntity mount) {
-            return new BarValues(mount.getHealth(), mount.getMaxHealth(), BarValueType.MOUNT_HEALTH, true);
+    private static BarValues getBarValues(Player player, StaminaProvider provider) {
+        // Check if mounted and mergeMountHealth is true
+        if (ModConfigManager.getClient().mergeMountHealth && player.getVehicle() instanceof LivingEntity mount) {
+            return new BarValues(mount.getHealth(), mount.getMaxHealth(), true);
         }
         
-        // Check if vampire
-        #if UPTO_20_1 && FABRIC
-        if (PlatformUtil.isModLoaded("bewitchment") && BewitchmentAPI.isVampire(player, true)) {
-            float bloodCurrent = BWComponents.BLOOD_COMPONENT.get(player).getBlood();
-            float bloodMax = BloodComponent.MAX_BLOOD;
-            return new BarValues(bloodCurrent, bloodMax, BarValueType.BLOOD, false);
-        }
-        #endif
-        
-        // Default to food
-        return new BarValues(player.getFoodData().getFoodLevel(), 20f, BarValueType.FOOD, false);
+        // Otherwise use the stamina provider
+        return new BarValues(provider.getCurrentStamina(player), provider.getMaxStamina(player), false);
     }
     
     // Clean method to determine fade behavior
     private static boolean shouldBarFade(Player player, BarValues values) {
-        switch (values.type) {
-            case MOUNT_HEALTH:
-                return ModConfigManager.getClient().fadeHealthWhenFull && values.current >= values.max;
-            case BLOOD:
-            case FOOD:
-                return ModConfigManager.getClient().fadeStaminaWhenFull && values.current >= values.max;
-            default:
-                return false;
+        if (values.isMounted) {
+            return ModConfigManager.getClient().fadeHealthWhenFull && values.current >= values.max;
+        } else {
+            return ModConfigManager.getClient().fadeStaminaWhenFull && values.current >= values.max;
         }
     }
 
-    private static void renderBaseBar(GuiGraphics graphics, Player player, float currentStamina, float maxStamina,
+    private static void renderBaseBar(GuiGraphics graphics, Player player, BarValues values, StaminaProvider provider,
                                       ScreenRect barAreaRect,
                                       int animOffset, boolean isRightAnchored) {
-        BarType barType = BarType.fromPlayerState(player, currentStamina);
+        String barTexture;
+        if (values.isMounted) {
+            // Mount health uses special textures
+            float healthPercentage = values.current / values.max;
+            if (healthPercentage <= 0.2f) {
+                barTexture = "stamina_bar_critical";
+            } else {
+                barTexture = "stamina_bar_mounted";
+            }
+        } else {
+            // Use provider's texture
+            barTexture = provider.getBarTexture(player, values.current);
+        }
+        
         int totalBarWidth = barAreaRect.width();
         int barHeight = barAreaRect.height();
-        float currentStaminaRatio = (maxStamina == 0) ? 0.0f : (currentStamina / maxStamina);
+        float currentStaminaRatio = (values.max == 0) ? 0.0f : (values.current / values.max);
 
         FillDirection fillDirection = ModConfigManager.getClient().staminaFillDirection;
 
         if (fillDirection == FillDirection.VERTICAL) {
             int partialBarHeight = (int) (barHeight * currentStaminaRatio);
-            if (partialBarHeight <= 0 && currentStamina > 0) partialBarHeight = 1;
+            if (partialBarHeight <= 0 && values.current > 0) partialBarHeight = 1;
             if (partialBarHeight > barHeight) partialBarHeight = barHeight;
 
             int barX = barAreaRect.x();
@@ -325,7 +278,7 @@ public class StaminaBarRenderer {
 
             if (partialBarHeight > 0) {
                 graphics.blit(
-                        DynamicResourceBars.loc("textures/gui/" + barType.getTexture() + ".png"),
+                        DynamicResourceBars.loc("textures/gui/" + barTexture + ".png"),
                         barX, barY,
                         0, textureVOffset, // Use 0 for U, adjusted V for vertical fill
                         totalBarWidth, partialBarHeight, // Use full width, partial height
@@ -334,7 +287,7 @@ public class StaminaBarRenderer {
             }
         } else { // HORIZONTAL
             int partialBarWidth = (int) (totalBarWidth * currentStaminaRatio);
-            if (partialBarWidth <= 0 && currentStamina > 0) partialBarWidth = 1;
+            if (partialBarWidth <= 0 && values.current > 0) partialBarWidth = 1;
             if (partialBarWidth > totalBarWidth) partialBarWidth = totalBarWidth;
 
             int barRenderX = barAreaRect.x();
@@ -349,7 +302,7 @@ public class StaminaBarRenderer {
 
             if (partialBarWidth > 0) {
                 graphics.blit(
-                        DynamicResourceBars.loc("textures/gui/" + barType.getTexture() + ".png"),
+                        DynamicResourceBars.loc("textures/gui/" + barTexture + ".png"),
                         barRenderX, barRenderY,
                         uTexOffset, animOffset, // Use calculated uTexOffset
                         partialBarWidth, barHeight,
@@ -548,8 +501,16 @@ public class StaminaBarRenderer {
         RenderSystem.setShaderColor(1.0f, 1.0f, 1.0f, TickHandler.getOverlayFlashAlpha());
 
         FillDirection fillDirection = ModConfigManager.getClient().staminaFillDirection;
-        // Use the bar type that would apply at the restored hunger level
-        BarType barType = BarType.fromPlayerState(player, restoredHunger);
+        
+        // Get the texture that would apply at the restored hunger level
+        // We need to get the food provider specifically since this is a food overlay
+        StaminaProvider provider = StaminaProviderManager.getCurrentProvider();
+        String barTexture = "stamina_bar"; // default
+        
+        // Only use the provider's texture if it's the food provider
+        if (provider instanceof dev.muon.dynamic_resource_bars.compat.FoodStaminaProvider) {
+            barTexture = provider.getBarTexture(player, restoredHunger);
+        }
 
         if (fillDirection == FillDirection.VERTICAL) {
             int currentHeight = (int) (barRect.height() * (currentHunger / 20f));
@@ -561,7 +522,7 @@ public class StaminaBarRenderer {
                 int textureVOffset = animOffset + (barRect.height() - restoredHeight);
 
                 graphics.blit(
-                        DynamicResourceBars.loc("textures/gui/" + barType.getTexture() + ".png"),
+                        DynamicResourceBars.loc("textures/gui/" + barTexture + ".png"),
                         barRect.x(), yPos,
                         0, textureVOffset,
                         barRect.width(), overlayHeight,
@@ -587,7 +548,7 @@ public class StaminaBarRenderer {
                 if (uTexOffset < 0) uTexOffset = 0;
 
                 graphics.blit(
-                        DynamicResourceBars.loc("textures/gui/" + barType.getTexture() + ".png"),
+                        DynamicResourceBars.loc("textures/gui/" + barTexture + ".png"),
                         xDrawPos, barRect.y(),
                         uTexOffset, animOffset, // Use the calculated uTexOffset
                         overlayWidth, barRect.height(),
@@ -632,7 +593,7 @@ public class StaminaBarRenderer {
     public static boolean isVampire(Player player) {
         #if UPTO_20_1 && FABRIC
             if (PlatformUtil.isModLoaded("bewitchment")) {
-                return BewitchmentAPI.isVampire(player, true);
+                return BewitchmentCompat.isVampire(player);
             }
         #endif
             // TODO: More vampire transformation mods here

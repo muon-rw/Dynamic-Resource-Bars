@@ -17,6 +17,7 @@
   },
   "client": [
     "GuiMixin",
-    "compat.manaattributes.ClientEventsRegistryMixin"
+    "compat.manaattributes.ClientEventsRegistryMixin",
+    "compat.staminaattributes.ClientEventsRegistryMixin"
   ]
 }

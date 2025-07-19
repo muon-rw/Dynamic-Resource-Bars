@@ -1,6 +1,7 @@
 package dev.muon.dynamic_resource_bars;
 
 import dev.muon.dynamic_resource_bars.compat.AppleSkinFabricEventHandler;
+import dev.muon.dynamic_resource_bars.compat.StaminaProviderManager;
 import dev.muon.dynamic_resource_bars.config.gui.ModConfigScreen;
 import dev.muon.dynamic_resource_bars.config.ModConfigManager;
 import dev.muon.dynamic_resource_bars.util.TickHandler;
@@ -92,7 +93,7 @@ public class DynamicResourceBars #if FABRIC implements ClientModInitializer, Mod
     public void onInitializeClient() {
         ModConfigManager.initializeConfig();
         ManaProviderManager.initialize();
-        
+        StaminaProviderManager.initialize();
         #if FABRIC
         ClientTickEvents.END_CLIENT_TICK.register(client -> TickHandler.onClientTick());
         if (PlatformUtil.isModLoaded("appleskin")) {

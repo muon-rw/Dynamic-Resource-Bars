@@ -65,6 +65,9 @@ blahaj {
 		if (project.hasProperty("rpgmana")) { deps.modCompileOnly("curse.maven:rpgmana-1021902:${property("rpgmana")}")}
 		if (project.hasProperty("mana_attributes")) { deps.modCompileOnly("maven.modrinth:mana-attributes:${property("mana_attributes")}") }
 
+		// Stamina Attribute
+		if (project.hasProperty("stamina_attributes")) { deps.modCompileOnly("maven.modrinth:stamina-attributes:${property("stamina_attributes")}") }
+
 		// Publishing
 		addRequiredMod("puzzles-lib")
 			.modrinth("puzzles-lib") // override with Modrinth URL slug
