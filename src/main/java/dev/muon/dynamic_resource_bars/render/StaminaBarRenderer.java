@@ -23,6 +23,10 @@ import dev.muon.dynamic_resource_bars.compat.BewitchmentCompat;
 import vectorwing.farmersdelight.common.registry.ModEffects;
 import dev.muon.dynamic_resource_bars.config.ClientConfig;
 
+import java.util.ArrayList;
+import java.util.Iterator;
+import java.util.List;
+
 public class StaminaBarRenderer {
     private static float lastStamina = -1;
     private static long fullStaminaStartTime = 0;
@@ -33,6 +37,43 @@ public class StaminaBarRenderer {
     private static float lastMountHealth = -1;
     private static float lastMountMaxHealth = -1;
     private static long fullMountHealthStartTime = 0;
+    
+    // Fadeout chunking system
+    private static final long CHUNK_FADEOUT_DURATION = RenderUtil.BAR_FADEOUT_DURATION / 3;
+    private static final List<FadingChunk> fadingChunks = new ArrayList<>();
+    private static float previousValue = -1;
+    private static float previousMax = -1;
+    private static boolean wasMounted = false;
+    
+    private static class FadingChunk {
+        final float startValue;    // Where the chunk starts (in resource units)
+        final float endValue;      // Where it ends
+        final float maxValue;      // Max value at time of creation
+        final long creationTime;   // When this chunk started fading
+        final String texture;      // Which bar texture to use
+        final int animOffset;      // Animation frame at creation
+        final boolean isMounted;   // Whether this was mount health
+        
+        FadingChunk(float startValue, float endValue, float maxValue, String texture, int animOffset, boolean isMounted) {
+            this.startValue = startValue;
+            this.endValue = endValue;
+            this.maxValue = maxValue;
+            this.creationTime = System.currentTimeMillis();
+            this.texture = texture;
+            this.animOffset = animOffset;
+            this.isMounted = isMounted;
+        }
+        
+        float getAlpha() {
+            long elapsed = System.currentTimeMillis() - creationTime;
+            if (elapsed >= CHUNK_FADEOUT_DURATION) return 0f;
+            return 1f - (elapsed / (float) CHUNK_FADEOUT_DURATION);
+        }
+        
+        boolean isExpired() {
+            return getAlpha() <= 0f;
+        }
+    }
 
     public static ScreenRect getScreenRect(Player player) {
         if (player == null) return new ScreenRect(0, 0, 0, 0);
@@ -92,6 +133,9 @@ public class StaminaBarRenderer {
         // Determine the bar values based on player state and config
         BarValues values = getBarValues(player, staminaProvider);
         
+        // Track value changes for chunk creation
+        updateChunkTracking(player, values, staminaProvider, #if NEWER_THAN_20_1 deltaTracker.getGameTimeDeltaTicks() #else partialTicks #endif);
+        
         // Determine fade behavior
         boolean shouldFade = shouldBarFade(player, values);
         setStaminaBarVisibility(!shouldFade || EditModeManager.isEditModeEnabled());
@@ -128,6 +172,9 @@ public class StaminaBarRenderer {
         renderBaseBar(graphics, player, values, staminaProvider,
                 barRect,
                 animOffset, isRightAnchored);
+        
+        // Render fading chunks after the main bar
+        renderFadingChunks(graphics, barRect, values, isRightAnchored, currentAlphaForRender);
 
         // Show overlays only if the provider supports them and we're not showing mount health
         if (staminaProvider.shouldShowOverlays() && !values.isMounted) {
@@ -206,6 +253,119 @@ public class StaminaBarRenderer {
                 graphics.renderOutline(complexRect.x() - 1, complexRect.y() - 1, complexRect.width() + 2, complexRect.height() + 2, borderColor);
             }
         }
+        RenderSystem.setShaderColor(1.0f, 1.0f, 1.0f, 1.0f);
+        RenderSystem.disableBlend();
+    }
+    
+    private static void updateChunkTracking(Player player, BarValues values, StaminaProvider provider, float partialTicks) {
+        // Clean up expired chunks and those covered by current fill
+        Iterator<FadingChunk> it = fadingChunks.iterator();
+        while (it.hasNext()) {
+            FadingChunk chunk = it.next();
+            // Remove if expired or if current value covers this chunk
+            if (chunk.isExpired() || 
+                (chunk.isMounted == values.isMounted && values.current >= chunk.endValue)) {
+                it.remove();
+            }
+        }
+        
+        // Check if we need to create a new chunk
+        if (previousValue > 0 && values.current < previousValue && 
+            wasMounted == values.isMounted && previousMax == values.max) {
+            
+            // Get the texture and animation state
+            String texture;
+            if (values.isMounted) {
+                float healthPercentage = values.current / values.max;
+                texture = healthPercentage <= 0.2f ? "stamina_bar_critical" : "stamina_bar_mounted";
+            } else {
+                texture = provider.getBarTexture(player, values.current);
+            }
+            
+            int animationCycles = ModConfigManager.getClient().staminaBarAnimationCycles;
+            int frameHeight = ModConfigManager.getClient().staminaBarFrameHeight;
+            int animOffset = (int) (((player.tickCount + partialTicks) / 3) % animationCycles) * frameHeight;
+            
+            // Create chunk for the lost portion, clamping to 0 minimum
+            float chunkStart = Math.max(0, values.current);
+            fadingChunks.add(new FadingChunk(chunkStart, previousValue, values.max, texture, animOffset, values.isMounted));
+        }
+        
+        // Update tracking values
+        previousValue = values.current;
+        previousMax = values.max;
+        wasMounted = values.isMounted;
+    }
+    
+    private static void renderFadingChunks(GuiGraphics graphics, ScreenRect barRect, BarValues currentValues, 
+                                          boolean isRightAnchored, float parentAlpha) {
+        if (fadingChunks.isEmpty()) return;
+        
+        RenderSystem.enableBlend();
+        RenderSystem.defaultBlendFunc();
+        
+        FillDirection fillDirection = ModConfigManager.getClient().staminaFillDirection;
+        
+        for (FadingChunk chunk : fadingChunks) {
+            // Skip chunks that don't match current mount state
+            if (chunk.isMounted != currentValues.isMounted) continue;
+            
+            float alpha = chunk.getAlpha() * parentAlpha;
+            if (alpha <= 0) continue;
+            
+            RenderSystem.setShaderColor(1.0f, 1.0f, 1.0f, alpha);
+            
+            if (fillDirection == FillDirection.VERTICAL) {
+                // Calculate heights for the chunk
+                float startRatio = chunk.startValue / chunk.maxValue;
+                float endRatio = chunk.endValue / chunk.maxValue;
+                int startHeight = (int) (barRect.height() * startRatio);
+                int endHeight = (int) (barRect.height() * endRatio);
+                int chunkHeight = endHeight - startHeight;
+                
+                if (chunkHeight > 0) {
+                    int yPos = barRect.y() + (barRect.height() - endHeight);
+                    int textureVOffset = chunk.animOffset + (barRect.height() - endHeight);
+                    
+                    graphics.blit(
+                        DynamicResourceBars.loc("textures/gui/" + chunk.texture + ".png"),
+                        barRect.x(), yPos,
+                        0, textureVOffset,
+                        barRect.width(), chunkHeight,
+                        256, 1024
+                    );
+                }
+            } else { // HORIZONTAL
+                // Calculate widths for the chunk
+                float startRatio = chunk.startValue / chunk.maxValue;
+                float endRatio = chunk.endValue / chunk.maxValue;
+                int startWidth = (int) (barRect.width() * startRatio);
+                int endWidth = (int) (barRect.width() * endRatio);
+                int chunkWidth = endWidth - startWidth;
+                
+                if (chunkWidth > 0) {
+                    int xPos, uOffset;
+                    if (isRightAnchored) {
+                        // Chunk position from right
+                        xPos = barRect.x() + barRect.width() - endWidth;
+                        uOffset = barRect.width() - endWidth;
+                    } else {
+                        // Chunk position from left
+                        xPos = barRect.x() + startWidth;
+                        uOffset = startWidth;
+                    }
+                    
+                    graphics.blit(
+                        DynamicResourceBars.loc("textures/gui/" + chunk.texture + ".png"),
+                        xPos, barRect.y(),
+                        uOffset, chunk.animOffset,
+                        chunkWidth, barRect.height(),
+                        256, 1024
+                    );
+                }
+            }
+        }
+        
         RenderSystem.setShaderColor(1.0f, 1.0f, 1.0f, 1.0f);
         RenderSystem.disableBlend();
     }

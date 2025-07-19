@@ -18,6 +18,9 @@ import dev.muon.dynamic_resource_bars.compat.AppleSkinCompat;
 #endif
 
 import java.lang.reflect.Method;
+import java.util.ArrayList;
+import java.util.Iterator;
+import java.util.List;
 
 import vectorwing.farmersdelight.common.registry.ModEffects;
 
@@ -27,6 +30,40 @@ public class HealthBarRenderer {
     private static long fullHealthStartTime = 0;
     private static boolean healthBarSetVisible = true; // Default to visible
     private static long healthBarDisabledStartTime = 0L;
+    
+    // Fadeout chunking system
+    private static final long CHUNK_FADEOUT_DURATION = RenderUtil.BAR_FADEOUT_DURATION / 3;
+    private static final List<FadingChunk> fadingChunks = new ArrayList<>();
+    private static float previousHealth = -1;
+    private static float previousMaxHealth = -1;
+    
+    private static class FadingChunk {
+        final float startValue;    // Where the chunk starts (in health units)
+        final float endValue;      // Where it ends
+        final float maxValue;      // Max value at time of creation
+        final long creationTime;   // When this chunk started fading
+        final String texture;      // Which bar texture to use
+        final int animOffset;      // Animation frame at creation
+        
+        FadingChunk(float startValue, float endValue, float maxValue, String texture, int animOffset) {
+            this.startValue = startValue;
+            this.endValue = endValue;
+            this.maxValue = maxValue;
+            this.creationTime = System.currentTimeMillis();
+            this.texture = texture;
+            this.animOffset = animOffset;
+        }
+        
+        float getAlpha() {
+            long elapsed = System.currentTimeMillis() - creationTime;
+            if (elapsed >= CHUNK_FADEOUT_DURATION) return 0f;
+            return 1f - (elapsed / (float) CHUNK_FADEOUT_DURATION);
+        }
+        
+        boolean isExpired() {
+            return getAlpha() <= 0f;
+        }
+    }
 
     private enum BarType {
         NORMAL("health_bar"),
@@ -110,6 +147,9 @@ public class HealthBarRenderer {
     public static void render(GuiGraphics graphics, Player player, float maxHealth, float actualHealth, int absorptionAmount,
             #if NEWER_THAN_20_1 DeltaTracker deltaTracker #else float partialTicks #endif) {
 
+        // Track value changes for chunk creation
+        updateChunkTracking(player, actualHealth, maxHealth, #if NEWER_THAN_20_1 deltaTracker.getGameTimeDeltaTicks() #else partialTicks #endif);
+
         // Override hideWhenFull if player has absorption. TODO: Maybe set this as config value
         boolean shouldFade = ModConfigManager.getClient().fadeHealthWhenFull && actualHealth >= maxHealth && absorptionAmount == 0;
         setHealthBarVisibility(!shouldFade || EditModeManager.isEditModeEnabled());
@@ -155,6 +195,9 @@ public class HealthBarRenderer {
                       mainBarRect.x(), mainBarRect.y(), mainBarRect.width(), mainBarRect.height(), 
                       0, 0,
                       animOffset, isRightAnchored);
+        
+        // Render fading chunks after the main bar
+        renderFadingChunks(graphics, mainBarRect, actualHealth, maxHealth, isRightAnchored, currentAlphaForRender);
 
         // Render AppleSkin estimated health overlay
         if (PlatformUtil.isModLoaded("appleskin")) {
@@ -239,6 +282,107 @@ public class HealthBarRenderer {
         }
         RenderSystem.setShaderColor(1.0f, 1.0f, 1.0f, 1.0f); // Reset shader color
         RenderSystem.disableBlend(); // Ensure blend is disabled after rendering this bar
+    }
+    
+    private static void updateChunkTracking(Player player, float currentHealth, float maxHealth, float partialTicks) {
+        // Clean up expired chunks and those covered by current fill
+        Iterator<FadingChunk> it = fadingChunks.iterator();
+        while (it.hasNext()) {
+            FadingChunk chunk = it.next();
+            // Remove if expired or if current health covers this chunk
+            if (chunk.isExpired() || currentHealth >= chunk.endValue) {
+                it.remove();
+            }
+        }
+        
+        // Check if we need to create a new chunk
+        if (previousHealth > 0 && currentHealth < previousHealth && previousMaxHealth == maxHealth) {
+            // Get the texture based on player state
+            BarType barType = BarType.fromPlayerState(player);
+            String texture = barType.getTexture();
+            
+            int animationCycles = ModConfigManager.getClient().healthBarAnimationCycles;
+            int frameHeight = ModConfigManager.getClient().healthBarFrameHeight;
+            int animOffset = (int) (((player.tickCount + partialTicks) / 3) % animationCycles) * frameHeight;
+            
+            // Create chunk for the lost portion, clamping to 0 minimum
+            float chunkStart = Math.max(0, currentHealth);
+            fadingChunks.add(new FadingChunk(chunkStart, previousHealth, maxHealth, texture, animOffset));
+        }
+        
+        // Update tracking values
+        previousHealth = currentHealth;
+        previousMaxHealth = maxHealth;
+    }
+    
+    private static void renderFadingChunks(GuiGraphics graphics, ScreenRect barRect, float currentHealth, float maxHealth,
+                                          boolean isRightAnchored, float parentAlpha) {
+        if (fadingChunks.isEmpty()) return;
+        
+        RenderSystem.enableBlend();
+        RenderSystem.defaultBlendFunc();
+        
+        FillDirection fillDirection = ModConfigManager.getClient().healthFillDirection;
+        
+        for (FadingChunk chunk : fadingChunks) {
+            float alpha = chunk.getAlpha() * parentAlpha;
+            if (alpha <= 0) continue;
+            
+            RenderSystem.setShaderColor(1.0f, 1.0f, 1.0f, alpha);
+            
+            if (fillDirection == FillDirection.VERTICAL) {
+                // Calculate heights for the chunk
+                float startRatio = chunk.startValue / chunk.maxValue;
+                float endRatio = chunk.endValue / chunk.maxValue;
+                int startHeight = (int) (barRect.height() * startRatio);
+                int endHeight = (int) (barRect.height() * endRatio);
+                int chunkHeight = endHeight - startHeight;
+                
+                if (chunkHeight > 0) {
+                    int yPos = barRect.y() + (barRect.height() - endHeight);
+                    int textureVOffset = chunk.animOffset + (barRect.height() - endHeight);
+                    
+                    graphics.blit(
+                        DynamicResourceBars.loc("textures/gui/" + chunk.texture + ".png"),
+                        barRect.x(), yPos,
+                        0, textureVOffset,
+                        barRect.width(), chunkHeight,
+                        256, 1024
+                    );
+                }
+            } else { // HORIZONTAL
+                // Calculate widths for the chunk
+                float startRatio = chunk.startValue / chunk.maxValue;
+                float endRatio = chunk.endValue / chunk.maxValue;
+                int startWidth = (int) (barRect.width() * startRatio);
+                int endWidth = (int) (barRect.width() * endRatio);
+                int chunkWidth = endWidth - startWidth;
+                
+                if (chunkWidth > 0) {
+                    int xPos, uOffset;
+                    if (isRightAnchored) {
+                        // Chunk position from right
+                        xPos = barRect.x() + barRect.width() - endWidth;
+                        uOffset = barRect.width() - endWidth;
+                    } else {
+                        // Chunk position from left
+                        xPos = barRect.x() + startWidth;
+                        uOffset = startWidth;
+                    }
+                    
+                    graphics.blit(
+                        DynamicResourceBars.loc("textures/gui/" + chunk.texture + ".png"),
+                        xPos, barRect.y(),
+                        uOffset, chunk.animOffset,
+                        chunkWidth, barRect.height(),
+                        256, 1024
+                    );
+                }
+            }
+        }
+        
+        RenderSystem.setShaderColor(1.0f, 1.0f, 1.0f, 1.0f);
+        RenderSystem.disableBlend();
     }
 
     private static void renderBaseBar(GuiGraphics graphics, Player player, float maxHealth, float actualHealth,

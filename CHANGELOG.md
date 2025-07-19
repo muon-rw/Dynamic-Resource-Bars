@@ -1,5 +1,6 @@
 ## 0.7.0
 - Add Stamina Attributes support (soon: Paragliders, Epic Fight)
+- New feature, "chunking fadeout" - portions of a resource that are drained will have a subtle fade-out instead of disappearing abruptly.
 - Fix crash if Stamina Bar behavior was changed to vanilla while Farmer's Delight was installed (#22)
 
 ## 0.6.2

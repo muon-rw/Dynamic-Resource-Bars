@@ -24,6 +24,10 @@ import dev.muon.dynamic_resource_bars.util.HorizontalAlignment;
 import dev.muon.dynamic_resource_bars.util.FillDirection;
 import dev.muon.dynamic_resource_bars.config.ClientConfig;
 
+import java.util.ArrayList;
+import java.util.Iterator;
+import java.util.List;
+
 public class ManaBarRenderer {
     private static float lastMana = -1;
     private static long fullManaStartTime = 0;
@@ -32,6 +36,38 @@ public class ManaBarRenderer {
     private static boolean barSetVisible = false;
 
     private static final int RESERVED_MANA_COLOR = 0x232323;
+    
+    // Fadeout chunking system
+    private static final long CHUNK_FADEOUT_DURATION = RenderUtil.BAR_FADEOUT_DURATION / 3;
+    private static final List<FadingChunk> fadingChunks = new ArrayList<>();
+    private static double previousMana = -1;
+    private static float previousMaxMana = -1;
+    
+    private static class FadingChunk {
+        final double startValue;    // Where the chunk starts (in mana units)
+        final double endValue;      // Where it ends
+        final float maxValue;       // Max value at time of creation
+        final long creationTime;    // When this chunk started fading
+        final int animOffset;       // Animation frame at creation
+        
+        FadingChunk(double startValue, double endValue, float maxValue, int animOffset) {
+            this.startValue = startValue;
+            this.endValue = endValue;
+            this.maxValue = maxValue;
+            this.creationTime = System.currentTimeMillis();
+            this.animOffset = animOffset;
+        }
+        
+        float getAlpha() {
+            long elapsed = System.currentTimeMillis() - creationTime;
+            if (elapsed >= CHUNK_FADEOUT_DURATION) return 0f;
+            return 1f - (elapsed / (float) CHUNK_FADEOUT_DURATION);
+        }
+        
+        boolean isExpired() {
+            return getAlpha() <= 0f;
+        }
+    }
 
     public static ScreenRect getScreenRect(Player player) {
         if (player == null && Minecraft.getInstance().player == null) return new ScreenRect(0,0,0,0);
@@ -104,6 +140,9 @@ public class ManaBarRenderer {
             }
         }
         setBarVisibility(visibilityDecision);
+        
+        // Track value changes for chunk creation
+        updateChunkTracking(player, manaProvider, #if NEWER_THAN_20_1 deltaTracker.getGameTimeDeltaTicks() #else partialTicks #endif);
 
         if (!isVisible() && !EditModeManager.isEditModeEnabled()) {
             return;
@@ -132,6 +171,9 @@ public class ManaBarRenderer {
 
         ScreenRect barRect = getSubElementRect(SubElementType.BAR_MAIN, player);
         renderManaBar(graphics, manaProvider, animOffset, barRect, isRightAnchored);
+        
+        // Render fading chunks after the main bar
+        renderFadingChunks(graphics, barRect, manaProvider, isRightAnchored, currentAlphaForRender);
 
         renderReservedOverlay(graphics, manaProvider, animOffset, barRect);
 
@@ -352,5 +394,111 @@ public class ManaBarRenderer {
             lastMana = (float)currentMana;
             return true; // Not full, so show
         }
+    }
+    
+    private static void updateChunkTracking(Player player, ManaProvider manaProvider, float partialTicks) {
+        double currentMana = manaProvider.getCurrentMana();
+        float maxMana = manaProvider.getMaxMana();
+        
+        // Clean up expired chunks and those covered by current fill
+        Iterator<FadingChunk> it = fadingChunks.iterator();
+        while (it.hasNext()) {
+            FadingChunk chunk = it.next();
+            // Remove if expired or if current mana covers this chunk
+            if (chunk.isExpired() || currentMana >= chunk.endValue) {
+                it.remove();
+            }
+        }
+        
+        // Check if we need to create a new chunk
+        if (previousMana > 0 && currentMana < previousMana && previousMaxMana == maxMana) {
+            int animationCycles = ModConfigManager.getClient().manaBarAnimationCycles;
+            int frameHeight = ModConfigManager.getClient().manaBarFrameHeight;
+            int animOffset = (int) (((player.tickCount + partialTicks) / 3) % animationCycles) * frameHeight;
+            
+            // Create chunk for the lost portion, clamping to 0 minimum
+            double chunkStart = Math.max(0, currentMana);
+            fadingChunks.add(new FadingChunk(chunkStart, previousMana, maxMana, animOffset));
+        }
+        
+        // Update tracking values
+        previousMana = currentMana;
+        previousMaxMana = maxMana;
+    }
+    
+    private static void renderFadingChunks(GuiGraphics graphics, ScreenRect barRect, ManaProvider manaProvider,
+                                          boolean isRightAnchored, float parentAlpha) {
+        if (fadingChunks.isEmpty()) return;
+        
+        RenderSystem.enableBlend();
+        RenderSystem.defaultBlendFunc();
+        
+        FillDirection fillDirection = ModConfigManager.getClient().manaFillDirection;
+        
+        // Account for reserved mana in calculations
+        float maxManaTotal = manaProvider.getMaxMana() * (1.0f + manaProvider.getReservedMana());
+        
+        for (FadingChunk chunk : fadingChunks) {
+            float alpha = chunk.getAlpha() * parentAlpha;
+            if (alpha <= 0) continue;
+            
+            RenderSystem.setShaderColor(1.0f, 1.0f, 1.0f, alpha);
+            
+            // Use the total max mana including reserved for proper scaling
+            float effectiveMaxForChunk = chunk.maxValue * (1.0f + manaProvider.getReservedMana());
+            
+            if (fillDirection == FillDirection.VERTICAL) {
+                // Calculate heights for the chunk
+                float startRatio = (float)(chunk.startValue / effectiveMaxForChunk);
+                float endRatio = (float)(chunk.endValue / effectiveMaxForChunk);
+                int startHeight = (int) (barRect.height() * startRatio);
+                int endHeight = (int) (barRect.height() * endRatio);
+                int chunkHeight = endHeight - startHeight;
+                
+                if (chunkHeight > 0) {
+                    int yPos = barRect.y() + (barRect.height() - endHeight);
+                    int textureVOffset = chunk.animOffset + (barRect.height() - endHeight);
+                    
+                    graphics.blit(
+                        DynamicResourceBars.loc("textures/gui/mana_bar.png"),
+                        barRect.x(), yPos,
+                        0, textureVOffset,
+                        barRect.width(), chunkHeight,
+                        256, 1024
+                    );
+                }
+            } else { // HORIZONTAL
+                // Calculate widths for the chunk
+                float startRatio = (float)(chunk.startValue / effectiveMaxForChunk);
+                float endRatio = (float)(chunk.endValue / effectiveMaxForChunk);
+                int startWidth = (int) (barRect.width() * startRatio);
+                int endWidth = (int) (barRect.width() * endRatio);
+                int chunkWidth = endWidth - startWidth;
+                
+                if (chunkWidth > 0) {
+                    int xPos, uOffset;
+                    if (isRightAnchored) {
+                        // Chunk position from right
+                        xPos = barRect.x() + barRect.width() - endWidth;
+                        uOffset = barRect.width() - endWidth;
+                    } else {
+                        // Chunk position from left
+                        xPos = barRect.x() + startWidth;
+                        uOffset = startWidth;
+                    }
+                    
+                    graphics.blit(
+                        DynamicResourceBars.loc("textures/gui/mana_bar.png"),
+                        xPos, barRect.y(),
+                        uOffset, chunk.animOffset,
+                        chunkWidth, barRect.height(),
+                        256, 1024
+                    );
+                }
+            }
+        }
+        
+        RenderSystem.setShaderColor(1.0f, 1.0f, 1.0f, 1.0f);
+        RenderSystem.disableBlend();
     }
 }
