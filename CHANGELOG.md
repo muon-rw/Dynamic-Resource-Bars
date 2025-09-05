@@ -1,3 +1,6 @@
+## 0.7.1
+- Adjust default stamina bar color
+
 ## 0.7.0
 - Add Stamina Attributes support (soon: Paragliders, Epic Fight)
 - New feature, "chunking fadeout" - portions of a resource that are drained will have a subtle fade-out instead of disappearing abruptly.

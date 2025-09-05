@@ -7,7 +7,6 @@ import java.util.function.Supplier;
 
 public class ManaProviderRegistry {
 
-    // Use Supplier to potentially defer provider instantiation if needed
     private static final List<Supplier<ManaProvider>> registeredProviders = new ArrayList<>();
     private static ManaProvider activeProvider = null;
 
@@ -26,9 +25,7 @@ public class ManaProviderRegistry {
     
     @Nullable
     public static ManaProvider getActiveProvider() {
-         // Ensure the active provider is instantiated if it hasn't been already
         if (activeProvider == null && !registeredProviders.isEmpty()) {
-            // Activate the first one by default if none is active
              setActiveProvider(registeredProviders.get(0).get());
         }
         return activeProvider;
@@ -47,7 +44,4 @@ public class ManaProviderRegistry {
         registeredProviders.clear();
         activeProvider = null;
     }
-
-     // TODO: Add logic for user selection if multiple providers exist
-     // public static void cycleActiveProvider() { ... }
 } 
