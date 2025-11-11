@@ -1,18 +1,6 @@
 {
   "dynamic_resource_bars": {
-    "scaling": {
-      "type": "nine_slice",
-      "left": 3,
-      "right": 3,
-      "top": 0,
-      "bottom": 5,
-      "edges": "tile",
-      "center": "tile",
-      "source": {
-        "width": 80,
-        "height": 10
-      }
-    }
+    "scaling": "tile"
   }
 }
 

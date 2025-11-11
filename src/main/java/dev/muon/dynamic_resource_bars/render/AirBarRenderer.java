@@ -165,9 +165,8 @@ public class AirBarRenderer {
         int barOnlyYOffset = config.airBarYOffset;
         int iconSize = config.airIconSize;
 
-        // Load animation data and mask info from .mcmeta
+        // Load animation data from .mcmeta
         AnimationMetadata.AnimationData animData = AnimationMetadataCache.getAirBarAnimation();
-        AnimationMetadata.MaskInfo maskInfo = AnimationMetadataCache.getAirBarMask();
         FillDirection fillDirection = config.airFillDirection;
 
         int xPos = airPos.x();
@@ -177,13 +176,13 @@ public class AirBarRenderer {
         float ticks = player.tickCount + (#if NEWER_THAN_20_1 deltaTracker.getGameTimeDeltaTicks() #else partialTicks #endif);
         int animOffset = AnimationMetadata.calculateAnimationOffset(animData, ticks);
 
+        ResourceLocation bgTexture = DynamicResourceBars.loc("textures/gui/air_background.png");
         AnimationMetadata.ScalingInfo bgScaling = AnimationMetadataCache.getAirBackgroundScaling();
-        NineSliceRenderer.renderWithScaling(graphics,
-                DynamicResourceBars.loc("textures/gui/air_background.png"),
-                bgScaling,
+        AnimationMetadata.TextureDimensions bgDims = AnimationMetadataCache.getTextureDimensions(bgTexture);
+        NineSliceRenderer.renderWithScaling(graphics, bgTexture, bgScaling,
                 xPos + config.airBackgroundXOffset,
                 yPos + config.airBackgroundYOffset,
-                backgroundWidth, backgroundHeight, 256, 256
+                backgroundWidth, backgroundHeight, bgDims.width, bgDims.height
         );
 
         float airPercent = (maxAir == 0) ? 0.0f : Math.min(1.0f, (float) currentAir / maxAir);
@@ -200,8 +199,7 @@ public class AirBarRenderer {
                 // and step through the animation strip.
                 int textureVOffset = animOffset + (barHeight - filledHeight);
 
-                MaskRenderUtil.renderWithMask(
-                        graphics, airBarTexture, maskInfo,
+                RenderUtil.blitWithBinding(graphics, airBarTexture,
                         barRenderX, barRenderY,
                         0, textureVOffset,       // uOffset, vOffset
                         barWidth, filledHeight,   // imageWidth, imageHeight (drawn size)
@@ -224,8 +222,7 @@ public class AirBarRenderer {
                     uTexOffset = 0; // Sample the left part of the texture
                 }
 
-                MaskRenderUtil.renderWithMask(
-                        graphics, airBarTexture, maskInfo,
+                RenderUtil.blitWithBinding(graphics, airBarTexture,
                         barRenderX, yPos + barOnlyYOffset,
                         uTexOffset, animOffset,     // uOffset, vOffset (animOffset is the start of the current animation frame)
                         filledWidth, barHeight,     // imageWidth, imageHeight (drawn size)

@@ -20,7 +20,6 @@ import java.util.Optional;
  * - Animation properties (from .mcmeta)
  * - UV mapping (from .mcmeta custom section)
  * - Nine-slice scaling (from .mcmeta custom section)
- * - Mask layers (from .mcmeta custom section)
  */
 public class TextureMetadata {
     
@@ -74,41 +73,25 @@ public class TextureMetadata {
         }
     }
     
-    public static class MaskInfo {
-        public final String maskTexture;
-        public final boolean enabled;
-        
-        public MaskInfo(String maskTexture, boolean enabled) {
-            this.maskTexture = maskTexture;
-            this.enabled = enabled;
-        }
-        
-        public static MaskInfo disabled() {
-            return new MaskInfo(null, false);
-        }
-    }
-    
     public static class FullMetadata {
         public final int textureWidth;
         public final int textureHeight;
         public final AnimationInfo animation;
         public final UVMapping uvMapping;
         public final NineSliceInfo nineSlice;
-        public final MaskInfo mask;
         
         public FullMetadata(int textureWidth, int textureHeight, AnimationInfo animation, 
-                           UVMapping uvMapping, NineSliceInfo nineSlice, MaskInfo mask) {
+                           UVMapping uvMapping, NineSliceInfo nineSlice) {
             this.textureWidth = textureWidth;
             this.textureHeight = textureHeight;
             this.animation = animation;
             this.uvMapping = uvMapping;
             this.nineSlice = nineSlice;
-            this.mask = mask;
         }
     }
     
     /**
-     * Load full texture metadata including dimensions, animation, UV, nine-slice, and mask info.
+     * Load full texture metadata including dimensions, animation, UV, and nine-slice.
      * 
      * @param resourceManager The resource manager
      * @param textureLocation The texture location (without .mcmeta)
@@ -127,7 +110,7 @@ public class TextureMetadata {
                     textureWidth = image.getWidth();
                     textureHeight = image.getHeight();
                     image.close();
-                    DynamicResourceBars.LOGGER.debug("Detected texture size for {}: {}x{}", textureLocation, textureWidth, textureHeight);
+                    DynamicResourceBars.LOGGER.info("Detected texture size for {}: {}x{}", textureLocation, textureWidth, textureHeight);
                 }
             }
         } catch (Exception e) {
@@ -138,7 +121,6 @@ public class TextureMetadata {
         AnimationInfo animation = null;
         UVMapping uvMapping = null;
         NineSliceInfo nineSlice = null;
-        MaskInfo mask = MaskInfo.disabled();
         
         ResourceLocation mcmetaLocation;
         #if NEWER_THAN_20_1
@@ -178,11 +160,6 @@ public class TextureMetadata {
                         if (custom.has("nine_slice")) {
                             nineSlice = parseNineSlice(custom.getAsJsonObject("nine_slice"));
                         }
-                        
-                        // Parse mask
-                        if (custom.has("mask")) {
-                            mask = parseMask(custom.getAsJsonObject("mask"));
-                        }
                     }
                     
                 } catch (Exception e) {
@@ -190,7 +167,7 @@ public class TextureMetadata {
                 }
             }
         } catch (Exception e) {
-            DynamicResourceBars.LOGGER.debug("No .mcmeta for {} or could not load", textureLocation);
+            DynamicResourceBars.LOGGER.info("No .mcmeta for {} or could not load", textureLocation);
         }
         
         // Apply defaults for missing sections
@@ -212,7 +189,7 @@ public class TextureMetadata {
             nineSlice = new NineSliceInfo(0, 0, 0, 0);
         }
         
-        return new FullMetadata(textureWidth, textureHeight, animation, uvMapping, nineSlice, mask);
+        return new FullMetadata(textureWidth, textureHeight, animation, uvMapping, nineSlice);
     }
     
     private static AnimationInfo parseAnimation(JsonObject root, ResourceLocation location, int textureHeight) {
@@ -261,18 +238,6 @@ public class TextureMetadata {
         
         DynamicResourceBars.LOGGER.info("Loaded nine-slice: left={}, right={}, top={}, bottom={}", left, right, top, bottom);
         return new NineSliceInfo(left, right, top, bottom);
-    }
-    
-    private static MaskInfo parseMask(JsonObject mask) {
-        if (!mask.has("texture")) {
-            return MaskInfo.disabled();
-        }
-        
-        String maskTexture = mask.get("texture").getAsString();
-        boolean enabled = mask.has("enabled") ? mask.get("enabled").getAsBoolean() : true;
-        
-        DynamicResourceBars.LOGGER.info("Loaded mask: texture={}, enabled={}", maskTexture, enabled);
-        return new MaskInfo(maskTexture, enabled);
     }
 }
 

@@ -5,13 +5,10 @@ import com.mojang.blaze3d.systems.RenderSystem;
 import dev.muon.dynamic_resource_bars.DynamicResourceBars;
 import dev.muon.dynamic_resource_bars.config.ModConfigManager;
 import dev.muon.dynamic_resource_bars.config.ClientConfig;
-import dev.muon.dynamic_resource_bars.util.BarRenderBehavior;
-import dev.muon.dynamic_resource_bars.util.HUDPositioning;
-import dev.muon.dynamic_resource_bars.util.Position;
-import dev.muon.dynamic_resource_bars.util.RenderUtil;
-import dev.muon.dynamic_resource_bars.util.ScreenRect;
+import dev.muon.dynamic_resource_bars.util.*;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.entity.EquipmentSlot;
 import net.minecraft.world.entity.ai.attributes.Attribute;
 import net.minecraft.world.entity.ai.attributes.AttributeModifier;
@@ -25,12 +22,6 @@ import net.minecraft.world.item.enchantment.Enchantments;
 #if NEWER_THAN_20_1
 import net.minecraft.client.DeltaTracker;
 #endif
-
-import dev.muon.dynamic_resource_bars.util.SubElementType;
-import dev.muon.dynamic_resource_bars.util.TickHandler;
-import dev.muon.dynamic_resource_bars.util.EditModeManager;
-import dev.muon.dynamic_resource_bars.util.HorizontalAlignment;
-import dev.muon.dynamic_resource_bars.util.TextBehavior;
 
 public class ArmorBarRenderer {
     private static long armorTextStartTime = 0;
@@ -169,11 +160,13 @@ public class ArmorBarRenderer {
         int xPos = armorPos.x();
         int yPos = armorPos.y();
 
-        graphics.blit(
-                DynamicResourceBars.loc("textures/gui/armor_background.png"), 
-                xPos + config.armorBackgroundXOffset, 
-                yPos + config.armorBackgroundYOffset, 
-                0, 0, backgroundWidth, backgroundHeight, 256, 256
+        ResourceLocation bgTexture = DynamicResourceBars.loc("textures/gui/armor_background.png");
+        AnimationMetadata.ScalingInfo bgScaling = AnimationMetadataCache.getScalingOrLoad(bgTexture, AnimationMetadata.TextureType.BACKGROUND);
+        AnimationMetadata.TextureDimensions bgDims = AnimationMetadataCache.getTextureDimensions(bgTexture);
+        NineSliceRenderer.renderWithScaling(graphics, bgTexture, bgScaling,
+                xPos + config.armorBackgroundXOffset,
+                yPos + config.armorBackgroundYOffset,
+                backgroundWidth, backgroundHeight, bgDims.width, bgDims.height
         );
 
         float armorPercent = Math.min(1.0f, (float) armorValue / config.maxExpectedArmor);
@@ -205,14 +198,17 @@ public class ArmorBarRenderer {
             }
             if (uTexOffset < 0) uTexOffset = 0; // Prevent negative texture offset
 
+            // Armor bar is static (non-animated) but still uses UV sampling, not scaling
+            ResourceLocation armorBarTexture = DynamicResourceBars.loc("textures/gui/armor_bar.png");
+            AnimationMetadata.TextureDimensions armorBarDims = AnimationMetadataCache.getTextureDimensions(armorBarTexture);
             graphics.blit(
-                    DynamicResourceBars.loc("textures/gui/armor_bar.png"),
+                    armorBarTexture,
                     barX,
                     yPos + barOnlyYOffset,
                     uTexOffset, 0, // Use calculated uTexOffset, vOffset is 0 for armor bar
                     filledWidth,
                     barHeight,
-                    256, 256
+                    armorBarDims.width, armorBarDims.height
             );
         }
 
@@ -298,13 +294,14 @@ public class ArmorBarRenderer {
                 barWidth - (iconSize / 2) : barWidth;
         int overlayWidth = (int)(adjustedBarWidth * protectionScale);
 
-        graphics.blit(
-                DynamicResourceBars.loc("textures/gui/protection_overlay.png"),
+        ResourceLocation protectionTexture = DynamicResourceBars.loc("textures/gui/protection_overlay.png");
+        AnimationMetadata.ScalingInfo protectionScaling = AnimationMetadataCache.getProtectionOverlayScaling();
+        AnimationMetadata.TextureDimensions protectionDims = AnimationMetadataCache.getTextureDimensions(protectionTexture);
+        NineSliceRenderer.renderWithScaling(graphics, protectionTexture, protectionScaling,
                 xPos + (config.enableArmorIcon ? barOnlyXOffset + iconSize / 2 : barOnlyXOffset),
                 yPos + barOnlyYOffset,
-                0, 0,
                 overlayWidth, barHeight,
-                256, 256
+                protectionDims.width, protectionDims.height
         );
 
         RenderSystem.setShaderColor(1.0f, 1.0f, 1.0f, 1.0f);

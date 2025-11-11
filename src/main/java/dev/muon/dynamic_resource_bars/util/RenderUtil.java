@@ -4,14 +4,15 @@ import com.mojang.blaze3d.vertex.PoseStack;
 import dev.muon.dynamic_resource_bars.config.ModConfigManager;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.renderer.texture.TextureManager;
 import net.minecraft.network.chat.Component;
+import net.minecraft.resources.ResourceLocation;
 
 public class RenderUtil {
+    public static final long BAR_FADEOUT_DURATION = 1500L;
     public static final long TEXT_DISPLAY_DURATION = 2000L;
     public static final long TEXT_FADEOUT_DURATION = 500L;
     public static final int BASE_TEXT_ALPHA = 200;
-    // Only used for the mana bar
-    public static final long BAR_FADEOUT_DURATION = 1500L;
 
     public static void renderText(float current, float max, GuiGraphics graphics, int baseX, int baseY, int color, HorizontalAlignment alignment) {
         Minecraft minecraft = Minecraft.getInstance();
@@ -90,7 +91,7 @@ public class RenderUtil {
         } else {
             text = String.format("%.1f", value);
         }
-        
+
         int textWidth = minecraft.font.width(text);
         int actualX = scaledX;
         if (alignment == HorizontalAlignment.CENTER) {
@@ -121,4 +122,33 @@ public class RenderUtil {
         return Math.max(10, Math.min(alpha, BASE_TEXT_ALPHA));
     }
 
+
+    /**
+     * Render a texture with proper binding to fix GeckoLib/AzureLib compatibility.
+     * These mods wrap texture management in ways that can cause textures to not load properly,
+     * so we explicitly bind before blitting.
+     * 
+     * @param graphics The GUI graphics context
+     * @param texture The texture to render
+     * @param x Screen X position
+     * @param y Screen Y position
+     * @param uOffset Texture U offset
+     * @param vOffset Texture V offset
+     * @param width Width to render
+     * @param height Height to render
+     * @param textureWidth Total texture width
+     * @param textureHeight Total texture height
+     */
+    public static void blitWithBinding(GuiGraphics graphics, ResourceLocation texture,
+                                      int x, int y, int uOffset, int vOffset,
+                                      int width, int height, int textureWidth, int textureHeight) {
+        // Explicitly bind texture before blitting to ensure it's loaded with the proper dimensions
+        // This fixes a bug caused by GeckoLib/AzureLib interfering with textures they shouldn't
+        try {
+            TextureManager textureManager = Minecraft.getInstance().getTextureManager();
+            textureManager.bindForSetup(texture);
+        } catch (Exception ignored) {}
+        
+        graphics.blit(texture, x, y, uOffset, vOffset, width, height, textureWidth, textureHeight);
+    }
 }

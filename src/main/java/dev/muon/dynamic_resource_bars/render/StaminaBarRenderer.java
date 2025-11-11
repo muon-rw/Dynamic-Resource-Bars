@@ -156,37 +156,36 @@ public class StaminaBarRenderer {
 
         ScreenRect complexRect = getScreenRect(player);
 
-        // Load animation data and mask info from .mcmeta
+        // Load animation data from .mcmeta
         AnimationMetadata.AnimationData animData = AnimationMetadataCache.getStaminaBarAnimation();
-        AnimationMetadata.MaskInfo maskInfo = AnimationMetadataCache.getStaminaBarMask();
         float ticks = player.tickCount + (#if NEWER_THAN_20_1 deltaTracker.getGameTimeDeltaTicks() #else partialTicks #endif);
         int animOffset = AnimationMetadata.calculateAnimationOffset(animData, ticks);
         boolean isRightAnchored = ModConfigManager.getClient().staminaBarAnchor.getSide() == HUDPositioning.AnchorSide.RIGHT;
 
         if (ModConfigManager.getClient().enableStaminaBackground) {
             ScreenRect bgRect = getSubElementRect(SubElementType.BACKGROUND, player);
+            ResourceLocation bgTexture = DynamicResourceBars.loc("textures/gui/stamina_background.png");
             AnimationMetadata.ScalingInfo bgScaling = AnimationMetadataCache.getStaminaBackgroundScaling();
-            NineSliceRenderer.renderWithScaling(graphics,
-                    DynamicResourceBars.loc("textures/gui/stamina_background.png"),
-                    bgScaling,
-                    bgRect.x(), bgRect.y(), bgRect.width(), bgRect.height(), 256, 256
+            AnimationMetadata.TextureDimensions bgDims = AnimationMetadataCache.getTextureDimensions(bgTexture);
+            NineSliceRenderer.renderWithScaling(graphics, bgTexture, bgScaling,
+                    bgRect.x(), bgRect.y(), bgRect.width(), bgRect.height(), bgDims.width, bgDims.height
             );
         }
 
         ScreenRect barRect = getSubElementRect(SubElementType.BAR_MAIN, player);
         renderBaseBar(graphics, player, values, staminaProvider,
                 barRect,
-                animOffset, isRightAnchored, maskInfo, animData);
+                animOffset, isRightAnchored, animData);
         
         // Render fading chunks after the main bar
-        renderFadingChunks(graphics, barRect, values, isRightAnchored, currentAlphaForRender, maskInfo, animData);
+        renderFadingChunks(graphics, barRect, values, isRightAnchored, currentAlphaForRender, animData);
 
         // Show overlays only if the provider supports them and we're not showing mount health
         if (staminaProvider.shouldShowOverlays() && !values.isMounted) {
             if (PlatformUtil.isModLoaded("appleskin")) {
                 ItemStack heldFood = getHeldFood(player);
-                renderHungerRestoredOverlay(graphics, player, heldFood, barRect, #if NEWER_THAN_20_1 deltaTracker.getGameTimeDeltaTicks() #else partialTicks #endif , animOffset, isRightAnchored, maskInfo, animData);
-                renderSaturationOverlay(graphics, player, barRect, animOffset, isRightAnchored, maskInfo, animData);
+                renderHungerRestoredOverlay(graphics, player, heldFood, barRect, #if NEWER_THAN_20_1 deltaTracker.getGameTimeDeltaTicks() #else partialTicks #endif , animOffset, isRightAnchored, animData);
+                renderSaturationOverlay(graphics, player, barRect, animOffset, isRightAnchored, animData);
             }
 
             if (PlatformUtil.isModLoaded("farmersdelight") && hasNourishmentEffect(player)) {
@@ -195,13 +194,13 @@ public class StaminaBarRenderer {
                 float pulseAlpha = TickHandler.getOverlayFlashAlpha();
                 RenderSystem.setShaderColor(1.0f, 1.0f, 1.0f, pulseAlpha);
 
+                ResourceLocation nourishmentTexture = DynamicResourceBars.loc("textures/gui/nourishment_overlay.png");
                 AnimationMetadata.ScalingInfo nourishmentScaling = AnimationMetadataCache.getNourishmentOverlayScaling();
-                NineSliceRenderer.renderWithScaling(graphics,
-                        DynamicResourceBars.loc("textures/gui/nourishment_overlay.png"),
-                        nourishmentScaling,
+                AnimationMetadata.TextureDimensions nourishmentDims = AnimationMetadataCache.getTextureDimensions(nourishmentTexture);
+                NineSliceRenderer.renderWithScaling(graphics, nourishmentTexture, nourishmentScaling,
                         barRect.x(), barRect.y(),
                         barRect.width(), barRect.height(),
-                        256, 256
+                        nourishmentDims.width, nourishmentDims.height
                 );
                 RenderSystem.setShaderColor(1.0f, 1.0f, 1.0f, 1.0f);
                 RenderSystem.disableBlend();
@@ -210,12 +209,12 @@ public class StaminaBarRenderer {
 
         if (ModConfigManager.getClient().enableStaminaForeground) {
             ScreenRect fgRect = getSubElementRect(SubElementType.FOREGROUND_DETAIL, player);
+            ResourceLocation fgTexture = DynamicResourceBars.loc("textures/gui/stamina_foreground.png");
             AnimationMetadata.ScalingInfo fgScaling = AnimationMetadataCache.getStaminaForegroundScaling();
-            NineSliceRenderer.renderWithScaling(graphics,
-                    DynamicResourceBars.loc("textures/gui/stamina_foreground.png"),
-                    fgScaling,
+            AnimationMetadata.TextureDimensions fgDims = AnimationMetadataCache.getTextureDimensions(fgTexture);
+            NineSliceRenderer.renderWithScaling(graphics, fgTexture, fgScaling,
                     fgRect.x(), fgRect.y(), fgRect.width(), fgRect.height(),
-                    256, 256
+                    fgDims.width, fgDims.height
             );
         }
 
@@ -307,7 +306,7 @@ public class StaminaBarRenderer {
     }
     
     private static void renderFadingChunks(GuiGraphics graphics, ScreenRect barRect, BarValues currentValues,
-                                          boolean isRightAnchored, float parentAlpha, AnimationMetadata.MaskInfo maskInfo,
+                                          boolean isRightAnchored, float parentAlpha,
                                           AnimationMetadata.AnimationData animData) {
         if (fadingChunks.isEmpty()) return;
         
@@ -339,8 +338,7 @@ public class StaminaBarRenderer {
                     int yPos = barRect.y() + (barRect.height() - endHeight);
                     int textureVOffset = chunk.animOffset + (barRect.height() - endHeight);
                     
-                    MaskRenderUtil.renderWithMask(
-                        graphics, chunkTexture, maskInfo,
+                    RenderUtil.blitWithBinding(graphics, chunkTexture,
                         barRect.x(), yPos,
                         0, textureVOffset,
                         barRect.width(), chunkHeight,
@@ -367,8 +365,7 @@ public class StaminaBarRenderer {
                         uOffset = startWidth;
                     }
                     
-                    MaskRenderUtil.renderWithMask(
-                        graphics, chunkTexture, maskInfo,
+                    RenderUtil.blitWithBinding(graphics, chunkTexture,
                         xPos, barRect.y(),
                         uOffset, chunk.animOffset,
                         chunkWidth, barRect.height(),
@@ -417,7 +414,7 @@ public class StaminaBarRenderer {
 
     private static void renderBaseBar(GuiGraphics graphics, Player player, BarValues values, StaminaProvider provider,
                                       ScreenRect barAreaRect,
-                                      int animOffset, boolean isRightAnchored, AnimationMetadata.MaskInfo maskInfo,
+                                      int animOffset, boolean isRightAnchored,
                                       AnimationMetadata.AnimationData animData) {
         String barTextureStr;
         if (values.isMounted) {
@@ -452,8 +449,7 @@ public class StaminaBarRenderer {
             int textureVOffset = animOffset + (barHeight - partialBarHeight);
 
             if (partialBarHeight > 0) {
-                MaskRenderUtil.renderWithMask(
-                        graphics, barTexture, maskInfo,
+                RenderUtil.blitWithBinding(graphics, barTexture,
                         barX, barY,
                         0, textureVOffset, // Use 0 for U, adjusted V for vertical fill
                         totalBarWidth, partialBarHeight, // Use full width, partial height
@@ -476,8 +472,7 @@ public class StaminaBarRenderer {
             if (uTexOffset < 0) uTexOffset = 0; // Prevent negative texture offset
 
             if (partialBarWidth > 0) {
-                MaskRenderUtil.renderWithMask(
-                        graphics, barTexture, maskInfo,
+                RenderUtil.blitWithBinding(graphics, barTexture,
                         barRenderX, barRenderY,
                         uTexOffset, animOffset, // Use calculated uTexOffset
                         partialBarWidth, barHeight,
@@ -595,7 +590,7 @@ public class StaminaBarRenderer {
         return Math.max(0.0f, 1.0f - (timeSinceDisabled / (float) RenderUtil.BAR_FADEOUT_DURATION));
     }
 
-    private static void renderSaturationOverlay(GuiGraphics graphics, Player player, ScreenRect barRect, int animOffset, boolean isRightAnchored, AnimationMetadata.MaskInfo maskInfo, AnimationMetadata.AnimationData animData) {
+    private static void renderSaturationOverlay(GuiGraphics graphics, Player player, ScreenRect barRect, int animOffset, boolean isRightAnchored, AnimationMetadata.AnimationData animData) {
         if (!PlatformUtil.isModLoaded("appleskin")) {
             return;
         }
@@ -613,13 +608,12 @@ public class StaminaBarRenderer {
         float pulseAlpha = 0.5f + (TickHandler.getOverlayFlashAlpha() * 0.5f); // Range from 0.5 to 1.0
         RenderSystem.setShaderColor(1.0f, 1.0f, 1.0f, pulseAlpha);
         
-        ResourceLocation overlayTexture = DynamicResourceBars.loc("textures/gui/protection_overlay.png");
+        ResourceLocation overlayTexture = DynamicResourceBars.loc("textures/gui/saturation_overlay.png");
 
         if (fillDirection == FillDirection.VERTICAL) {
             int overlayHeight = (int) (barRect.height() * saturationPercent);
             if (overlayHeight > 0) {
-                MaskRenderUtil.renderWithMask(
-                        graphics, overlayTexture, maskInfo,
+                RenderUtil.blitWithBinding(graphics, overlayTexture,
                         barRect.x(),
                         barRect.y() + (barRect.height() - overlayHeight),
                         0, 0,
@@ -641,8 +635,7 @@ public class StaminaBarRenderer {
                 }
                 if (uTexOffset < 0) uTexOffset = 0;
 
-                MaskRenderUtil.renderWithMask(
-                        graphics, overlayTexture, maskInfo,
+                RenderUtil.blitWithBinding(graphics, overlayTexture,
                         xPos, barRect.y(),
                         uTexOffset, 0, // Use calculated uTexOffset, vOffset usually 0 for horizontal overlays unless animated differently
                         overlayWidth, barRect.height(),
@@ -656,7 +649,7 @@ public class StaminaBarRenderer {
     }
 
     private static void renderHungerRestoredOverlay(GuiGraphics graphics, Player player, ItemStack heldFood,
-                                                    ScreenRect barRect, float partialTicks, int animOffset, boolean isRightAnchored, AnimationMetadata.MaskInfo maskInfo, AnimationMetadata.AnimationData animData) {
+                                                    ScreenRect barRect, float partialTicks, int animOffset, boolean isRightAnchored, AnimationMetadata.AnimationData animData) {
         if (!PlatformUtil.isModLoaded("appleskin")) {
             return;
         }
@@ -700,8 +693,7 @@ public class StaminaBarRenderer {
                 int yPos = barRect.y() + (barRect.height() - restoredHeight);
                 int textureVOffset = animOffset + (barRect.height() - restoredHeight);
 
-                MaskRenderUtil.renderWithMask(
-                        graphics, barTexture, maskInfo,
+                RenderUtil.blitWithBinding(graphics, barTexture,
                         barRect.x(), yPos,
                         0, textureVOffset,
                         barRect.width(), overlayHeight,
@@ -726,8 +718,7 @@ public class StaminaBarRenderer {
                 }
                 if (uTexOffset < 0) uTexOffset = 0;
 
-                MaskRenderUtil.renderWithMask(
-                        graphics, barTexture, maskInfo,
+                RenderUtil.blitWithBinding(graphics, barTexture,
                         xDrawPos, barRect.y(),
                         uTexOffset, animOffset, // Use the calculated uTexOffset
                         overlayWidth, barRect.height(),

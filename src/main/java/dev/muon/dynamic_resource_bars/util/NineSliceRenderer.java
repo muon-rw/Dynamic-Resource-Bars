@@ -40,14 +40,14 @@ public class NineSliceRenderer {
             }
             
         } else if (scalingInfo.mode == AnimationMetadata.ScalingMode.STRETCH) {
-            // Simple stretch - use standard blit
+            // Simple stretch - use stretching blit signature
             if (scalingInfo.sourceRegion != null) {
                 // Stretch from source region
                 AnimationMetadata.SourceRegion src = scalingInfo.sourceRegion;
                 graphics.blit(texture, x, y, width, height, (float)src.u, (float)src.v, src.width, src.height, textureWidth, textureHeight);
             } else {
                 // Stretch from full texture
-                graphics.blit(texture, x, y, 0, 0, width, height, textureWidth, textureHeight);
+                graphics.blit(texture, x, y, width, height, 0f, 0f, textureWidth, textureHeight, textureWidth, textureHeight);
             }
             
         } else if (scalingInfo.mode == AnimationMetadata.ScalingMode.TILE) {

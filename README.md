@@ -1,14 +1,24 @@
 # Dynamic RPG Resource Bars
+by muon-rw
 ### Animated, adjustable resource bars for Minecraft!
 
 [![Download on CurseForge](https://img.shields.io/badge/CurseForge-Download-orange)](https://www.curseforge.com/minecraft/mc-mods/dynamic-rpg-resource-bars)
 [![Download on Modrinth](https://img.shields.io/badge/Modrinth-Download-green)](https://modrinth.com/mod/dynamic-resource-bars)
 
+
 ---
 
 # Resource Pack Creator Guide
 
-This guide covers everything you need to create custom bar textures, animations, and shapes for Dynamic Resource Bars.
+---
+
+# WARNING: THIS GUIDE WAS WRITTEN BY AN LLM, IT PROBABLY SUCKS
+# I'M STILL WORKING ON IMPROVING THE GUIDE MANUALLY, BUT IT'S REALLY LONG 
+# IF YOU ACTUALLY WANT TO MAKE A RESOURCE PACK FOR THIS MOD, FEEL FREE TO ASK ME QUESTIONS ON DISCORD
+
+---
+
+With that out of the way:
 
 ## Table of Contents
 1. [Common Questions](#common-questions)
@@ -17,11 +27,10 @@ This guide covers everything you need to create custom bar textures, animations,
 4. [Texture Requirements](#texture-requirements)
 5. [Animation System](#animation-system)
 6. [Scaling System](#scaling-system-nine-slice--tiling)
-7. [Mask System (Shaped Bars)](#mask-system-shaped-bars)
-8. [Combining Features](#combining-features-practical-examples)
-9. [Feature Matrix](#feature-compatibility-matrix)
-10. [In-Game HUD Editor](#in-game-hud-editor)
-11. [Troubleshooting](#troubleshooting)
+7. [Combining Features](#combining-features-practical-examples)
+8. [Feature Matrix](#feature-compatibility-matrix)
+9. [In-Game HUD Editor](#in-game-hud-editor)
+10. [Troubleshooting](#troubleshooting)
 
 ---
 
@@ -30,8 +39,8 @@ This guide covers everything you need to create custom bar textures, animations,
 **Q: How do I change bar colors?**  
 A: Replace bar textures in a resource pack. See [Quick Start](#quick-start-recoloring-bars).
 
-**Q: Can I make bars with rounded corners?**  
-A: Yes! Use [mask textures](#mask-system-shaped-bars). Masks let you create any shape.
+**Q: Can I make rounded bars, or other shapes**  
+A: It's possible, but to do so, you'll need to each frame of the bar textures themselves (finding some way to automate this is highly recommended - Pixel Composer is great!)
 
 **Q: Can I use high-resolution (HD) textures?**  
 A: Yes! The mod auto-detects texture dimensions. Use 512x2048 or any size. Power of 2 texture sizes are recommended!
@@ -46,9 +55,9 @@ A: No! The mod uses smart defaults. Only add .mcmeta to customize.
 A: **Texture size** = PNG file dimensions (256x1024). **Rendered size** = on-screen pixels (74x4). The mod scales automatically!
 
 **Q: Why can't I use nine-slice on bars?**  
-A: Bars use UV sampling + masks for fill percentage. Use masks for bar shapes instead!
+A: Bars use UV sampling to show fill percentage. Use transparency in your bar textures for custom shapes!
 
-**Q: Can I mix features (HD + masks + nine-slice)?**  
+**Q: Can I mix features (HD + nine-slice)?**  
 A: Yes! See [Combining Features](#combining-features-practical-examples) for examples.
 
 ---
@@ -135,12 +144,6 @@ resourcepacks/
             air_bar.png             (256x1024 - 32 frames)
             air_bar.png.mcmeta
             
-            # === OPTIONAL: MASKS (for shaped bars) ===
-            health_bar_mask.png     (256x32 - ONE frame size)
-            stamina_bar_mask.png
-            mana_bar_mask.png
-            air_bar_mask.png
-            
             # === BACKGROUNDS ===
             health_background.png   (256x256 - static)
             stamina_background.png
@@ -178,7 +181,6 @@ resourcepacks/
 |--------------|---------------|--------|-------|
 | Bar (animated) | **256 x 1024** | PNG + Alpha | 32 frames of 32px each (standard) |
 | Bar (custom) | **Any width x (height × frames)** | PNG + Alpha | Width auto-detected, height ÷ frame height must be whole number |
-| Mask | **Texture width x frame height** | PNG + Alpha | MUST match bar texture's frame dimensions |
 | Background/Overlay | **256 x 256** | PNG + Alpha | Static (non-animated), standard size |
 
 ### How Auto-Detection Works
@@ -190,11 +192,6 @@ resourcepacks/
 2. **Texture height**: Automatically detected from your PNG file
    - Must be evenly divisible by frame height from `.mcmeta`
    - Example: 2048px texture ÷ 64px frame = 32 frames
-
-3. **Mask dimensions**: Must match **width x frame_height** of the bar texture
-   - Validated on load with helpful warnings
-   - Example: 256x32 mask for 256x1024 bar with 32px frames
-   - Example: 512x64 mask for 512x2048 bar with 64px frames
 
 ### Rendered Size vs Texture Size
 
@@ -442,7 +439,7 @@ If your texture file is 256×256 but your actual graphic is only 80×10 in the c
 **Default placement**: If `u` and `v` are omitted, defaults to `(0, 0)` = **top-left corner**
 
 **Examples**:
-```json
+```json5
 // Graphic in top-left (most common)
 "source": { "width": 80, "height": 10 }  // u:0, v:0 implied
 
@@ -478,134 +475,25 @@ If you don't specify scaling, the mod applies smart defaults:
 
 **Why?** Bars use:
 - **UV sampling** to show fill percentage (not scaling)
-- **Mask layers** which require fixed texture dimensions
-- Applying nine-slice would require rendering 9 masked regions per frame (expensive!)
+- Applying nine-slice would require complex UV remapping per frame
 
 **What this means**:
 - ✅ Backgrounds, foregrounds, overlays → Can use nine-slice/tiling
-- ❌ Bar animated textures → Use mask layers for shapes instead
+- ❌ Bar animated textures → Use transparency for custom shapes instead
 - ✅ Bar dimensions are capped at texture sheet width (auto-detected)
-
----
-
-## Mask System (Shaped Bars)
-
-Create **non-rectangular bars** (rounded corners, pill shapes, custom silhouettes) using mask textures!
-
-### How Masks Work
-
-1. Mask texture defines the **shape** using alpha channel
-2. White pixels (255,255,255,255) = bar is **visible**
-3. Transparent pixels (0,0,0,0) = bar is **invisible**
-4. Gray pixels = **partially transparent**
-5. Applied via OpenGL stencil buffer (no texture editing needed!)
-
-### Creating a Mask
-
-#### Step 1: Create Mask Texture
-
-**Dimensions**: **bar_texture_width x frame_height** (matches ONE animation frame)
-
-**Standard dimensions**: **256 x 32 pixels** (for standard 256x1024 bars with 32px frames)
-
-**Visual example** (rounded corners):
-```
-Transparent → □□■■■■■■■■■■□□
-              □■■■■■■■■■■■■□
-White →       ■■■■■■■■■■■■■■  ← Visible bar area
-              □■■■■■■■■■■■■□
-Transparent → □□■■■■■■■■■■□□
-```
-
-**In an image editor**:
-1. Check your bar texture dimensions (e.g., 256x1024)
-2. Create mask with: width = bar width, height = frame height from .mcmeta
-3. Paint white on transparent background where bar should show
-4. Save as PNG with alpha channel
-
-**File naming**: `{bar_name}_mask.png`
-- ✅ `health_bar_mask.png`
-- ✅ `mana_bar_mask.png`
-- ❌ `masks/health_bar_mask.png` (no subdirectory)
-
-#### Step 2: Reference in .mcmeta
-
-**File**: `health_bar.png.mcmeta`
-```json
-{
-  "animation": {
-    "frametime": 3,
-    "height": 32
-  },
-  "dynamic_resource_bars": {
-    "mask": {
-      "texture": "dynamic_resource_bars:textures/gui/health_bar_mask.png",
-      "enabled": true
-    }
-  }
-}
-```
-
-### Mask Dimension Validation
-
-The mod **automatically validates** mask dimensions on resource pack load:
-
-**Warning example**:
-```
-[WARN] MASK DIMENSION MISMATCH for health_bar.png: Mask is 128x16 but animation frame is 256x32.
-       Mask should match the size of a single animation frame for best results.
-```
-
-**If you see this**:
-- Check mask dimensions match your bar's texture width × frame height
-- Standard: **256 x 32** for 256-wide bars with 32px frames
-- HD: **512 x 64** for 512-wide bars with 64px frames
-- Verify mask matches **frame size**, not **rendered size**
-
-**Quick fix**:
-1. Check your bar texture size (e.g., open in image editor)
-2. Check frame height in `.mcmeta` (e.g., 32)
-3. Resize mask to: bar_width × frame_height
-4. Reload with F3+T
-
-### Common Mask Shapes
-
-| Shape | Description | Use Case |
-|-------|-------------|----------|
-| **Rounded corners** | 2-4px radius corners | Smooth, modern look |
-| **Pill shape** | Fully rounded ends | Sleek, minimal design |
-| **Hexagon** | Angled corners (120°) | Sci-fi or geometric theme |
-| **Star/Heart** | Custom decorative | Fantasy or themed packs |
-| **Segmented** | Gaps between sections | Discrete "chunk" bars |
-
-### Tips for Mask Creation
-
-✅ **DO**:
-- Use pure white (255,255,255,255) for visible areas
-- Use pure transparent (0,0,0,0) for cutouts
-- Test in-game with F3+T to reload
-- Start simple (rounded corners) before complex shapes
-
-❌ **DON'T**:
-- Use colored pixels (RGB is ignored, only alpha matters)
-- Make mask different size than bar_width x frame_height
-- Put masks in subdirectories
-- Forget to enable in .mcmeta
-- Confuse texture size with rendered size
 
 ---
 
 ## Combining Features: Practical Examples
 
-### Example 1: HD Bars with Rounded Corners
+### Example 1: HD Bars
 
-**Goal**: 2x resolution bars with smooth rounded edges
+**Goal**: 2x resolution bars with smooth visuals
 
 **Files needed**:
 ```
 health_bar.png (512x2048)
 health_bar.png.mcmeta
-health_bar_mask.png (512x64)
 ```
 
 **health_bar.png.mcmeta**:
@@ -614,26 +502,17 @@ health_bar_mask.png (512x64)
   "animation": {
     "frametime": 3,
     "height": 64
-  },
-  "dynamic_resource_bars": {
-    "mask": {
-      "texture": "dynamic_resource_bars:textures/gui/health_bar_mask.png",
-      "enabled": true
-    }
   }
 }
 ```
 
 **Steps**:
 1. Create 512x2048 bar texture (double resolution)
-2. Create 512x64 mask with rounded corners
-3. Add `.mcmeta` with height: 64 and mask reference
-4. Reload and enjoy HD rounded bars!
+2. Add `.mcmeta` with height: 64
+3. Reload and enjoy HD bars!
 
 **Why it works**:
 - Auto-detection reads 512x2048 dimensions
-- Mask validation checks 512x64 matches frame size
-- Mask stencil creates rounded shape
 - Everything scales automatically!
 
 ---
@@ -711,8 +590,7 @@ fantasy_pack/
   assets/dynamic_resource_bars/textures/gui/
     # HD bars (512x2048)
     health_bar.png
-    health_bar.png.mcmeta (animation + mask)
-    health_bar_mask.png (512x64, heart shape)
+    health_bar.png.mcmeta (animation)
     
     # Decorative backgrounds (256x256)
     health_background.png
@@ -731,7 +609,6 @@ fantasy_pack/
 
 **Features used**:
 - ✅ HD textures (512x2048 bars)
-- ✅ Shaped bars (heart mask)
 - ✅ Decorative borders (nine-slice tile)
 - ✅ Patterned overlays (simple tile)
 
@@ -746,7 +623,7 @@ Bars are rendered in multiple layers for visual depth and status effects.
 ### Layer Order (bottom to top)
 
 1. **Background** (`health_background.png`) - Behind everything
-2. **Bar** (`health_bar.png`) - Main animated bar (with optional mask)
+2. **Bar** (`health_bar.png`) - Main animated bar
 3. **Status Overlays** - Applied over bar (absorption, regen, heat, etc.)
 4. **Foreground** (`health_foreground.png`) - Frame/border on top
 
@@ -765,14 +642,12 @@ assets/dynamic_resource_bars/textures/gui/
 assets/dynamic_resource_bars/textures/gui/
   ├── health_bar.png        ← 512x2048 (double resolution)
   ├── health_bar.png.mcmeta ← height: 64 (double frame size)
-  ├── health_bar_mask.png   ← 512x64 (matches new dimensions)
 ```
 
 **Full pack** (complete visual overhaul):
 ```
 assets/dynamic_resource_bars/textures/gui/
   ├── health_bar.png           ← Animated bar (any size!)
-  ├── health_bar_mask.png      ← Custom shape (matches bar dimensions)
   ├── health_background.png    ← Frame/container
   ├── health_foreground.png    ← Border overlay
   ├── absorption_overlay.png   ← Status effects
@@ -859,15 +734,13 @@ What works with what:
 |---------|:----:|:-----------:|:-----------:|:--------:|
 | **Custom animations** | ✅ | ❌ | ❌ | ❌ |
 | **Auto-detected size** | ✅ | ✅ | ✅ | ✅ |
-| **Mask layers** | ✅ | ❌ | ❌ | ❌ |
 | **Nine-slice scaling** | ❌ | ✅ | ✅ | ✅ |
 | **Tile mode** | ❌ | ✅ | ✅ | ✅ |
 
 **Key insights**:
-- **Bars** = Animation + Masks (UV sampling for fill)
+- **Bars** = Animation with UV sampling for fill percentage
 - **Backgrounds/Foregrounds/Overlays** = Nine-slice or Tile (full texture rendering)
 - **Bars don't scale** because they use UV sampling to show fill percentage
-- **Masks need fixed sizes** which is why bars can't use nine-slice
 
 ---
 
@@ -879,12 +752,6 @@ What works with what:
   "animation": {
     "frametime": 3,
     "height": 32
-  },
-  "dynamic_resource_bars": {
-    "mask": {
-      "texture": "dynamic_resource_bars:textures/gui/health_bar_mask.png",
-      "enabled": true
-    }
   }
 }
 ```
@@ -986,18 +853,10 @@ Edit `.mcmeta` file:
 - **Too slow**: Decrease `frametime` (try 1-2)
 - Reload with F3 + T
 
-#### "Mask dimension mismatch warning!"
-
-Your mask size doesn't match the animation frame size:
-- **Check mask**: Should be 256 x 32 (or 256 x your `animation.height`)
-- **Check .mcmeta**: `animation.height` should match mask height
-- **Not rendered size**: Mask uses texture sheet size, not config size
-
 #### "Bar looks stretched/wrong!"
 
 Check these requirements:
 - **Height must be divisible**: texture_height ÷ frame_height must be whole number
-- **Mask must match bar**: mask dimensions = bar_width × frame_height
 - **Frame height in .mcmeta**: Must match your actual frame size
 - **Rendered size**: Config values are separate from texture size
 
@@ -1068,13 +927,11 @@ Known limitation (tracked for future fix):
 ## Advanced Topics
 
 ### See Also
-- **`EXAMPLE_with_mask.mcmeta`** - Complete working example in mod assets
 - **Mod config**: `.minecraft/config/dynamic_resource_bars-client.toml`
 - **In-game editor**: Access via config menu to customize positioning
 
 ### Recently Implemented Features
 - ✅ **Texture auto-detection** - Use any PNG size
-- ✅ **Mask layers** - Shaped bars with stencil buffers
 - ✅ **Nine-slice scaling** - Tile/stretch modes for backgrounds and overlays
 
 ---
@@ -1098,22 +955,20 @@ hd_bars/
   assets/dynamic_resource_bars/textures/gui/
     health_bar.png            ← 512x2048 (double resolution)
     health_bar.png.mcmeta     ← height: 64 (double frame size)
-    health_bar_mask.png       ← 512x64 (matches new dimensions)
     stamina_bar.png           ← 512x2048
     stamina_bar.png.mcmeta    ← height: 64
     mana_bar.png              ← 512x2048
     mana_bar.png.mcmeta       ← height: 64
 ```
 
-### Rounded Bars Pack (With Masks)
+### Simple Recolor Pack
 ```
-rounded_bars/
+recolor_pack/
   pack.mcmeta
   assets/dynamic_resource_bars/textures/gui/
-    health_bar_mask.png       ← 256x32 rounded corners
-    health_bar.png.mcmeta     ← References mask
-    stamina_bar_mask.png      ← 256x32 rounded corners
-    stamina_bar.png.mcmeta    ← References mask
+    health_bar.png            ← 256x1024 recolored
+    stamina_bar.png           ← 256x1024 recolored
+    mana_bar.png              ← 256x1024 recolored
 ```
 
 ### Decorative Frames Pack (Nine-Slice)
@@ -1202,16 +1057,5 @@ Compact:  128 × 512  = 32 × 16 frames
 ```
 
 ---
-
-## Credits & Links
-
-- **Mod by**: muon
-- **CurseForge**: https://www.curseforge.com/minecraft/mc-mods/dynamic-rpg-resource-bars
-- **Modrinth**: https://modrinth.com/mod/dynamic-resource-bars
-- **Report Issues**: [GitHub Issues](https://github.com/muon-rw/dynamic-resource-bars/issues)
-
----
-
-**Happy bar creating!** 🎨
 
 **Pro tip**: Check `assets/dynamic_resource_bars/textures/gui/` in the mod for `EXAMPLE_*.mcmeta` files showing all features!

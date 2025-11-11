@@ -1,7 +1,6 @@
 package dev.muon.dynamic_resource_bars.util;
 
 import dev.muon.dynamic_resource_bars.DynamicResourceBars;
-import dev.muon.dynamic_resource_bars.config.ModConfigManager;
 import net.minecraft.client.Minecraft;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.packs.resources.ResourceManager;
@@ -16,9 +15,9 @@ import java.util.Map;
 public class AnimationMetadataCache {
     
     private static final Map<ResourceLocation, AnimationMetadata.AnimationData> animationCache = new HashMap<>();
-    private static final Map<ResourceLocation, AnimationMetadata.MaskInfo> maskCache = new HashMap<>();
     private static final Map<ResourceLocation, AnimationMetadata.BarDimensions> dimensionsCache = new HashMap<>();
     private static final Map<ResourceLocation, AnimationMetadata.ScalingInfo> scalingCache = new HashMap<>();
+    private static final Map<ResourceLocation, AnimationMetadata.TextureDimensions> textureDimensionsCache = new HashMap<>();
     private static boolean needsRefresh = true;
     
     /**
@@ -36,8 +35,9 @@ public class AnimationMetadataCache {
     // TODO: doesn't seem to be hooked
     public static void clear() {
         animationCache.clear();
-        maskCache.clear();
         dimensionsCache.clear();
+        scalingCache.clear();
+        textureDimensionsCache.clear();
         needsRefresh = true;
         DynamicResourceBars.LOGGER.info("Texture metadata cache cleared");
     }
@@ -77,45 +77,13 @@ public class AnimationMetadataCache {
     }
     
     /**
-     * Get mask info for health bar
-     */
-    public static AnimationMetadata.MaskInfo getHealthBarMask() {
-        ResourceLocation location = DynamicResourceBars.loc("textures/gui/health_bar.png");
-        return getMaskOrLoad(location);
-    }
-    
-    /**
-     * Get mask info for stamina bar
-     */
-    public static AnimationMetadata.MaskInfo getStaminaBarMask() {
-        ResourceLocation location = DynamicResourceBars.loc("textures/gui/stamina_bar.png");
-        return getMaskOrLoad(location);
-    }
-    
-    /**
-     * Get mask info for mana bar
-     */
-    public static AnimationMetadata.MaskInfo getManaBarMask() {
-        ResourceLocation location = DynamicResourceBars.loc("textures/gui/mana_bar.png");
-        return getMaskOrLoad(location);
-    }
-    
-    /**
-     * Get mask info for air bar
-     */
-    public static AnimationMetadata.MaskInfo getAirBarMask() {
-        ResourceLocation location = DynamicResourceBars.loc("textures/gui/air_bar.png");
-        return getMaskOrLoad(location);
-    }
-    
-    /**
      * Internal method to get or load animation data
      */
     private static AnimationMetadata.AnimationData getOrLoad(ResourceLocation location) {
         // Refresh cache if needed
         if (needsRefresh) {
+            DynamicResourceBars.LOGGER.info("CACHE: Refreshing animation cache...");
             animationCache.clear();
-            maskCache.clear();
             dimensionsCache.clear();
             scalingCache.clear();
             needsRefresh = false;
@@ -127,49 +95,25 @@ public class AnimationMetadataCache {
         }
         
         // Load and cache
+        DynamicResourceBars.LOGGER.info("CACHE: Loading and caching animation data for {}", location);
         ResourceManager resourceManager = Minecraft.getInstance().getResourceManager();
         AnimationMetadata.AnimationData data = AnimationMetadata.loadAnimationData(
             resourceManager, location
         );
         animationCache.put(location, data);
+        DynamicResourceBars.LOGGER.info("CACHE: Cached animation data for {}: frameHeight={}, totalFrames={}, textureSize={}x{}", 
+            location, data.frameHeight, data.totalFrames, data.textureWidth, data.textureHeight);
         return data;
     }
     
     /**
-     * Internal method to get or load mask info
+     * Get or load scaling info for any texture with specified type.
+     * Public method for textures without dedicated getters (e.g., armor_background).
      */
-    private static AnimationMetadata.MaskInfo getMaskOrLoad(ResourceLocation location) {
-        // Refresh cache if needed (same check as animation)
-        if (needsRefresh) {
-            animationCache.clear();
-            maskCache.clear();
-            dimensionsCache.clear();
-            scalingCache.clear();
-            needsRefresh = false;
-        }
-        
-        // Return cached value if available
-        if (maskCache.containsKey(location)) {
-            return maskCache.get(location);
-        }
-        
-        // Load and cache
-        ResourceManager resourceManager = Minecraft.getInstance().getResourceManager();
-        AnimationMetadata.MaskInfo maskInfo = AnimationMetadata.loadMaskInfo(
-            resourceManager, location
-        );
-        maskCache.put(location, maskInfo);
-        return maskInfo;
-    }
-    
-    /**
-     * Internal method to get or load scaling info
-     */
-    private static AnimationMetadata.ScalingInfo getScalingOrLoad(ResourceLocation location, AnimationMetadata.TextureType textureType) {
+    public static AnimationMetadata.ScalingInfo getScalingOrLoad(ResourceLocation location, AnimationMetadata.TextureType textureType) {
         // Refresh cache if needed
         if (needsRefresh) {
             animationCache.clear();
-            maskCache.clear();
             dimensionsCache.clear();
             scalingCache.clear();
             needsRefresh = false;
@@ -270,6 +214,25 @@ public class AnimationMetadataCache {
     public static AnimationMetadata.ScalingInfo getProtectionOverlayScaling() {
         return getScalingOrLoad(DynamicResourceBars.loc("textures/gui/protection_overlay.png"), 
             AnimationMetadata.TextureType.OVERLAY_ANIMATED);
+    }
+    
+    /**
+     * Get texture dimensions for any texture (backgrounds, overlays, etc.)
+     * Used to get correct texture sheet dimensions for non-animated textures.
+     */
+    public static AnimationMetadata.TextureDimensions getTextureDimensions(ResourceLocation location) {
+        if (needsRefresh) {
+            textureDimensionsCache.clear();
+        }
+        
+        if (textureDimensionsCache.containsKey(location)) {
+            return textureDimensionsCache.get(location);
+        }
+        
+        ResourceManager resourceManager = Minecraft.getInstance().getResourceManager();
+        AnimationMetadata.TextureDimensions dims = AnimationMetadata.loadTextureDimensions(resourceManager, location);
+        textureDimensionsCache.put(location, dims);
+        return dims;
     }
 }
 

@@ -18,7 +18,6 @@ import java.util.Optional;
  * Utility for loading and parsing .mcmeta files with extended features:
  * - Animation properties
  * - Bar dimensions (auto-sizing)
- * - Mask layers (shaped bars)
  * - UV mapping (texture atlases)
  * - Nine-slice scaling (borders)
  */
@@ -52,20 +51,6 @@ public class AnimationMetadata {
             this.width = width;
             this.height = height;
             this.fromMcmeta = fromMcmeta;
-        }
-    }
-    
-    public static class MaskInfo {
-        public final String maskTexturePath;
-        public final boolean enabled;
-        
-        public MaskInfo(String maskTexturePath, boolean enabled) {
-            this.maskTexturePath = maskTexturePath;
-            this.enabled = enabled;
-        }
-        
-        public static MaskInfo disabled() {
-            return new MaskInfo(null, false);
         }
     }
     
@@ -192,6 +177,8 @@ public class AnimationMetadata {
      */
     public static AnimationData loadAnimationData(ResourceManager resourceManager, 
                                                    ResourceLocation textureLocation) {
+        DynamicResourceBars.LOGGER.info("ANIM_LOAD: Starting animation data load for: {}", textureLocation);
+        
         // Create .mcmeta location
         ResourceLocation mcmetaLocation;
         #if NEWER_THAN_20_1
@@ -206,6 +193,8 @@ public class AnimationMetadata {
         );
         #endif
         
+        DynamicResourceBars.LOGGER.info("ANIM_LOAD: Looking for .mcmeta at: {}", mcmetaLocation);
+        
         // Hardcoded defaults if .mcmeta is missing or invalid
         final int DEFAULT_FRAMETIME = 3;
         final int DEFAULT_FRAME_HEIGHT = 32;
@@ -214,29 +203,35 @@ public class AnimationMetadata {
         
         // Load actual texture dimensions from the PNG file
         TextureDimensions textureDims = loadTextureDimensions(resourceManager, textureLocation);
+        DynamicResourceBars.LOGGER.info("ANIM_LOAD: Texture dimensions loaded: {}x{}", textureDims.width, textureDims.height);
         
         try {
             Optional<Resource> resourceOpt = resourceManager.getResource(mcmetaLocation);
             if (resourceOpt.isEmpty()) {
                 // No .mcmeta file found, use hardcoded defaults
-                DynamicResourceBars.LOGGER.warn("No .mcmeta found for {}, using hardcoded defaults (frametime=3, height=32)", textureLocation);
+                DynamicResourceBars.LOGGER.info("ANIM_LOAD: No .mcmeta found for {}, using hardcoded defaults (frametime={}, frameHeight={}, totalFrames={})", 
+                    textureLocation, DEFAULT_FRAMETIME, DEFAULT_FRAME_HEIGHT, DEFAULT_TOTAL_FRAMES);
                 return new AnimationData(DEFAULT_FRAMETIME, DEFAULT_FRAME_HEIGHT, DEFAULT_TOTAL_FRAMES, DEFAULT_INTERPOLATE,
                     textureDims.width, textureDims.height);
             }
+            
+            DynamicResourceBars.LOGGER.info("ANIM_LOAD: .mcmeta resource found, parsing JSON...");
             
             Resource resource = resourceOpt.get();
             try (BufferedReader reader = new BufferedReader(
                     new InputStreamReader(resource.open(), StandardCharsets.UTF_8))) {
                 
                 JsonObject root = JsonParser.parseReader(reader).getAsJsonObject();
+                DynamicResourceBars.LOGGER.info("ANIM_LOAD: JSON parsed successfully, checking for 'animation' section...");
                 
                 if (!root.has("animation")) {
-                    DynamicResourceBars.LOGGER.error("INVALID .mcmeta for {}: Missing 'animation' section! Using defaults.", textureLocation);
+                    DynamicResourceBars.LOGGER.info("ANIM_LOAD: INVALID .mcmeta for {}: Missing 'animation' section! Using defaults.", textureLocation);
                     return new AnimationData(DEFAULT_FRAMETIME, DEFAULT_FRAME_HEIGHT, DEFAULT_TOTAL_FRAMES, DEFAULT_INTERPOLATE,
                         textureDims.width, textureDims.height);
                 }
                 
                 JsonObject animation = root.getAsJsonObject("animation");
+                DynamicResourceBars.LOGGER.info("ANIM_LOAD: Found 'animation' section");
                 
                 // Parse animation properties
                 int frametime = animation.has("frametime") ? animation.get("frametime").getAsInt() : DEFAULT_FRAMETIME;
@@ -246,30 +241,39 @@ public class AnimationMetadata {
                 int frameHeight;
                 if (animation.has("height")) {
                     frameHeight = animation.get("height").getAsInt();
+                    DynamicResourceBars.LOGGER.info("ANIM_LOAD: Frame height from 'height' field: {}", frameHeight);
                 } else if (animation.has("frameHeight")) {
                     frameHeight = animation.get("frameHeight").getAsInt();
+                    DynamicResourceBars.LOGGER.info("ANIM_LOAD: Frame height from 'frameHeight' field: {}", frameHeight);
                 } else {
-                    DynamicResourceBars.LOGGER.error("INVALID .mcmeta for {}: Missing 'height' field! Using default (32px).", textureLocation);
+                    DynamicResourceBars.LOGGER.info("ANIM_LOAD: INVALID .mcmeta for {}: Missing 'height' field! Using default ({}px).", 
+                        textureLocation, DEFAULT_FRAME_HEIGHT);
                     frameHeight = DEFAULT_FRAME_HEIGHT;
                 }
                 
                 // Calculate total frames from actual texture height
                 int totalFrames = textureDims.height / frameHeight;
+                DynamicResourceBars.LOGGER.info("ANIM_LOAD: Calculated totalFrames = {} / {} = {}", 
+                    textureDims.height, frameHeight, totalFrames);
                 
-                DynamicResourceBars.LOGGER.info("Loaded animation data for {}: frametime={}, frameHeight={}, totalFrames={}, textureSize={}x{}", 
-                    textureLocation, frametime, frameHeight, totalFrames, textureDims.width, textureDims.height);
+                DynamicResourceBars.LOGGER.info("ANIM_LOAD: Successfully loaded animation data for {}: frametime={}, frameHeight={}, totalFrames={}, textureSize={}x{}, interpolate={}", 
+                    textureLocation, frametime, frameHeight, totalFrames, textureDims.width, textureDims.height, interpolate);
                 
                 return new AnimationData(frametime, frameHeight, totalFrames, interpolate,
                     textureDims.width, textureDims.height);
                 
             } catch (Exception e) {
-                DynamicResourceBars.LOGGER.error("ERROR parsing .mcmeta for {}: {}. Using hardcoded defaults.", textureLocation, e.getMessage());
+                DynamicResourceBars.LOGGER.info("ANIM_LOAD: ERROR parsing .mcmeta for {}: {} ({}). Using hardcoded defaults.", 
+                    textureLocation, e.getClass().getSimpleName(), e.getMessage());
+                e.printStackTrace();
                 return new AnimationData(DEFAULT_FRAMETIME, DEFAULT_FRAME_HEIGHT, DEFAULT_TOTAL_FRAMES, DEFAULT_INTERPOLATE,
                     textureDims.width, textureDims.height);
             }
             
         } catch (Exception e) {
-            DynamicResourceBars.LOGGER.error("ERROR loading .mcmeta for {}: {}. Using hardcoded defaults.", textureLocation, e.getMessage());
+            DynamicResourceBars.LOGGER.info("ANIM_LOAD: ERROR loading .mcmeta for {}: {} ({}). Using hardcoded defaults.", 
+                textureLocation, e.getClass().getSimpleName(), e.getMessage());
+            e.printStackTrace();
             return new AnimationData(DEFAULT_FRAMETIME, DEFAULT_FRAME_HEIGHT, DEFAULT_TOTAL_FRAMES, DEFAULT_INTERPOLATE,
                 textureDims.width, textureDims.height);
         }
@@ -289,21 +293,25 @@ public class AnimationMetadata {
     }
     
     /**
-     * Load actual texture dimensions from PNG file.
+     * Load actual texture dimensions from PNG file (public version for non-animated textures).
      * This allows resource packs to use any texture size!
      */
-    private static TextureDimensions loadTextureDimensions(ResourceManager resourceManager, ResourceLocation textureLocation) {
+    public static TextureDimensions loadTextureDimensions(ResourceManager resourceManager, ResourceLocation textureLocation) {
         // Defaults if we can't load the texture
         final int DEFAULT_WIDTH = 256;
         final int DEFAULT_HEIGHT = 1024;
         
+        DynamicResourceBars.LOGGER.info("DIMENSION_LOAD: Attempting to load texture dimensions for: {}", textureLocation);
+        
         try {
             Optional<Resource> resourceOpt = resourceManager.getResource(textureLocation);
             if (resourceOpt.isEmpty()) {
-                DynamicResourceBars.LOGGER.warn("Texture not found: {}. Using default dimensions {}x{}", 
+                DynamicResourceBars.LOGGER.info("DIMENSION_LOAD: Texture not found: {}. Using default dimensions {}x{}", 
                     textureLocation, DEFAULT_WIDTH, DEFAULT_HEIGHT);
                 return new TextureDimensions(DEFAULT_WIDTH, DEFAULT_HEIGHT);
             }
+            
+            DynamicResourceBars.LOGGER.info("DIMENSION_LOAD: Resource found for {}, attempting to read PNG...", textureLocation);
             
             try (InputStream stream = resourceOpt.get().open()) {
                 NativeImage image = NativeImage.read(stream);
@@ -311,12 +319,14 @@ public class AnimationMetadata {
                 int height = image.getHeight();
                 image.close();
                 
-                DynamicResourceBars.LOGGER.debug("Detected texture dimensions for {}: {}x{}", textureLocation, width, height);
+                DynamicResourceBars.LOGGER.info("DIMENSION_LOAD: Successfully detected texture dimensions for {}: {}x{}", 
+                    textureLocation, width, height);
                 return new TextureDimensions(width, height);
             }
         } catch (Exception e) {
-            DynamicResourceBars.LOGGER.warn("Could not load texture dimensions for {}: {}. Using defaults {}x{}", 
-                textureLocation, e.getMessage(), DEFAULT_WIDTH, DEFAULT_HEIGHT);
+            DynamicResourceBars.LOGGER.info("DIMENSION_LOAD: ERROR loading texture dimensions for {}: {} ({}). Using defaults {}x{}", 
+                textureLocation, e.getClass().getSimpleName(), e.getMessage(), DEFAULT_WIDTH, DEFAULT_HEIGHT);
+            e.printStackTrace(); // Print full stack trace to help diagnose the issue
             return new TextureDimensions(DEFAULT_WIDTH, DEFAULT_HEIGHT);
         }
     }
@@ -395,127 +405,6 @@ public class AnimationMetadata {
             }
         } catch (Exception e) {
             return null; // No .mcmeta
-        }
-    }
-    
-    /**
-     * Load mask info from .mcmeta file with dimension validation.
-     * Returns disabled mask if not specified.
-     * 
-     * @param resourceManager The resource manager
-     * @param textureLocation The texture location
-     * @return MaskInfo from .mcmeta, or disabled mask
-     */
-    public static MaskInfo loadMaskInfo(ResourceManager resourceManager, ResourceLocation textureLocation) {
-        ResourceLocation mcmetaLocation;
-        #if NEWER_THAN_20_1
-        mcmetaLocation = ResourceLocation.fromNamespaceAndPath(
-            textureLocation.getNamespace(),
-            textureLocation.getPath() + ".mcmeta"
-        );
-        #else
-        mcmetaLocation = new ResourceLocation(
-            textureLocation.getNamespace(),
-            textureLocation.getPath() + ".mcmeta"
-        );
-        #endif
-        
-        try {
-            Optional<Resource> resourceOpt = resourceManager.getResource(mcmetaLocation);
-            if (resourceOpt.isEmpty()) {
-                return MaskInfo.disabled();
-            }
-            
-            Resource resource = resourceOpt.get();
-            try (BufferedReader reader = new BufferedReader(
-                    new InputStreamReader(resource.open(), StandardCharsets.UTF_8))) {
-                
-                JsonObject root = JsonParser.parseReader(reader).getAsJsonObject();
-                
-                if (!root.has("dynamic_resource_bars")) {
-                    return MaskInfo.disabled();
-                }
-                
-                JsonObject custom = root.getAsJsonObject("dynamic_resource_bars");
-                if (!custom.has("mask")) {
-                    return MaskInfo.disabled();
-                }
-                
-                JsonObject maskObj = custom.getAsJsonObject("mask");
-                if (!maskObj.has("texture")) {
-                    DynamicResourceBars.LOGGER.error("INVALID mask in .mcmeta for {}: missing texture field", textureLocation);
-                    return MaskInfo.disabled();
-                }
-                
-                String maskTexture = maskObj.get("texture").getAsString();
-                boolean enabled = !maskObj.has("enabled") || maskObj.get("enabled").getAsBoolean();
-                
-                // Validate mask dimensions against animation frame size
-                if (enabled) {
-                    validateMaskDimensions(resourceManager, textureLocation, maskTexture);
-                }
-                
-                DynamicResourceBars.LOGGER.info("Loaded mask for {}: texture={}, enabled={}", textureLocation, maskTexture, enabled);
-                return new MaskInfo(maskTexture, enabled);
-                
-            } catch (Exception e) {
-                DynamicResourceBars.LOGGER.error("ERROR parsing mask info for {}: {}", textureLocation, e.getMessage());
-                return MaskInfo.disabled();
-            }
-        } catch (Exception e) {
-            return MaskInfo.disabled();
-        }
-    }
-    
-    /**
-     * Validate that mask dimensions match the animation frame size.
-     * Logs a warning if dimensions don't match.
-     */
-    private static void validateMaskDimensions(ResourceManager resourceManager, ResourceLocation barTextureLocation, String maskTexturePath) {
-        try {
-            // Parse mask texture location
-            ResourceLocation maskLocation;
-            String[] parts = maskTexturePath.split(":");
-            if (parts.length == 2) {
-                #if NEWER_THAN_20_1
-                maskLocation = ResourceLocation.fromNamespaceAndPath(parts[0], parts[1]);
-                #else
-                maskLocation = new ResourceLocation(parts[0], parts[1]);
-                #endif
-            } else {
-                maskLocation = DynamicResourceBars.loc(maskTexturePath);
-            }
-            
-            // Load animation data to get frame dimensions (this auto-detects texture size)
-            AnimationData animData = loadAnimationData(resourceManager, barTextureLocation);
-            int expectedWidth = animData.textureWidth;
-            int expectedHeight = animData.frameHeight;
-            
-            // Load mask texture to check dimensions
-            Optional<Resource> maskResourceOpt = resourceManager.getResource(maskLocation);
-            if (maskResourceOpt.isEmpty()) {
-                DynamicResourceBars.LOGGER.warn("MASK VALIDATION: Mask texture not found: {}", maskTexturePath);
-                return;
-            }
-            
-            try (InputStream stream = maskResourceOpt.get().open()) {
-                NativeImage image = NativeImage.read(stream);
-                int maskWidth = image.getWidth();
-                int maskHeight = image.getHeight();
-                image.close();
-                
-                if (maskWidth != expectedWidth || maskHeight != expectedHeight) {
-                    DynamicResourceBars.LOGGER.warn(
-                        "MASK DIMENSION MISMATCH for {}: Mask is {}x{} but animation frame is {}x{}. " +
-                        "Mask should match the size of a single animation frame for best results.",
-                        barTextureLocation, maskWidth, maskHeight, expectedWidth, expectedHeight
-                    );
-                } else {
-                    DynamicResourceBars.LOGGER.debug("Mask dimensions validated for {}: {}x{}", barTextureLocation, maskWidth, maskHeight);
-                }
-            }
-        } catch (Exception e) {
-            DynamicResourceBars.LOGGER.debug("Could not validate mask dimensions for {}: {}", barTextureLocation, e.getMessage());
         }
     }
     
