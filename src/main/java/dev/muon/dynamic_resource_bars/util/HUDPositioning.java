@@ -22,6 +22,11 @@ public class HUDPositioning {
         public AnchorSide getSide() {
             return side;
         }
+        
+        public BarPlacement getNext() {
+            BarPlacement[] values = values();
+            return values[(ordinal() + 1) % values.length];
+        }
     }
 
     public enum AnchorSide {
