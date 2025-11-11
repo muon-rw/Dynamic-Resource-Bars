@@ -3,25 +3,16 @@ package dev.muon.dynamic_resource_bars.render;
 import com.mojang.blaze3d.systems.RenderSystem;
 import dev.muon.dynamic_resource_bars.DynamicResourceBars;
 import dev.muon.dynamic_resource_bars.config.ModConfigManager;
-import dev.muon.dynamic_resource_bars.util.HUDPositioning;
-import dev.muon.dynamic_resource_bars.util.ManaProvider;
-import dev.muon.dynamic_resource_bars.util.Position;
-import dev.muon.dynamic_resource_bars.util.RenderUtil;
+import dev.muon.dynamic_resource_bars.util.*;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.entity.player.Player;
 
 #if NEWER_THAN_20_1
     import net.minecraft.client.DeltaTracker;
 #endif
 
-import dev.muon.dynamic_resource_bars.util.EditModeManager;
-import dev.muon.dynamic_resource_bars.util.ScreenRect;
-import dev.muon.dynamic_resource_bars.util.TextBehavior;
-import dev.muon.dynamic_resource_bars.util.SubElementType;
-import dev.muon.dynamic_resource_bars.util.DraggableElement;
-import dev.muon.dynamic_resource_bars.util.HorizontalAlignment;
-import dev.muon.dynamic_resource_bars.util.FillDirection;
 import dev.muon.dynamic_resource_bars.config.ClientConfig;
 
 import java.util.ArrayList;
@@ -158,30 +149,37 @@ public class ManaBarRenderer {
 
         ScreenRect complexRect = getScreenRect(player);
 
-        int animationCycles = ModConfigManager.getClient().manaBarAnimationCycles;
-        int frameHeight = ModConfigManager.getClient().manaBarFrameHeight;
-        int animOffset = (int) (((player.tickCount + #if NEWER_THAN_20_1 deltaTracker.getGameTimeDeltaTicks() #else partialTicks #endif) / 3) % animationCycles) * frameHeight;
+        // Load animation data and mask info from .mcmeta
+        AnimationMetadata.AnimationData animData = AnimationMetadataCache.getManaBarAnimation();
+        AnimationMetadata.MaskInfo maskInfo = AnimationMetadataCache.getManaBarMask();
+        float ticks = player.tickCount + (#if NEWER_THAN_20_1 deltaTracker.getGameTimeDeltaTicks() #else partialTicks #endif);
+        int animOffset = AnimationMetadata.calculateAnimationOffset(animData, ticks);
         boolean isRightAnchored = ModConfigManager.getClient().manaBarAnchor.getSide() == HUDPositioning.AnchorSide.RIGHT;
 
         if (ModConfigManager.getClient().enableManaBackground) {
-             ScreenRect bgRect = getSubElementRect(SubElementType.BACKGROUND, player); 
-             graphics.blit(DynamicResourceBars.loc("textures/gui/mana_background.png"),
-                     bgRect.x(), bgRect.y(), 0, 0, bgRect.width(), bgRect.height(), 256, 256);
+             ScreenRect bgRect = getSubElementRect(SubElementType.BACKGROUND, player);
+             AnimationMetadata.ScalingInfo bgScaling = AnimationMetadataCache.getManaBackgroundScaling();
+             NineSliceRenderer.renderWithScaling(graphics, 
+                     DynamicResourceBars.loc("textures/gui/mana_background.png"),
+                     bgScaling,
+                     bgRect.x(), bgRect.y(), bgRect.width(), bgRect.height(), 256, 256);
         }
 
         ScreenRect barRect = getSubElementRect(SubElementType.BAR_MAIN, player);
-        renderManaBar(graphics, manaProvider, animOffset, barRect, isRightAnchored);
+        renderManaBar(graphics, manaProvider, animOffset, barRect, isRightAnchored, maskInfo, animData);
         
         // Render fading chunks after the main bar
-        renderFadingChunks(graphics, barRect, manaProvider, isRightAnchored, currentAlphaForRender);
+        renderFadingChunks(graphics, barRect, manaProvider, isRightAnchored, currentAlphaForRender, maskInfo, animData);
 
-        renderReservedOverlay(graphics, manaProvider, animOffset, barRect);
+        renderReservedOverlay(graphics, manaProvider, animOffset, barRect, maskInfo, animData);
 
         if (ModConfigManager.getClient().enableManaForeground) {
             ScreenRect fgRect = getSubElementRect(SubElementType.FOREGROUND_DETAIL, player);
-            graphics.blit(DynamicResourceBars.loc("textures/gui/mana_foreground.png"),
-                    fgRect.x(), fgRect.y(),
-                    0, 0, fgRect.width(), fgRect.height(), 256, 256);
+            AnimationMetadata.ScalingInfo fgScaling = AnimationMetadataCache.getManaForegroundScaling();
+            NineSliceRenderer.renderWithScaling(graphics,
+                    DynamicResourceBars.loc("textures/gui/mana_foreground.png"),
+                    fgScaling,
+                    fgRect.x(), fgRect.y(), fgRect.width(), fgRect.height(), 256, 256);
         }
 
         // Text Rendering
@@ -249,12 +247,15 @@ public class ManaBarRenderer {
     }
 
     private static void renderManaBar(GuiGraphics graphics, ManaProvider manaProvider,
-                                      int animOffset, ScreenRect barAreaRect, boolean isRightAnchored) {
+                                      int animOffset, ScreenRect barAreaRect, boolean isRightAnchored,
+                                      AnimationMetadata.MaskInfo maskInfo, AnimationMetadata.AnimationData animData) {
         float maxManaTotal = manaProvider.getMaxMana() * (1.0f + manaProvider.getReservedMana());
         if (maxManaTotal <= 0) maxManaTotal = 1;
         double currentMana = manaProvider.getCurrentMana();
         int totalBarWidth = barAreaRect.width();
         int barHeight = barAreaRect.height();
+        
+        ResourceLocation barTexture = DynamicResourceBars.loc("textures/gui/mana_bar.png");
 
         FillDirection fillDirection = ModConfigManager.getClient().manaFillDirection;
 
@@ -270,11 +271,12 @@ public class ManaBarRenderer {
             int textureVOffset = animOffset + (barHeight - filledHeight);
 
             if (filledHeight > 0) {
-                graphics.blit(DynamicResourceBars.loc("textures/gui/mana_bar.png"),
+                MaskRenderUtil.renderWithMask(
+                        graphics, barTexture, maskInfo,
                         barX, barY,
                         0, textureVOffset, // Use 0 for U, adjusted V for vertical fill
                         totalBarWidth, filledHeight, // Use full width, partial height
-                        256, 1024);
+                        animData.textureWidth, animData.textureHeight);
             }
         } else { // HORIZONTAL
             int filledWidth = (int) (totalBarWidth * (currentMana / maxManaTotal));
@@ -292,17 +294,19 @@ public class ManaBarRenderer {
             if (uTexOffset < 0) uTexOffset = 0; // Prevent negative texture offset
 
             if (filledWidth > 0) {
-                graphics.blit(DynamicResourceBars.loc("textures/gui/mana_bar.png"),
+                MaskRenderUtil.renderWithMask(
+                        graphics, barTexture, maskInfo,
                         barX, barY,
                         uTexOffset, animOffset, // Use calculated uTexOffset
                         filledWidth, barHeight,
-                        256, 1024); // Standard animated texture sheet size
+                        animData.textureWidth, animData.textureHeight);
             }
         }
     }
 
     private static void renderReservedOverlay(GuiGraphics graphics, ManaProvider manaProvider,
-                                              int animOffset, ScreenRect barAreaRect) {
+                                              int animOffset, ScreenRect barAreaRect, AnimationMetadata.MaskInfo maskInfo,
+                                              AnimationMetadata.AnimationData animData) {
         float reservedManaFraction = manaProvider.getReservedMana();
         if (reservedManaFraction <= 0) return;
 
@@ -325,12 +329,13 @@ public class ManaBarRenderer {
                 (RESERVED_MANA_COLOR & 0xFF) / 255f,
                 1.0f);
 
-        graphics.blit(
-                DynamicResourceBars.loc("textures/gui/mana_bar.png"),
+        ResourceLocation barTexture = DynamicResourceBars.loc("textures/gui/mana_bar.png");
+        MaskRenderUtil.renderWithMask(
+                graphics, barTexture, maskInfo,
                 reserveStartX, barAreaRect.y(),
                 0, animOffset,
                 reserveManaPixelWidth, barHeight,
-                256, 256
+                animData.textureWidth, animData.textureHeight
         );
 
         RenderSystem.setShaderColor(1.0f, 1.0f, 1.0f, 1.0f);
@@ -412,9 +417,10 @@ public class ManaBarRenderer {
         
         // Check if we need to create a new chunk
         if (previousMana > 0 && currentMana < previousMana && previousMaxMana == maxMana) {
-            int animationCycles = ModConfigManager.getClient().manaBarAnimationCycles;
-            int frameHeight = ModConfigManager.getClient().manaBarFrameHeight;
-            int animOffset = (int) (((player.tickCount + partialTicks) / 3) % animationCycles) * frameHeight;
+            // Load animation data from .mcmeta (or use config defaults)
+            AnimationMetadata.AnimationData animData = AnimationMetadataCache.getManaBarAnimation();
+            float ticks = player.tickCount + partialTicks;
+            int animOffset = AnimationMetadata.calculateAnimationOffset(animData, ticks);
             
             // Create chunk for the lost portion, clamping to 0 minimum
             double chunkStart = Math.max(0, currentMana);
@@ -427,13 +433,15 @@ public class ManaBarRenderer {
     }
     
     private static void renderFadingChunks(GuiGraphics graphics, ScreenRect barRect, ManaProvider manaProvider,
-                                          boolean isRightAnchored, float parentAlpha) {
+                                          boolean isRightAnchored, float parentAlpha, AnimationMetadata.MaskInfo maskInfo,
+                                          AnimationMetadata.AnimationData animData) {
         if (fadingChunks.isEmpty()) return;
         
         RenderSystem.enableBlend();
         RenderSystem.defaultBlendFunc();
         
         FillDirection fillDirection = ModConfigManager.getClient().manaFillDirection;
+        ResourceLocation barTexture = DynamicResourceBars.loc("textures/gui/mana_bar.png");
         
         // Account for reserved mana in calculations
         float maxManaTotal = manaProvider.getMaxMana() * (1.0f + manaProvider.getReservedMana());
@@ -459,12 +467,12 @@ public class ManaBarRenderer {
                     int yPos = barRect.y() + (barRect.height() - endHeight);
                     int textureVOffset = chunk.animOffset + (barRect.height() - endHeight);
                     
-                    graphics.blit(
-                        DynamicResourceBars.loc("textures/gui/mana_bar.png"),
+                    MaskRenderUtil.renderWithMask(
+                        graphics, barTexture, maskInfo,
                         barRect.x(), yPos,
                         0, textureVOffset,
                         barRect.width(), chunkHeight,
-                        256, 1024
+                        animData.textureWidth, animData.textureHeight
                     );
                 }
             } else { // HORIZONTAL
@@ -487,12 +495,12 @@ public class ManaBarRenderer {
                         uOffset = startWidth;
                     }
                     
-                    graphics.blit(
-                        DynamicResourceBars.loc("textures/gui/mana_bar.png"),
+                    MaskRenderUtil.renderWithMask(
+                        graphics, barTexture, maskInfo,
                         xPos, barRect.y(),
                         uOffset, chunk.animOffset,
                         chunkWidth, barRect.height(),
-                        256, 1024
+                        animData.textureWidth, animData.textureHeight
                     );
                 }
             }

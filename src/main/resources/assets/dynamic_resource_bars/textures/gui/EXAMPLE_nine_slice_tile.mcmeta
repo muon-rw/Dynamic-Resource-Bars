@@ -1,0 +1,15 @@
+{
+  "comment": "Example: Heat overlay with repeating pattern (tile mode)",
+  "dynamic_resource_bars": {
+    "scaling": {
+      "type": "nine_slice",
+      "left": 3,
+      "right": 3,
+      "top": 2,
+      "bottom": 2,
+      "edges": "tile",
+      "center": "tile"
+    }
+  }
+}
+

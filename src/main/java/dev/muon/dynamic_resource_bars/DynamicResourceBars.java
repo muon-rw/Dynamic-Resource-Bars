@@ -72,10 +72,12 @@ public class DynamicResourceBars #if FABRIC implements ClientModInitializer, Mod
     public DynamicResourceBars(#if NEO IEventBus modEventBus, ModContainer modContainer #elif FORGE FMLJavaModLoadingContext fmlContext #endif) {
         #if FORGE
             fmlContext.getModEventBus().addListener(this::clientSetup);
+            fmlContext.getModEventBus().addListener(this::registerReloadListeners);
             fmlContext.registerExtensionPoint(ConfigScreenHandler.ConfigScreenFactory.class,
                 () -> new ConfigScreenHandler.ConfigScreenFactory((mc, screen) -> new ModConfigScreen(screen)));
         #elif NEO
             modEventBus.addListener(this::clientSetup);
+            modEventBus.addListener(this::registerReloadListeners);
              modContainer.registerExtensionPoint(IConfigScreenFactory.class, 
                 (mc, screen) -> new ModConfigScreen(screen));
         #endif
@@ -94,8 +96,13 @@ public class DynamicResourceBars #if FABRIC implements ClientModInitializer, Mod
         ModConfigManager.initializeConfig();
         ManaProviderManager.initialize();
         StaminaProviderManager.initialize();
+        
+        // Register resource reload listener to refresh animation cache
+
         #if FABRIC
         ClientTickEvents.END_CLIENT_TICK.register(client -> TickHandler.onClientTick());
+        net.fabricmc.fabric.api.resource.ResourceManagerHelper.get(net.minecraft.server.packs.PackType.CLIENT_RESOURCES)
+            .registerReloadListener(new dev.muon.dynamic_resource_bars.util.AnimationCacheReloadListener());
         if (PlatformUtil.isModLoaded("appleskin")) {
             AppleSkinFabricEventHandler.init();
         }
@@ -119,6 +126,16 @@ public class DynamicResourceBars #if FABRIC implements ClientModInitializer, Mod
         NeoForge.EVENT_BUS.register(this);
         #endif
     }
+    
+    #if FORGE
+    public void registerReloadListeners(net.minecraftforge.client.event.RegisterClientReloadListenersEvent event) {
+        event.registerReloadListener(new dev.muon.dynamic_resource_bars.util.AnimationCacheReloadListener());
+    }
+    #elif NEO
+    public void registerReloadListeners(net.neoforged.neoforge.client.event.RegisterClientReloadListenersEvent event) {
+        event.registerReloadListener(new dev.muon.dynamic_resource_bars.util.AnimationCacheReloadListener());
+    }
+    #endif
 
     @SubscribeEvent
     #if FORGE

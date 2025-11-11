@@ -1,0 +1,20 @@
+{
+  "dynamic_resource_bars": {
+    "scaling": {
+      "type": "nine_slice",
+      "left": 3,
+      "right": 3,
+      "top": 3,
+      "bottom": 3,
+      "edges": "stretch",
+      "center": "stretch",
+      "source": {
+        "u": 0,
+        "v": 0,
+        "width": 80,
+        "height": 10
+      }
+    }
+  }
+}
+

@@ -4,19 +4,11 @@ import com.mojang.blaze3d.systems.RenderSystem;
 import dev.muon.dynamic_resource_bars.DynamicResourceBars;
 import dev.muon.dynamic_resource_bars.config.ModConfigManager;
 import dev.muon.dynamic_resource_bars.config.ClientConfig;
-import dev.muon.dynamic_resource_bars.util.BarRenderBehavior;
-import dev.muon.dynamic_resource_bars.util.HUDPositioning;
-import dev.muon.dynamic_resource_bars.util.Position;
-import dev.muon.dynamic_resource_bars.util.RenderUtil;
-import dev.muon.dynamic_resource_bars.util.ScreenRect;
+import dev.muon.dynamic_resource_bars.util.*;
 import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.entity.player.Player;
-import dev.muon.dynamic_resource_bars.util.SubElementType;
-import dev.muon.dynamic_resource_bars.util.EditModeManager;
-import dev.muon.dynamic_resource_bars.util.HorizontalAlignment;
-import dev.muon.dynamic_resource_bars.util.TextBehavior;
 import net.minecraft.client.Minecraft;
-import dev.muon.dynamic_resource_bars.util.FillDirection;
 
 #if NEWER_THAN_20_1
 import net.minecraft.client.DeltaTracker;
@@ -173,9 +165,9 @@ public class AirBarRenderer {
         int barOnlyYOffset = config.airBarYOffset;
         int iconSize = config.airIconSize;
 
-        // Animation config
-        int animationCycles = config.airBarAnimationCycles;
-        int frameHeightForAnim = config.airBarFrameHeight; // This is the V-offset step in texture per animation cycle
+        // Load animation data and mask info from .mcmeta
+        AnimationMetadata.AnimationData animData = AnimationMetadataCache.getAirBarAnimation();
+        AnimationMetadata.MaskInfo maskInfo = AnimationMetadataCache.getAirBarMask();
         FillDirection fillDirection = config.airFillDirection;
 
         int xPos = airPos.x();
@@ -183,16 +175,19 @@ public class AirBarRenderer {
 
         // Calculate animation offset
         float ticks = player.tickCount + (#if NEWER_THAN_20_1 deltaTracker.getGameTimeDeltaTicks() #else partialTicks #endif);
-        int animOffset = (int) ((ticks / 3) % animationCycles) * frameHeightForAnim;
+        int animOffset = AnimationMetadata.calculateAnimationOffset(animData, ticks);
 
-        graphics.blit(
+        AnimationMetadata.ScalingInfo bgScaling = AnimationMetadataCache.getAirBackgroundScaling();
+        NineSliceRenderer.renderWithScaling(graphics,
                 DynamicResourceBars.loc("textures/gui/air_background.png"),
-                xPos + config.airBackgroundXOffset, 
-                yPos + config.airBackgroundYOffset, 
-                0, 0, backgroundWidth, backgroundHeight, 256, 256
+                bgScaling,
+                xPos + config.airBackgroundXOffset,
+                yPos + config.airBackgroundYOffset,
+                backgroundWidth, backgroundHeight, 256, 256
         );
 
         float airPercent = (maxAir == 0) ? 0.0f : Math.min(1.0f, (float) currentAir / maxAir);
+        ResourceLocation airBarTexture = DynamicResourceBars.loc("textures/gui/air_bar.png");
 
         if (fillDirection == FillDirection.VERTICAL) {
             int filledHeight = Math.round(barHeight * airPercent);
@@ -205,12 +200,12 @@ public class AirBarRenderer {
                 // and step through the animation strip.
                 int textureVOffset = animOffset + (barHeight - filledHeight);
 
-                graphics.blit(
-                        DynamicResourceBars.loc("textures/gui/air_bar.png"),
+                MaskRenderUtil.renderWithMask(
+                        graphics, airBarTexture, maskInfo,
                         barRenderX, barRenderY,
                         0, textureVOffset,       // uOffset, vOffset
                         barWidth, filledHeight,   // imageWidth, imageHeight (drawn size)
-                        256, 1024                // textureSheetWidth, textureSheetHeight
+                        animData.textureWidth, animData.textureHeight
                 );
             }
         } else { // HORIZONTAL
@@ -229,12 +224,12 @@ public class AirBarRenderer {
                     uTexOffset = 0; // Sample the left part of the texture
                 }
 
-                graphics.blit(
-                        DynamicResourceBars.loc("textures/gui/air_bar.png"),
+                MaskRenderUtil.renderWithMask(
+                        graphics, airBarTexture, maskInfo,
                         barRenderX, yPos + barOnlyYOffset,
                         uTexOffset, animOffset,     // uOffset, vOffset (animOffset is the start of the current animation frame)
                         filledWidth, barHeight,     // imageWidth, imageHeight (drawn size)
-                        256, 1024                  // textureSheetWidth, textureSheetHeight
+                        animData.textureWidth, animData.textureHeight
                 );
             }
         }

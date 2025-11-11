@@ -1,0 +1,15 @@
+{
+  "comment": "Example: Background with smooth borders (stretch mode)",
+  "dynamic_resource_bars": {
+    "scaling": {
+      "type": "nine_slice",
+      "left": 4,
+      "right": 4,
+      "top": 3,
+      "bottom": 3,
+      "edges": "stretch",
+      "center": "stretch"
+    }
+  }
+}
+

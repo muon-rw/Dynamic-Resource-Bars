@@ -1,0 +1,10 @@
+{
+  "dynamic_resource_bars": {
+    "scaling": "stretch",
+    "source": {
+      "width": 80,
+      "height": 10
+    }
+  }
+}
+

@@ -47,13 +47,6 @@ public abstract class GuiMixin {
     @Final
     private Minecraft minecraft;
 
-    @Unique
-    private DeltaTracker medieval$currentDeltaTracker;
-
-    @Inject(method = "render", at = @At("HEAD"))
-    private void captureDeltaTracker(GuiGraphics guiGraphics, DeltaTracker deltaTracker, CallbackInfo ci) {
-        this.medieval$currentDeltaTracker = deltaTracker;
-    }
 
     @ModifyArg(
             method = "renderArmor",

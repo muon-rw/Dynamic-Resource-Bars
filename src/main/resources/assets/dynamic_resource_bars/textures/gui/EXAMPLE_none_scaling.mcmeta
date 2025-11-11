@@ -1,0 +1,11 @@
+{
+  "comment": "Example: No scaling - 1:1 UV sampling (old behavior)",
+  "dynamic_resource_bars": {
+    "scaling": "none",
+    "source": {
+      "width": 80,
+      "height": 10
+    }
+  }
+}
+

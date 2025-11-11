@@ -54,8 +54,6 @@ public class ClientConfig {
     public static final int DEFAULT_HEALTH_BACKGROUND_HEIGHT = 10;
     public static final int DEFAULT_HEALTH_BAR_WIDTH = 74;
     public static final int DEFAULT_HEALTH_BAR_HEIGHT = 4;
-    public static final int DEFAULT_HEALTH_BAR_ANIMATION_CYCLES = 32;
-    public static final int DEFAULT_HEALTH_BAR_FRAME_HEIGHT = 32;
     public static final int DEFAULT_HEALTH_OVERLAY_WIDTH = 80;
     public static final int DEFAULT_HEALTH_OVERLAY_HEIGHT = 10;
     public static final int DEFAULT_HEALTH_BAR_X_OFFSET = 3;
@@ -86,8 +84,6 @@ public class ClientConfig {
     public int healthBackgroundHeight;
     public int healthBarWidth;
     public int healthBarHeight;
-    public int healthBarAnimationCycles;
-    public int healthBarFrameHeight;
     public int healthOverlayWidth;
     public int healthOverlayHeight;
     public int healthBarXOffset;
@@ -122,8 +118,6 @@ public class ClientConfig {
     public static final int DEFAULT_STAMINA_BACKGROUND_HEIGHT = 10;
     public static final int DEFAULT_STAMINA_BAR_WIDTH = 74;
     public static final int DEFAULT_STAMINA_BAR_HEIGHT = 4;
-    public static final int DEFAULT_STAMINA_BAR_ANIMATION_CYCLES = 32;
-    public static final int DEFAULT_STAMINA_BAR_FRAME_HEIGHT = 32;
     public static final int DEFAULT_STAMINA_OVERLAY_WIDTH = 80;
     public static final int DEFAULT_STAMINA_OVERLAY_HEIGHT = 10;
     public static final int DEFAULT_STAMINA_OVERLAY_X_OFFSET = 0;
@@ -154,8 +148,6 @@ public class ClientConfig {
     public int staminaBackgroundHeight;
     public int staminaBarWidth;
     public int staminaBarHeight;
-    public int staminaBarAnimationCycles;
-    public int staminaBarFrameHeight;
     public int staminaOverlayWidth;
     public int staminaOverlayHeight;
     public int staminaOverlayXOffset;
@@ -191,8 +183,6 @@ public class ClientConfig {
     public static final int DEFAULT_MANA_BAR_Y_OFFSET = 3;
     public static final int DEFAULT_MANA_BAR_WIDTH = 74;
     public static final int DEFAULT_MANA_BAR_HEIGHT = 4;
-    public static final int DEFAULT_MANA_BAR_FRAME_HEIGHT = 32;
-    public static final int DEFAULT_MANA_BAR_ANIMATION_CYCLES = 32;
     public static final int DEFAULT_MANA_OVERLAY_X_OFFSET = 0;
     public static final int DEFAULT_MANA_OVERLAY_Y_OFFSET = -3;
     public static final int DEFAULT_MANA_OVERLAY_WIDTH = 81;
@@ -212,8 +202,6 @@ public class ClientConfig {
     public int manaBackgroundHeight;
     public int manaBarWidth;
     public int manaBarHeight;
-    public int manaBarAnimationCycles;
-    public int manaBarFrameHeight;
     public int manaOverlayWidth;
     public int manaOverlayHeight;
     public int manaBarXOffset;
@@ -311,8 +299,6 @@ public class ClientConfig {
     public static final HorizontalAlignment DEFAULT_AIR_TEXT_ALIGN = HorizontalAlignment.CENTER;
     public static final int DEFAULT_AIR_BACKGROUND_X_OFFSET = 0;
     public static final int DEFAULT_AIR_BACKGROUND_Y_OFFSET = 0;
-    public static final int DEFAULT_AIR_BAR_ANIMATION_CYCLES = 32;
-    public static final int DEFAULT_AIR_BAR_FRAME_HEIGHT = 32;
     public static final FillDirection DEFAULT_AIR_FILL_DIRECTION = FillDirection.HORIZONTAL;
 
     public BarRenderBehavior airBarBehavior;
@@ -338,8 +324,6 @@ public class ClientConfig {
     public HorizontalAlignment airTextAlign;
     public int airBackgroundXOffset;
     public int airBackgroundYOffset;
-    public int airBarAnimationCycles;
-    public int airBarFrameHeight;
     public FillDirection airFillDirection;
 
     private static transient ClientConfig instance; // Marked transient so GSON doesn't try to save it
@@ -363,8 +347,6 @@ public class ClientConfig {
         this.healthBackgroundHeight = DEFAULT_HEALTH_BACKGROUND_HEIGHT;
         this.healthBarWidth = DEFAULT_HEALTH_BAR_WIDTH;
         this.healthBarHeight = DEFAULT_HEALTH_BAR_HEIGHT;
-        this.healthBarAnimationCycles = DEFAULT_HEALTH_BAR_ANIMATION_CYCLES;
-        this.healthBarFrameHeight = DEFAULT_HEALTH_BAR_FRAME_HEIGHT;
         this.healthOverlayWidth = DEFAULT_HEALTH_OVERLAY_WIDTH;
         this.healthOverlayHeight = DEFAULT_HEALTH_OVERLAY_HEIGHT;
         this.healthBarXOffset = DEFAULT_HEALTH_BAR_X_OFFSET;
@@ -397,8 +379,6 @@ public class ClientConfig {
         this.staminaBackgroundHeight = DEFAULT_STAMINA_BACKGROUND_HEIGHT;
         this.staminaBarWidth = DEFAULT_STAMINA_BAR_WIDTH;
         this.staminaBarHeight = DEFAULT_STAMINA_BAR_HEIGHT;
-        this.staminaBarAnimationCycles = DEFAULT_STAMINA_BAR_ANIMATION_CYCLES;
-        this.staminaBarFrameHeight = DEFAULT_STAMINA_BAR_FRAME_HEIGHT;
         this.staminaOverlayWidth = DEFAULT_STAMINA_OVERLAY_WIDTH;
         this.staminaOverlayHeight = DEFAULT_STAMINA_OVERLAY_HEIGHT;
         this.staminaOverlayXOffset = DEFAULT_STAMINA_OVERLAY_X_OFFSET;
@@ -427,8 +407,6 @@ public class ClientConfig {
         this.manaBackgroundHeight = DEFAULT_MANA_BACKGROUND_HEIGHT;
         this.manaBarWidth = DEFAULT_MANA_BAR_WIDTH;
         this.manaBarHeight = DEFAULT_MANA_BAR_HEIGHT;
-        this.manaBarAnimationCycles = DEFAULT_MANA_BAR_ANIMATION_CYCLES;
-        this.manaBarFrameHeight = DEFAULT_MANA_BAR_FRAME_HEIGHT;
         this.manaOverlayWidth = DEFAULT_MANA_OVERLAY_WIDTH;
         this.manaOverlayHeight = DEFAULT_MANA_OVERLAY_HEIGHT;
         this.manaBarXOffset = DEFAULT_MANA_BAR_X_OFFSET;
@@ -496,8 +474,6 @@ public class ClientConfig {
         this.airTextAlign = DEFAULT_AIR_TEXT_ALIGN;
         this.airBackgroundXOffset = DEFAULT_AIR_BACKGROUND_X_OFFSET;
         this.airBackgroundYOffset = DEFAULT_AIR_BACKGROUND_Y_OFFSET;
-        this.airBarAnimationCycles = DEFAULT_AIR_BAR_ANIMATION_CYCLES;
-        this.airBarFrameHeight = DEFAULT_AIR_BAR_FRAME_HEIGHT;
         this.airFillDirection = DEFAULT_AIR_FILL_DIRECTION;
     }
 

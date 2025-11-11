@@ -48,3 +48,5 @@ hs_err_*.log
 replay_*.log
 *.hprof
 *.jfr
+/IMPLEMENTATION_STATUS.md
+/TODO.md

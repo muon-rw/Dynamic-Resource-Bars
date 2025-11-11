@@ -7,6 +7,7 @@ import dev.muon.dynamic_resource_bars.config.ModConfigManager;
 import dev.muon.dynamic_resource_bars.util.*;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.effect.MobEffects;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.player.Player;
@@ -155,33 +156,37 @@ public class StaminaBarRenderer {
 
         ScreenRect complexRect = getScreenRect(player);
 
-        int animationCycles = ModConfigManager.getClient().staminaBarAnimationCycles;
-        int frameHeight = ModConfigManager.getClient().staminaBarFrameHeight;
-        int animOffset = (int) (((player.tickCount + #if NEWER_THAN_20_1 deltaTracker.getGameTimeDeltaTicks() #else partialTicks #endif ) / 3) % animationCycles) * frameHeight;
+        // Load animation data and mask info from .mcmeta
+        AnimationMetadata.AnimationData animData = AnimationMetadataCache.getStaminaBarAnimation();
+        AnimationMetadata.MaskInfo maskInfo = AnimationMetadataCache.getStaminaBarMask();
+        float ticks = player.tickCount + (#if NEWER_THAN_20_1 deltaTracker.getGameTimeDeltaTicks() #else partialTicks #endif);
+        int animOffset = AnimationMetadata.calculateAnimationOffset(animData, ticks);
         boolean isRightAnchored = ModConfigManager.getClient().staminaBarAnchor.getSide() == HUDPositioning.AnchorSide.RIGHT;
 
         if (ModConfigManager.getClient().enableStaminaBackground) {
             ScreenRect bgRect = getSubElementRect(SubElementType.BACKGROUND, player);
-            graphics.blit(
+            AnimationMetadata.ScalingInfo bgScaling = AnimationMetadataCache.getStaminaBackgroundScaling();
+            NineSliceRenderer.renderWithScaling(graphics,
                     DynamicResourceBars.loc("textures/gui/stamina_background.png"),
-                    bgRect.x(), bgRect.y(), 0, 0, bgRect.width(), bgRect.height(), 256, 256
+                    bgScaling,
+                    bgRect.x(), bgRect.y(), bgRect.width(), bgRect.height(), 256, 256
             );
         }
 
         ScreenRect barRect = getSubElementRect(SubElementType.BAR_MAIN, player);
         renderBaseBar(graphics, player, values, staminaProvider,
                 barRect,
-                animOffset, isRightAnchored);
+                animOffset, isRightAnchored, maskInfo, animData);
         
         // Render fading chunks after the main bar
-        renderFadingChunks(graphics, barRect, values, isRightAnchored, currentAlphaForRender);
+        renderFadingChunks(graphics, barRect, values, isRightAnchored, currentAlphaForRender, maskInfo, animData);
 
         // Show overlays only if the provider supports them and we're not showing mount health
         if (staminaProvider.shouldShowOverlays() && !values.isMounted) {
             if (PlatformUtil.isModLoaded("appleskin")) {
                 ItemStack heldFood = getHeldFood(player);
-                renderHungerRestoredOverlay(graphics, player, heldFood, barRect, #if NEWER_THAN_20_1 deltaTracker.getGameTimeDeltaTicks() #else partialTicks #endif , animOffset, isRightAnchored);
-                renderSaturationOverlay(graphics, player, barRect, animOffset, isRightAnchored);
+                renderHungerRestoredOverlay(graphics, player, heldFood, barRect, #if NEWER_THAN_20_1 deltaTracker.getGameTimeDeltaTicks() #else partialTicks #endif , animOffset, isRightAnchored, maskInfo, animData);
+                renderSaturationOverlay(graphics, player, barRect, animOffset, isRightAnchored, maskInfo, animData);
             }
 
             if (PlatformUtil.isModLoaded("farmersdelight") && hasNourishmentEffect(player)) {
@@ -190,10 +195,12 @@ public class StaminaBarRenderer {
                 float pulseAlpha = TickHandler.getOverlayFlashAlpha();
                 RenderSystem.setShaderColor(1.0f, 1.0f, 1.0f, pulseAlpha);
 
-                graphics.blit(
+                AnimationMetadata.ScalingInfo nourishmentScaling = AnimationMetadataCache.getNourishmentOverlayScaling();
+                NineSliceRenderer.renderWithScaling(graphics,
                         DynamicResourceBars.loc("textures/gui/nourishment_overlay.png"),
+                        nourishmentScaling,
                         barRect.x(), barRect.y(),
-                        0, 0, barRect.width(), barRect.height(),
+                        barRect.width(), barRect.height(),
                         256, 256
                 );
                 RenderSystem.setShaderColor(1.0f, 1.0f, 1.0f, 1.0f);
@@ -203,10 +210,11 @@ public class StaminaBarRenderer {
 
         if (ModConfigManager.getClient().enableStaminaForeground) {
             ScreenRect fgRect = getSubElementRect(SubElementType.FOREGROUND_DETAIL, player);
-            graphics.blit(
+            AnimationMetadata.ScalingInfo fgScaling = AnimationMetadataCache.getStaminaForegroundScaling();
+            NineSliceRenderer.renderWithScaling(graphics,
                     DynamicResourceBars.loc("textures/gui/stamina_foreground.png"),
-                    fgRect.x(), fgRect.y(),
-                    0, 0, fgRect.width(), fgRect.height(),
+                    fgScaling,
+                    fgRect.x(), fgRect.y(), fgRect.width(), fgRect.height(),
                     256, 256
             );
         }
@@ -282,9 +290,10 @@ public class StaminaBarRenderer {
                 texture = provider.getBarTexture(player, values.current);
             }
             
-            int animationCycles = ModConfigManager.getClient().staminaBarAnimationCycles;
-            int frameHeight = ModConfigManager.getClient().staminaBarFrameHeight;
-            int animOffset = (int) (((player.tickCount + partialTicks) / 3) % animationCycles) * frameHeight;
+            // Load animation data (all stamina bar variants share the same animation properties)
+            AnimationMetadata.AnimationData animData = AnimationMetadataCache.getStaminaBarAnimation();
+            float ticks = player.tickCount + partialTicks;
+            int animOffset = AnimationMetadata.calculateAnimationOffset(animData, ticks);
             
             // Create chunk for the lost portion, clamping to 0 minimum
             float chunkStart = Math.max(0, values.current);
@@ -297,8 +306,9 @@ public class StaminaBarRenderer {
         wasMounted = values.isMounted;
     }
     
-    private static void renderFadingChunks(GuiGraphics graphics, ScreenRect barRect, BarValues currentValues, 
-                                          boolean isRightAnchored, float parentAlpha) {
+    private static void renderFadingChunks(GuiGraphics graphics, ScreenRect barRect, BarValues currentValues,
+                                          boolean isRightAnchored, float parentAlpha, AnimationMetadata.MaskInfo maskInfo,
+                                          AnimationMetadata.AnimationData animData) {
         if (fadingChunks.isEmpty()) return;
         
         RenderSystem.enableBlend();
@@ -315,6 +325,8 @@ public class StaminaBarRenderer {
             
             RenderSystem.setShaderColor(1.0f, 1.0f, 1.0f, alpha);
             
+            ResourceLocation chunkTexture = DynamicResourceBars.loc("textures/gui/" + chunk.texture + ".png");
+            
             if (fillDirection == FillDirection.VERTICAL) {
                 // Calculate heights for the chunk
                 float startRatio = chunk.startValue / chunk.maxValue;
@@ -327,12 +339,12 @@ public class StaminaBarRenderer {
                     int yPos = barRect.y() + (barRect.height() - endHeight);
                     int textureVOffset = chunk.animOffset + (barRect.height() - endHeight);
                     
-                    graphics.blit(
-                        DynamicResourceBars.loc("textures/gui/" + chunk.texture + ".png"),
+                    MaskRenderUtil.renderWithMask(
+                        graphics, chunkTexture, maskInfo,
                         barRect.x(), yPos,
                         0, textureVOffset,
                         barRect.width(), chunkHeight,
-                        256, 1024
+                        animData.textureWidth, animData.textureHeight
                     );
                 }
             } else { // HORIZONTAL
@@ -355,12 +367,12 @@ public class StaminaBarRenderer {
                         uOffset = startWidth;
                     }
                     
-                    graphics.blit(
-                        DynamicResourceBars.loc("textures/gui/" + chunk.texture + ".png"),
+                    MaskRenderUtil.renderWithMask(
+                        graphics, chunkTexture, maskInfo,
                         xPos, barRect.y(),
                         uOffset, chunk.animOffset,
                         chunkWidth, barRect.height(),
-                        256, 1024
+                        animData.textureWidth, animData.textureHeight
                     );
                 }
             }
@@ -405,20 +417,23 @@ public class StaminaBarRenderer {
 
     private static void renderBaseBar(GuiGraphics graphics, Player player, BarValues values, StaminaProvider provider,
                                       ScreenRect barAreaRect,
-                                      int animOffset, boolean isRightAnchored) {
-        String barTexture;
+                                      int animOffset, boolean isRightAnchored, AnimationMetadata.MaskInfo maskInfo,
+                                      AnimationMetadata.AnimationData animData) {
+        String barTextureStr;
         if (values.isMounted) {
             // Mount health uses special textures
             float healthPercentage = values.current / values.max;
             if (healthPercentage <= 0.2f) {
-                barTexture = "stamina_bar_critical";
+                barTextureStr = "stamina_bar_critical";
             } else {
-                barTexture = "stamina_bar_mounted";
+                barTextureStr = "stamina_bar_mounted";
             }
         } else {
             // Use provider's texture
-            barTexture = provider.getBarTexture(player, values.current);
+            barTextureStr = provider.getBarTexture(player, values.current);
         }
+        
+        ResourceLocation barTexture = DynamicResourceBars.loc("textures/gui/" + barTextureStr + ".png");
         
         int totalBarWidth = barAreaRect.width();
         int barHeight = barAreaRect.height();
@@ -437,12 +452,12 @@ public class StaminaBarRenderer {
             int textureVOffset = animOffset + (barHeight - partialBarHeight);
 
             if (partialBarHeight > 0) {
-                graphics.blit(
-                        DynamicResourceBars.loc("textures/gui/" + barTexture + ".png"),
+                MaskRenderUtil.renderWithMask(
+                        graphics, barTexture, maskInfo,
                         barX, barY,
                         0, textureVOffset, // Use 0 for U, adjusted V for vertical fill
                         totalBarWidth, partialBarHeight, // Use full width, partial height
-                        256, 1024
+                        animData.textureWidth, animData.textureHeight
                 );
             }
         } else { // HORIZONTAL
@@ -461,12 +476,12 @@ public class StaminaBarRenderer {
             if (uTexOffset < 0) uTexOffset = 0; // Prevent negative texture offset
 
             if (partialBarWidth > 0) {
-                graphics.blit(
-                        DynamicResourceBars.loc("textures/gui/" + barTexture + ".png"),
+                MaskRenderUtil.renderWithMask(
+                        graphics, barTexture, maskInfo,
                         barRenderX, barRenderY,
                         uTexOffset, animOffset, // Use calculated uTexOffset
                         partialBarWidth, barHeight,
-                        256, 1024
+                        animData.textureWidth, animData.textureHeight
                 );
             }
         }
@@ -580,7 +595,7 @@ public class StaminaBarRenderer {
         return Math.max(0.0f, 1.0f - (timeSinceDisabled / (float) RenderUtil.BAR_FADEOUT_DURATION));
     }
 
-    private static void renderSaturationOverlay(GuiGraphics graphics, Player player, ScreenRect barRect, int animOffset, boolean isRightAnchored) {
+    private static void renderSaturationOverlay(GuiGraphics graphics, Player player, ScreenRect barRect, int animOffset, boolean isRightAnchored, AnimationMetadata.MaskInfo maskInfo, AnimationMetadata.AnimationData animData) {
         if (!PlatformUtil.isModLoaded("appleskin")) {
             return;
         }
@@ -597,17 +612,19 @@ public class StaminaBarRenderer {
         // Use pulsing opacity instead of frame animation
         float pulseAlpha = 0.5f + (TickHandler.getOverlayFlashAlpha() * 0.5f); // Range from 0.5 to 1.0
         RenderSystem.setShaderColor(1.0f, 1.0f, 1.0f, pulseAlpha);
+        
+        ResourceLocation overlayTexture = DynamicResourceBars.loc("textures/gui/protection_overlay.png");
 
         if (fillDirection == FillDirection.VERTICAL) {
             int overlayHeight = (int) (barRect.height() * saturationPercent);
             if (overlayHeight > 0) {
-                graphics.blit(
-                        DynamicResourceBars.loc("textures/gui/protection_overlay.png"), // Placeholder texture
+                MaskRenderUtil.renderWithMask(
+                        graphics, overlayTexture, maskInfo,
                         barRect.x(),
                         barRect.y() + (barRect.height() - overlayHeight),
                         0, 0,
                         barRect.width(), overlayHeight,
-                        256, 256
+                        animData.textureWidth, animData.textureHeight
                 );
             }
         } else { // HORIZONTAL
@@ -624,12 +641,12 @@ public class StaminaBarRenderer {
                 }
                 if (uTexOffset < 0) uTexOffset = 0;
 
-                graphics.blit(
-                        DynamicResourceBars.loc("textures/gui/protection_overlay.png"), // Placeholder texture
+                MaskRenderUtil.renderWithMask(
+                        graphics, overlayTexture, maskInfo,
                         xPos, barRect.y(),
                         uTexOffset, 0, // Use calculated uTexOffset, vOffset usually 0 for horizontal overlays unless animated differently
                         overlayWidth, barRect.height(),
-                        256, 256
+                        animData.textureWidth, animData.textureHeight
                 );
             }
         }
@@ -639,7 +656,7 @@ public class StaminaBarRenderer {
     }
 
     private static void renderHungerRestoredOverlay(GuiGraphics graphics, Player player, ItemStack heldFood,
-                                                    ScreenRect barRect, float partialTicks, int animOffset, boolean isRightAnchored) {
+                                                    ScreenRect barRect, float partialTicks, int animOffset, boolean isRightAnchored, AnimationMetadata.MaskInfo maskInfo, AnimationMetadata.AnimationData animData) {
         if (!PlatformUtil.isModLoaded("appleskin")) {
             return;
         }
@@ -665,12 +682,14 @@ public class StaminaBarRenderer {
         // Get the texture that would apply at the restored hunger level
         // We need to get the food provider specifically since this is a food overlay
         StaminaProvider provider = StaminaProviderManager.getCurrentProvider();
-        String barTexture = "stamina_bar"; // default
+        String barTextureStr = "stamina_bar"; // default
         
         // Only use the provider's texture if it's the food provider
         if (provider instanceof dev.muon.dynamic_resource_bars.compat.FoodStaminaProvider) {
-            barTexture = provider.getBarTexture(player, restoredHunger);
+            barTextureStr = provider.getBarTexture(player, restoredHunger);
         }
+        
+        ResourceLocation barTexture = DynamicResourceBars.loc("textures/gui/" + barTextureStr + ".png");
 
         if (fillDirection == FillDirection.VERTICAL) {
             int currentHeight = (int) (barRect.height() * (currentHunger / 20f));
@@ -681,12 +700,12 @@ public class StaminaBarRenderer {
                 int yPos = barRect.y() + (barRect.height() - restoredHeight);
                 int textureVOffset = animOffset + (barRect.height() - restoredHeight);
 
-                graphics.blit(
-                        DynamicResourceBars.loc("textures/gui/" + barTexture + ".png"),
+                MaskRenderUtil.renderWithMask(
+                        graphics, barTexture, maskInfo,
                         barRect.x(), yPos,
                         0, textureVOffset,
                         barRect.width(), overlayHeight,
-                        256, 1024
+                        animData.textureWidth, animData.textureHeight
                 );
             }
         } else { // HORIZONTAL
@@ -707,12 +726,12 @@ public class StaminaBarRenderer {
                 }
                 if (uTexOffset < 0) uTexOffset = 0;
 
-                graphics.blit(
-                        DynamicResourceBars.loc("textures/gui/" + barTexture + ".png"),
+                MaskRenderUtil.renderWithMask(
+                        graphics, barTexture, maskInfo,
                         xDrawPos, barRect.y(),
                         uTexOffset, animOffset, // Use the calculated uTexOffset
                         overlayWidth, barRect.height(),
-                        256, 1024
+                        animData.textureWidth, animData.textureHeight
                 );
             }
         }

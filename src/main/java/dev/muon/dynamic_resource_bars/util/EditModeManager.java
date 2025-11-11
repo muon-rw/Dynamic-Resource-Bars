@@ -20,6 +20,11 @@ public class EditModeManager {
     private static int initialSubElementXOffset = 0; // The sub-element's specific X offset config (e.g., barXOffset)
     private static int initialSubElementYOffset = 0; // The sub-element's specific Y offset config (e.g., barYOffset)
 
+    // For keyboard navigation
+    private static DraggableElement keyboardSelectedElement = null; // Selected element for keyboard control in non-focus mode
+    private static SubElementType keyboardSelectedSubElement = null; // Selected sub-element for keyboard control in focus mode
+
+    // TODO: we can probably use lombok for most of these helpers
     public static boolean isEditModeEnabled() {
         return editModeEnabled;
     }
@@ -29,11 +34,15 @@ public class EditModeManager {
         if (!editModeEnabled) {
             clearDraggedElement(); 
             clearFocusedElement(); // Also clear focus when exiting edit mode
+            clearKeyboardSelectedElement();
+            clearKeyboardSelectedSubElement();
             // No explicit save call needed here; ModConfigSpec handles it.
         } else {
             // On entering edit mode, ensure states are clean
             clearDraggedElement();
             clearFocusedElement();
+            clearKeyboardSelectedElement();
+            clearKeyboardSelectedSubElement();
         }
         DynamicResourceBars.LOGGER.debug("Edit Mode toggled: {}", editModeEnabled ? "Enabled" : "Disabled");
     }
@@ -69,11 +78,14 @@ public class EditModeManager {
         focusedElement = element;
         clearDraggedElement(); // Can't drag whole bar when one is focused for sub-editing
         clearDraggedSubElement(); // Clear any previous sub-element drag
+        clearKeyboardSelectedElement(); // Clear element-level keyboard selection when entering focus mode
+        clearKeyboardSelectedSubElement(); // Clear any previous sub-element selection
         DynamicResourceBars.LOGGER.debug("Focused element set to: {}", element);
     }
     public static void clearFocusedElement() {
         focusedElement = null;
         clearDraggedSubElement(); // If focus is cleared, sub-element drag is also cleared
+        clearKeyboardSelectedSubElement(); // Clear sub-element keyboard selection when leaving focus mode
         DynamicResourceBars.LOGGER.debug("Focused element cleared.");
     }
 
@@ -96,4 +108,33 @@ public class EditModeManager {
     public static int getSubElementDragStartY() { return subElementDragStartY; }
     public static int getInitialSubElementXOffset() { return initialSubElementXOffset; }
     public static int getInitialSubElementYOffset() { return initialSubElementYOffset; }
+
+    // --- Keyboard Selection ---
+    public static DraggableElement getKeyboardSelectedElement() {
+        return keyboardSelectedElement;
+    }
+    
+    public static void setKeyboardSelectedElement(DraggableElement element) {
+        if (!editModeEnabled) return;
+        keyboardSelectedElement = element;
+        DynamicResourceBars.LOGGER.debug("Keyboard selected element: {}", element);
+    }
+    
+    public static void clearKeyboardSelectedElement() {
+        keyboardSelectedElement = null;
+    }
+    
+    public static SubElementType getKeyboardSelectedSubElement() {
+        return keyboardSelectedSubElement;
+    }
+    
+    public static void setKeyboardSelectedSubElement(SubElementType subElement) {
+        if (!editModeEnabled || focusedElement == null) return;
+        keyboardSelectedSubElement = subElement;
+        DynamicResourceBars.LOGGER.debug("Keyboard selected sub-element: {} of bar: {}", subElement, focusedElement);
+    }
+    
+    public static void clearKeyboardSelectedSubElement() {
+        keyboardSelectedSubElement = null;
+    }
 } 

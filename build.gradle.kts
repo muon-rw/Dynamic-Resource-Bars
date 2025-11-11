@@ -40,15 +40,15 @@ blahaj {
 		// Integrations
 		// TODO: Mana: Ars Nouveau, Iron's Spellbooks, RPGMana, Mana Attributes, Archon?
 		// Frostiful, Scorchful
-		if (project.hasProperty("thermoo")) { deps.modImplementation("maven.modrinth:thermoo:${property("thermoo")}-$mc") }
+		if (project.hasProperty("thermoo")) { deps.modCompileOnly("maven.modrinth:thermoo:${property("thermoo")}-$mc") }
 
 		// Appleskin
 		if (project.hasProperty("clothconfig")) { deps.modRuntimeOnly("me.shedaniel.cloth:cloth-config-$loader:${property("clothconfig")}") }
-		deps.modImplementation("squeek.appleskin:appleskin-$loader:${property("appleskin")}")
+		deps.modCompileOnly("squeek.appleskin:appleskin-$loader:${property("appleskin")}")
 
 		// Farmer's Delight
-		if (project.hasProperty("farmersdelight_forge")) { deps.modImplementation("maven.modrinth:farmers-delight:$mc-${property("farmersdelight_forge")}-$loader") }
-		if (project.hasProperty("farmersdelight_fabric")) { deps.modImplementation("vectorwing:FarmersDelight:$mc-${property("farmersdelight_fabric")}+refabricated") }
+		if (project.hasProperty("farmersdelight_forge")) { deps.modCompileOnly("maven.modrinth:farmers-delight:$mc-${property("farmersdelight_forge")}-$loader") }
+		if (project.hasProperty("farmersdelight_fabric")) { deps.modCompileOnly("vectorwing:FarmersDelight:$mc-${property("farmersdelight_fabric")}+refabricated") }
 
 		// Bewitchment
 		if (project.hasProperty("bewitchment")) { deps.modCompileOnly("maven.modrinth:bewitchment:${property("bewitchment")}") }
@@ -104,8 +104,8 @@ repositories {
 	}
 
 	// Farmer's Delight + Refabricated
-	maven("https://repo.greenhouse.house/releases/")
-	maven("https://repo.greenhouse.house/snapshots/")
+	maven("https://maven.greenhouse.lgbt/releases/")
+	maven("https://maven.greenhouse.lgbt/snapshots/")
 	maven("https://mvn.devos.one/releases/")
 	maven {
 		url = uri("https://maven.jamieswhiteshirt.com/libs-release")

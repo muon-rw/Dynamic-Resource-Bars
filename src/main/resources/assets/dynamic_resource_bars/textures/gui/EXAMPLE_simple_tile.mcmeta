@@ -1,0 +1,7 @@
+{
+  "comment": "Example: Simple tile/repeat scaling (no nine-slice)",
+  "dynamic_resource_bars": {
+    "scaling": "tile"
+  }
+}
+

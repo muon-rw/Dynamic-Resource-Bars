@@ -8,6 +8,7 @@ import dev.muon.dynamic_resource_bars.config.ClientConfig;
 import dev.muon.dynamic_resource_bars.util.*;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.effect.MobEffects;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
@@ -176,34 +177,41 @@ public class HealthBarRenderer {
 
         int backgroundWidth = ModConfigManager.getClient().healthBackgroundWidth;
         int backgroundHeight = ModConfigManager.getClient().healthBackgroundHeight;
-        int animationCycles = ModConfigManager.getClient().healthBarAnimationCycles;
-        int frameHeight = ModConfigManager.getClient().healthBarFrameHeight;
 
         if (ModConfigManager.getClient().enableHealthBackground) {
             ScreenRect bgRect = getSubElementRect(SubElementType.BACKGROUND, player);
-            graphics.blit(
-                    DynamicResourceBars.loc("textures/gui/health_background.png"), 
-                    bgRect.x(), bgRect.y(), 0, 0, bgRect.width(), bgRect.height(), 256, 256
+            AnimationMetadata.ScalingInfo bgScaling = AnimationMetadataCache.getHealthBackgroundScaling();
+            NineSliceRenderer.renderWithScaling(graphics, 
+                    DynamicResourceBars.loc("textures/gui/health_background.png"),
+                    bgScaling,
+                    bgRect.x(), bgRect.y(), bgRect.width(), bgRect.height(), 
+                    256, 256
             );
         }
 
-        int animOffset = (int) (((player.tickCount + #if NEWER_THAN_20_1 deltaTracker.getGameTimeDeltaTicks() #else partialTicks #endif) / 3) % animationCycles) * frameHeight;
+        // Load animation data from .mcmeta
+        AnimationMetadata.AnimationData animData = AnimationMetadataCache.getHealthBarAnimation();
+        float ticks = player.tickCount + (#if NEWER_THAN_20_1 deltaTracker.getGameTimeDeltaTicks() #else partialTicks #endif);
+        int animOffset = AnimationMetadata.calculateAnimationOffset(animData, ticks);
 
+        // Load mask info for health bar
+        AnimationMetadata.MaskInfo maskInfo = AnimationMetadataCache.getHealthBarMask();
+        
         ScreenRect mainBarRect = getSubElementRect(SubElementType.BAR_MAIN, player);
         boolean isRightAnchored = ModConfigManager.getClient().healthBarAnchor.getSide() == HUDPositioning.AnchorSide.RIGHT;
         renderBaseBar(graphics, player, maxHealth, actualHealth, 
                       mainBarRect.x(), mainBarRect.y(), mainBarRect.width(), mainBarRect.height(), 
                       0, 0,
-                      animOffset, isRightAnchored);
+                      animOffset, isRightAnchored, maskInfo, animData);
         
         // Render fading chunks after the main bar
-        renderFadingChunks(graphics, mainBarRect, actualHealth, maxHealth, isRightAnchored, currentAlphaForRender);
+        renderFadingChunks(graphics, mainBarRect, actualHealth, maxHealth, isRightAnchored, currentAlphaForRender, maskInfo, animData);
 
         // Render AppleSkin estimated health overlay
         if (PlatformUtil.isModLoaded("appleskin")) {
             ItemStack heldFood = getHeldFood(player);
             if (!heldFood.isEmpty()) {
-                renderHealthRestoredOverlay(graphics, player, heldFood, actualHealth, maxHealth, mainBarRect, animOffset, isRightAnchored);
+                renderHealthRestoredOverlay(graphics, player, heldFood, actualHealth, maxHealth, mainBarRect, animOffset, isRightAnchored, maskInfo, animData);
             }
         }
 
@@ -301,9 +309,10 @@ public class HealthBarRenderer {
             BarType barType = BarType.fromPlayerState(player);
             String texture = barType.getTexture();
             
-            int animationCycles = ModConfigManager.getClient().healthBarAnimationCycles;
-            int frameHeight = ModConfigManager.getClient().healthBarFrameHeight;
-            int animOffset = (int) (((player.tickCount + partialTicks) / 3) % animationCycles) * frameHeight;
+            // Load animation data (all health bar variants share the same animation properties)
+            AnimationMetadata.AnimationData animData = AnimationMetadataCache.getHealthBarAnimation();
+            float ticks = player.tickCount + partialTicks;
+            int animOffset = AnimationMetadata.calculateAnimationOffset(animData, ticks);
             
             // Create chunk for the lost portion, clamping to 0 minimum
             float chunkStart = Math.max(0, currentHealth);
@@ -316,7 +325,8 @@ public class HealthBarRenderer {
     }
     
     private static void renderFadingChunks(GuiGraphics graphics, ScreenRect barRect, float currentHealth, float maxHealth,
-                                          boolean isRightAnchored, float parentAlpha) {
+                                          boolean isRightAnchored, float parentAlpha, AnimationMetadata.MaskInfo maskInfo,
+                                          AnimationMetadata.AnimationData animData) {
         if (fadingChunks.isEmpty()) return;
         
         RenderSystem.enableBlend();
@@ -330,6 +340,8 @@ public class HealthBarRenderer {
             
             RenderSystem.setShaderColor(1.0f, 1.0f, 1.0f, alpha);
             
+            ResourceLocation chunkTexture = DynamicResourceBars.loc("textures/gui/" + chunk.texture + ".png");
+            
             if (fillDirection == FillDirection.VERTICAL) {
                 // Calculate heights for the chunk
                 float startRatio = chunk.startValue / chunk.maxValue;
@@ -342,12 +354,12 @@ public class HealthBarRenderer {
                     int yPos = barRect.y() + (barRect.height() - endHeight);
                     int textureVOffset = chunk.animOffset + (barRect.height() - endHeight);
                     
-                    graphics.blit(
-                        DynamicResourceBars.loc("textures/gui/" + chunk.texture + ".png"),
+                    MaskRenderUtil.renderWithMask(
+                        graphics, chunkTexture, maskInfo,
                         barRect.x(), yPos,
                         0, textureVOffset,
                         barRect.width(), chunkHeight,
-                        256, 1024
+                        animData.textureWidth, animData.textureHeight
                     );
                 }
             } else { // HORIZONTAL
@@ -370,12 +382,12 @@ public class HealthBarRenderer {
                         uOffset = startWidth;
                     }
                     
-                    graphics.blit(
-                        DynamicResourceBars.loc("textures/gui/" + chunk.texture + ".png"),
+                    MaskRenderUtil.renderWithMask(
+                        graphics, chunkTexture, maskInfo,
                         xPos, barRect.y(),
                         uOffset, chunk.animOffset,
                         chunkWidth, barRect.height(),
-                        256, 1024
+                        animData.textureWidth, animData.textureHeight
                     );
                 }
             }
@@ -388,8 +400,10 @@ public class HealthBarRenderer {
     private static void renderBaseBar(GuiGraphics graphics, Player player, float maxHealth, float actualHealth,
                                       int barAbsX, int barAbsY, int barAbsWidth, int barAbsHeight, 
                                       int barXOffsetWithinTexture, int barYOffsetWithinTexture,
-                                      int animOffset, boolean isRightAnchored) {
+                                      int animOffset, boolean isRightAnchored, AnimationMetadata.MaskInfo maskInfo,
+                                      AnimationMetadata.AnimationData animData) {
         BarType barType = BarType.fromPlayerState(player);
+        ResourceLocation barTexture = DynamicResourceBars.loc("textures/gui/" + barType.getTexture() + ".png");
         float currentHealthRatio = (maxHealth == 0) ? 0.0f : (actualHealth / maxHealth);
 
         FillDirection fillDirection = ModConfigManager.getClient().healthFillDirection;
@@ -398,12 +412,12 @@ public class HealthBarRenderer {
             int partialBarHeight = (int) (barAbsHeight * currentHealthRatio);
             if (partialBarHeight <= 0 && actualHealth > 0) partialBarHeight = 1;
             if (partialBarHeight > 0) {
-                graphics.blit(
-                        DynamicResourceBars.loc("textures/gui/" + barType.getTexture() + ".png"),
+                MaskRenderUtil.renderWithMask(
+                        graphics, barTexture, maskInfo,
                         barAbsX, barAbsY + (barAbsHeight - partialBarHeight), // Adjust Y to fill from bottom up
                         barXOffsetWithinTexture, animOffset + barYOffsetWithinTexture + (barAbsHeight - partialBarHeight), // Adjust texture V to match
                         barAbsWidth, partialBarHeight, // Use full width, partial height
-                        256, 1024
+                        animData.textureWidth, animData.textureHeight
                 );
             }
         } else { // HORIZONTAL (current behavior)
@@ -418,12 +432,12 @@ public class HealthBarRenderer {
                     uTexOffset = barXOffsetWithinTexture + barAbsWidth - partialBarWidth;
                 }
 
-                graphics.blit(
-                        DynamicResourceBars.loc("textures/gui/" + barType.getTexture() + ".png"),
+                MaskRenderUtil.renderWithMask(
+                        graphics, barTexture, maskInfo,
                         renderBarX, barAbsY,
                         uTexOffset, animOffset + barYOffsetWithinTexture,
                         partialBarWidth, barAbsHeight,
-                        256, 1024
+                        animData.textureWidth, animData.textureHeight
                 );
             }
         }
@@ -442,10 +456,12 @@ public class HealthBarRenderer {
             float pulseAlpha = 0.5f + (TickHandler.getOverlayFlashAlpha() * 0.5f);
             RenderSystem.setShaderColor(1.0f, 1.0f, 1.0f, pulseAlpha);
             
-            graphics.blit(
+            AnimationMetadata.ScalingInfo absorptionScaling = AnimationMetadataCache.getAbsorptionOverlayScaling();
+            NineSliceRenderer.renderWithScaling(graphics,
                     DynamicResourceBars.loc("textures/gui/absorption_overlay.png"),
+                    absorptionScaling,
                     barAbsX + barXOffset, barAbsY + barYOffset,
-                    0, 0, barAbsWidth, barAbsHeight,
+                    barAbsWidth, barAbsHeight,
                     256, 256
             );
             RenderSystem.setShaderColor(1.0f, 1.0f, 1.0f, 1.0f);
@@ -456,10 +472,12 @@ public class HealthBarRenderer {
                 float pulseAlpha = TickHandler.getOverlayFlashAlpha();
                 RenderSystem.setShaderColor(1.0f, 1.0f, 1.0f, pulseAlpha);
                 
-                graphics.blit(
+                AnimationMetadata.ScalingInfo comfortScaling = AnimationMetadataCache.getComfortOverlayScaling();
+                NineSliceRenderer.renderWithScaling(graphics,
                         DynamicResourceBars.loc("textures/gui/comfort_overlay.png"),
+                        comfortScaling,
                         barAbsX + barXOffset, barAbsY + barYOffset,
-                        0, 0, barAbsWidth, barAbsHeight,
+                        barAbsWidth, barAbsHeight,
                         256, 256
                 );
                 RenderSystem.setShaderColor(1.0f, 1.0f, 1.0f, 1.0f);
@@ -470,10 +488,12 @@ public class HealthBarRenderer {
             float pulseAlpha = TickHandler.getOverlayFlashAlpha();
             RenderSystem.setShaderColor(1.0f, 1.0f, 1.0f, pulseAlpha);
             
-            graphics.blit(
+            AnimationMetadata.ScalingInfo regenScaling = AnimationMetadataCache.getRegenerationOverlayScaling();
+            NineSliceRenderer.renderWithScaling(graphics,
                     DynamicResourceBars.loc("textures/gui/regeneration_overlay.png"),
+                    regenScaling,
                     barAbsX + barXOffset, barAbsY + barYOffset,
-                    0, 0, barAbsWidth, barAbsHeight,
+                    barAbsWidth, barAbsHeight,
                     256, 256
             );
             RenderSystem.setShaderColor(1.0f, 1.0f, 1.0f, 1.0f);
@@ -487,10 +507,12 @@ public class HealthBarRenderer {
         if (player.level().getLevelData().isHardcore()) {
             RenderSystem.enableBlend();
             RenderSystem.defaultBlendFunc();
-            graphics.blit(
+            AnimationMetadata.ScalingInfo hardcoreScaling = AnimationMetadataCache.getHardcoreOverlayScaling();
+            NineSliceRenderer.renderWithScaling(graphics,
                     DynamicResourceBars.loc("textures/gui/hardcore_overlay.png"),
+                    hardcoreScaling,
                     complexX, complexY,
-                    0, 0, backgroundWidth, backgroundHeight,
+                    backgroundWidth, backgroundHeight,
                     256, 256
             );
             RenderSystem.disableBlend();
@@ -501,10 +523,12 @@ public class HealthBarRenderer {
             RenderSystem.enableBlend();
             RenderSystem.defaultBlendFunc();
             RenderSystem.setShaderColor(1.0f, 1.0f, 1.0f, wetScale);
-            graphics.blit(
+            AnimationMetadata.ScalingInfo wetnessScaling = AnimationMetadataCache.getWetnessOverlayScaling();
+            NineSliceRenderer.renderWithScaling(graphics,
                     DynamicResourceBars.loc("textures/gui/wetness_overlay.png"),
+                    wetnessScaling,
                     complexX, complexY,
-                    0, 0, backgroundWidth, backgroundHeight,
+                    backgroundWidth, backgroundHeight,
                     256, 256
             );
             RenderSystem.setShaderColor(1.0f, 1.0f, 1.0f, 1.0f);
@@ -513,10 +537,11 @@ public class HealthBarRenderer {
 
         if (ModConfigManager.getClient().enableHealthForeground) {
             ScreenRect fgRect = getSubElementRect(SubElementType.FOREGROUND_DETAIL, player);
-            graphics.blit(
+            AnimationMetadata.ScalingInfo fgScaling = AnimationMetadataCache.getHealthForegroundScaling();
+            NineSliceRenderer.renderWithScaling(graphics,
                     DynamicResourceBars.loc("textures/gui/health_foreground.png"),
-                    fgRect.x(), fgRect.y(),
-                    0, 0, fgRect.width(), fgRect.height(),
+                    fgScaling,
+                    fgRect.x(), fgRect.y(), fgRect.width(), fgRect.height(),
                     256, 256
             );
         }
@@ -528,20 +553,24 @@ public class HealthBarRenderer {
         if (tempScale > 0) {
             RenderSystem.setShaderColor(1.0f, 1.0f, 1.0f, getHealthBarAlpha()); // Apply alpha to heat overlay
             int heatWidth = (int) (barWidth * tempScale);
-            graphics.blit(
+            AnimationMetadata.ScalingInfo heatScaling = AnimationMetadataCache.getHeatOverlayScaling();
+            NineSliceRenderer.renderWithScaling(graphics,
                     DynamicResourceBars.loc("textures/gui/heat_overlay.png"),
+                    heatScaling,
                     xPos + barXOffset, yPos + barYOffset,
-                    0, 0, heatWidth, barHeight,
+                    heatWidth, barHeight,
                     256, 256
             );
             RenderSystem.setShaderColor(1.0f, 1.0f, 1.0f, 1.0f); // Reset after heat overlay
         } else if (tempScale < 0) {
             RenderSystem.setShaderColor(1.0f, 1.0f, 1.0f, getHealthBarAlpha()); // Apply alpha to cold overlay
             int coldWidth = (int) (barWidth * -tempScale);
-            graphics.blit(
+            AnimationMetadata.ScalingInfo coldScaling = AnimationMetadataCache.getColdOverlayScaling();
+            NineSliceRenderer.renderWithScaling(graphics,
                     DynamicResourceBars.loc("textures/gui/cold_overlay.png"),
+                    coldScaling,
                     xPos + barXOffset, yPos + barYOffset,
-                    0, 0, coldWidth, barHeight,
+                    coldWidth, barHeight,
                     256, 256
             );
             RenderSystem.setShaderColor(1.0f, 1.0f, 1.0f, 1.0f); // Reset after cold overlay
@@ -702,7 +731,8 @@ public class HealthBarRenderer {
     
     private static void renderHealthRestoredOverlay(GuiGraphics graphics, Player player, ItemStack heldFood,
                                                    float currentHealth, float maxHealth,
-                                                   ScreenRect barRect, int animOffset, boolean isRightAnchored) {
+                                                   ScreenRect barRect, int animOffset, boolean isRightAnchored,
+                                                   AnimationMetadata.MaskInfo maskInfo, AnimationMetadata.AnimationData animData) {
         if (!PlatformUtil.isModLoaded("appleskin")) {
             return;
         }
@@ -721,6 +751,7 @@ public class HealthBarRenderer {
         FillDirection fillDirection = ModConfigManager.getClient().healthFillDirection;
         // Use the bar type based on the player's current state
         BarType barType = BarType.fromPlayerState(player);
+        ResourceLocation barTexture = DynamicResourceBars.loc("textures/gui/" + barType.getTexture() + ".png");
         
         if (fillDirection == FillDirection.VERTICAL) {
             int currentHeight = (int) (barRect.height() * (currentHealth / maxHealth));
@@ -731,12 +762,12 @@ public class HealthBarRenderer {
                 int yPos = barRect.y() + (barRect.height() - restoredHeight);
                 int textureVOffset = animOffset + (barRect.height() - restoredHeight);
                 
-                graphics.blit(
-                    DynamicResourceBars.loc("textures/gui/" + barType.getTexture() + ".png"),
+                MaskRenderUtil.renderWithMask(
+                    graphics, barTexture, maskInfo,
                     barRect.x(), yPos,
                     0, textureVOffset,
                     barRect.width(), overlayHeight,
-                    256, 1024
+                    animData.textureWidth, animData.textureHeight
                 );
             }
         } else { // HORIZONTAL
@@ -762,12 +793,12 @@ public class HealthBarRenderer {
                     uTexOffset = currentWidth; // Sample from where the current health ends in the texture
                 }
 
-                graphics.blit(
-                    DynamicResourceBars.loc("textures/gui/" + barType.getTexture() + ".png"),
+                MaskRenderUtil.renderWithMask(
+                    graphics, barTexture, maskInfo,
                     xDrawPos, barRect.y(),
                     uTexOffset, animOffset,
                     overlayWidth, barRect.height(),
-                    256, 1024
+                    animData.textureWidth, animData.textureHeight
                 );
             }
         }

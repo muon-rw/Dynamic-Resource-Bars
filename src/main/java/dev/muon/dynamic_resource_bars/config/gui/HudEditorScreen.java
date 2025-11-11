@@ -549,6 +549,7 @@ public class HudEditorScreen extends Screen {
         if (focused == null) {
             Component helpLine1 = Component.translatable("gui.dynamic_resource_bars.hud_editor.help.main.line1");
             Component helpLine2 = Component.translatable("gui.dynamic_resource_bars.hud_editor.help.main.line2");
+            Component keyboardHelpLine = Component.literal("Tab: Select Element | Arrows: Move | Shift+Arrows: Resize");
             // Main help text does not have line3/4 in current en_us.json, but keeping structure for potential future additions
 
             graphics.drawCenteredString(font, helpLine1, this.width / 2, currentTextY, 0xFFFFFF);
@@ -562,6 +563,12 @@ public class HudEditorScreen extends Screen {
             overallMinX = Math.min(overallMinX, (this.width - textWidth) / 2f);
             overallMaxX = Math.max(overallMaxX, (this.width + textWidth) / 2f);
             currentTextY += fontHeight + LINE_SPACING;
+            
+            graphics.drawCenteredString(font, keyboardHelpLine, this.width / 2, currentTextY, 0x55FF55);
+            textWidth = font.width(keyboardHelpLine);
+            overallMinX = Math.min(overallMinX, (this.width - textWidth) / 2f);
+            overallMaxX = Math.max(overallMaxX, (this.width + textWidth) / 2f);
+            currentTextY += fontHeight + LINE_SPACING;
 
             // No explicit header for main mode, buttons start after help text based on their own layout logic.
             // So, update overallMaxY based on help text.
@@ -572,6 +579,7 @@ public class HudEditorScreen extends Screen {
             Component helpFocusLine2 = Component.translatable("gui.dynamic_resource_bars.hud_editor.help.focus.line2.sub_element");
             Component helpFocusLine3 = Component.translatable("gui.dynamic_resource_bars.hud_editor.help.focus.line3");
             Component helpFocusLine4 = Component.translatable("gui.dynamic_resource_bars.hud_editor.help.focus.line4");
+            Component keyboardHelpLine = Component.literal("Tab: Select Layer | Arrows: Move | Shift+Arrows: Resize");
 
             graphics.drawCenteredString(font, helpFocusLine1, this.width / 2, currentTextY, 0xFFFFFF);
             float textWidth = font.width(helpFocusLine1);
@@ -593,6 +601,12 @@ public class HudEditorScreen extends Screen {
 
             graphics.drawCenteredString(font, helpFocusLine4, this.width / 2, currentTextY, 0xFFFFFF);
             textWidth = font.width(helpFocusLine4);
+            overallMinX = Math.min(overallMinX, (this.width - textWidth) / 2f);
+            overallMaxX = Math.max(overallMaxX, (this.width + textWidth) / 2f);
+            currentTextY += fontHeight + LINE_SPACING;
+            
+            graphics.drawCenteredString(font, keyboardHelpLine, this.width / 2, currentTextY, 0x55FF55);
+            textWidth = font.width(keyboardHelpLine);
             overallMinX = Math.min(overallMinX, (this.width - textWidth) / 2f);
             overallMaxX = Math.max(overallMaxX, (this.width + textWidth) / 2f);
             currentTextY += fontHeight + LINE_SPACING;
@@ -718,6 +732,63 @@ public class HudEditorScreen extends Screen {
                     graphics.renderOutline(iconRect.x() - 1, iconRect.y() - 1, 
                                          iconRect.width() + 2, iconRect.height() + 2, 
                                          iconOutlineColor);
+                }
+            }
+        }
+        
+        // Draw keyboard selection indicators
+        if (player != null) {
+            DraggableElement keyboardSelected = EditModeManager.getKeyboardSelectedElement();
+            SubElementType keyboardSelectedSub = EditModeManager.getKeyboardSelectedSubElement();
+            
+            // Pulsing color for keyboard selection
+            float pulse = (System.currentTimeMillis() % 1000) / 1000.0f;
+            int alpha = (int)(128 + 64 * Math.sin(pulse * Math.PI * 2));
+            int keyboardSelectionColor = (alpha << 24) | 0x00FF00; // Green with pulsing alpha
+            
+            if (focused == null && keyboardSelected != null) {
+                // Non-focus mode: highlight the keyboard-selected element
+                ScreenRect elementRect = null;
+                switch (keyboardSelected) {
+                    case HEALTH_BAR: elementRect = HealthBarRenderer.getScreenRect(player); break;
+                    case MANA_BAR: elementRect = ManaBarRenderer.getScreenRect(player); break;
+                    case STAMINA_BAR: elementRect = StaminaBarRenderer.getScreenRect(player); break;
+                    case ARMOR_BAR: elementRect = ArmorBarRenderer.getScreenRect(player); break;
+                    case AIR_BAR: elementRect = AirBarRenderer.getScreenRect(player); break;
+                }
+                
+                if (elementRect != null && elementRect.width() > 0 && elementRect.height() > 0) {
+                    // Draw thick pulsing outline
+                    graphics.renderOutline(elementRect.x() - 2, elementRect.y() - 2,
+                                         elementRect.width() + 4, elementRect.height() + 4,
+                                         keyboardSelectionColor);
+                }
+            } else if (focused != null && keyboardSelectedSub != null) {
+                // Focus mode: highlight the keyboard-selected sub-element
+                ScreenRect subElementRect = null;
+                switch (focused) {
+                    case HEALTH_BAR:
+                        subElementRect = HealthBarRenderer.getSubElementRect(keyboardSelectedSub, player);
+                        break;
+                    case MANA_BAR:
+                        subElementRect = ManaBarRenderer.getSubElementRect(keyboardSelectedSub, player);
+                        break;
+                    case STAMINA_BAR:
+                        subElementRect = StaminaBarRenderer.getSubElementRect(keyboardSelectedSub, player);
+                        break;
+                    case ARMOR_BAR:
+                        subElementRect = ArmorBarRenderer.getSubElementRect(keyboardSelectedSub, player);
+                        break;
+                    case AIR_BAR:
+                        subElementRect = AirBarRenderer.getSubElementRect(keyboardSelectedSub, player);
+                        break;
+                }
+                
+                if (subElementRect != null && subElementRect.width() > 0 && subElementRect.height() > 0) {
+                    // Draw thick pulsing outline
+                    graphics.renderOutline(subElementRect.x() - 2, subElementRect.y() - 2,
+                                         subElementRect.width() + 4, subElementRect.height() + 4,
+                                         keyboardSelectionColor);
                 }
             }
         }
@@ -969,6 +1040,8 @@ public class HudEditorScreen extends Screen {
                     ResizeData resizeData = getResizeHandleAtPosition(currentFocusedElement, subType, (int)mouseX, (int)mouseY);
                     if (resizeData != null) {
                         startResizeOperation(resizeData, (int)mouseX, (int)mouseY); // startResizeOperation will use ModConfigManager.getClient()
+                        // Auto-select the sub-element being resized
+                        EditModeManager.setKeyboardSelectedSubElement(subType);
                         actionTaken = true;
                         break; // Found a handle, stop checking others
                     }
@@ -1062,6 +1135,8 @@ public class HudEditorScreen extends Screen {
                          break;
                 }
                 EditModeManager.setDraggedSubElement(clickedSub, (int)mouseX, (int)mouseY, currentSubX, currentSubY);
+                // Auto-select the sub-element being dragged
+                EditModeManager.setKeyboardSelectedSubElement(clickedSub);
                 this.lastFocusedElementForSubUndo = currentFocusedElement;
                 this.lastDraggedSubElementForUndo = clickedSub;
                 this.lastSubDragInitialXOffset = currentSubX;
@@ -1094,6 +1169,8 @@ public class HudEditorScreen extends Screen {
                 this.lastDragInitialYOffset = totalY;
                 this.canUndoLastDrag = false;
                 EditModeManager.setDraggedElement(clickedBarForDrag, (int) mouseX, (int) mouseY, totalX, totalY);
+                // Auto-select the element being dragged
+                EditModeManager.setKeyboardSelectedElement(clickedBarForDrag);
                 actionTaken = true;
              }
         }
@@ -1482,8 +1559,425 @@ public class HudEditorScreen extends Screen {
                 return true; 
             }
         }
-        // Ctrl+Z Undo block removed
+        
+        // Tab key - cycle through elements or sub-elements
+        if (keyCode == GLFW.GLFW_KEY_TAB) {
+            handleTabNavigation();
+            return true;
+        }
+        
+        // Arrow keys - move or resize
+        boolean isShiftPressed = (modifiers & GLFW.GLFW_MOD_SHIFT) != 0;
+        if (keyCode == GLFW.GLFW_KEY_UP || keyCode == GLFW.GLFW_KEY_DOWN || 
+            keyCode == GLFW.GLFW_KEY_LEFT || keyCode == GLFW.GLFW_KEY_RIGHT) {
+            if (isShiftPressed) {
+                handleArrowResize(keyCode);
+            } else {
+                handleArrowMove(keyCode);
+            }
+            return true;
+        }
+        
         return super.keyPressed(keyCode, scanCode, modifiers);
+    }
+
+    private void handleTabNavigation() {
+        ClientConfig config = ModConfigManager.getClient();
+        DraggableElement focused = EditModeManager.getFocusedElement();
+        
+        if (focused == null) {
+            // Non-focus mode: cycle through elements
+            DraggableElement current = EditModeManager.getKeyboardSelectedElement();
+            DraggableElement[] elements = DraggableElement.values();
+            
+            if (current == null) {
+                // Start with first element
+                EditModeManager.setKeyboardSelectedElement(elements[0]);
+            } else {
+                // Find next available element
+                int currentIndex = current.ordinal();
+                int nextIndex = (currentIndex + 1) % elements.length;
+                EditModeManager.setKeyboardSelectedElement(elements[nextIndex]);
+            }
+        } else {
+            // Focus mode: cycle through sub-elements for the focused bar
+            SubElementType current = EditModeManager.getKeyboardSelectedSubElement();
+            SubElementType[] availableSubElements = getAvailableSubElements(focused, config);
+            
+            if (availableSubElements.length == 0) return;
+            
+            if (current == null) {
+                // Start with first available sub-element
+                EditModeManager.setKeyboardSelectedSubElement(availableSubElements[0]);
+            } else {
+                // Find next available sub-element
+                int currentIndex = -1;
+                for (int i = 0; i < availableSubElements.length; i++) {
+                    if (availableSubElements[i] == current) {
+                        currentIndex = i;
+                        break;
+                    }
+                }
+                int nextIndex = (currentIndex + 1) % availableSubElements.length;
+                EditModeManager.setKeyboardSelectedSubElement(availableSubElements[nextIndex]);
+            }
+        }
+    }
+    
+    private SubElementType[] getAvailableSubElements(DraggableElement element, ClientConfig config) {
+        java.util.List<SubElementType> available = new java.util.ArrayList<>();
+        
+        switch (element) {
+            case HEALTH_BAR:
+                if (config.enableHealthBackground) available.add(SubElementType.BACKGROUND);
+                available.add(SubElementType.BAR_MAIN);
+                if (config.enableHealthForeground) available.add(SubElementType.FOREGROUND_DETAIL);
+                available.add(SubElementType.TEXT);
+                available.add(SubElementType.ABSORPTION_TEXT);
+                break;
+            case MANA_BAR:
+                if (config.enableManaBackground) available.add(SubElementType.BACKGROUND);
+                available.add(SubElementType.BAR_MAIN);
+                if (config.enableManaForeground) available.add(SubElementType.FOREGROUND_DETAIL);
+                available.add(SubElementType.TEXT);
+                break;
+            case STAMINA_BAR:
+                if (config.enableStaminaBackground) available.add(SubElementType.BACKGROUND);
+                available.add(SubElementType.BAR_MAIN);
+                if (config.enableStaminaForeground) available.add(SubElementType.FOREGROUND_DETAIL);
+                available.add(SubElementType.TEXT);
+                break;
+            case ARMOR_BAR:
+                available.add(SubElementType.BACKGROUND);
+                available.add(SubElementType.BAR_MAIN);
+                available.add(SubElementType.TEXT);
+                if (config.enableArmorIcon) available.add(SubElementType.ICON);
+                break;
+            case AIR_BAR:
+                available.add(SubElementType.BACKGROUND);
+                available.add(SubElementType.BAR_MAIN);
+                available.add(SubElementType.TEXT);
+                if (config.enableAirIcon) available.add(SubElementType.ICON);
+                break;
+        }
+        
+        return available.toArray(new SubElementType[0]);
+    }
+    
+    private void handleArrowMove(int keyCode) {
+        ClientConfig config = ModConfigManager.getClient();
+        DraggableElement focused = EditModeManager.getFocusedElement();
+        
+        int dx = 0, dy = 0;
+        switch (keyCode) {
+            case GLFW.GLFW_KEY_UP: dy = -1; break;
+            case GLFW.GLFW_KEY_DOWN: dy = 1; break;
+            case GLFW.GLFW_KEY_LEFT: dx = -1; break;
+            case GLFW.GLFW_KEY_RIGHT: dx = 1; break;
+        }
+        
+        if (focused == null) {
+            // Non-focus mode: move the keyboard-selected element's total offset
+            DraggableElement selected = EditModeManager.getKeyboardSelectedElement();
+            if (selected == null) return;
+            
+            switch (selected) {
+                case HEALTH_BAR:
+                    config.healthTotalXOffset += dx;
+                    config.healthTotalYOffset += dy;
+                    break;
+                case MANA_BAR:
+                    config.manaTotalXOffset += dx;
+                    config.manaTotalYOffset += dy;
+                    break;
+                case STAMINA_BAR:
+                    config.staminaTotalXOffset += dx;
+                    config.staminaTotalYOffset += dy;
+                    break;
+                case ARMOR_BAR:
+                    config.armorTotalXOffset += dx;
+                    config.armorTotalYOffset += dy;
+                    break;
+                case AIR_BAR:
+                    config.airTotalXOffset += dx;
+                    config.airTotalYOffset += dy;
+                    break;
+            }
+        } else {
+            // Focus mode: move the keyboard-selected sub-element
+            SubElementType subSelected = EditModeManager.getKeyboardSelectedSubElement();
+            if (subSelected == null) return;
+            
+            switch (focused) {
+                case HEALTH_BAR:
+                    moveHealthSubElement(config, subSelected, dx, dy);
+                    break;
+                case MANA_BAR:
+                    moveManaSubElement(config, subSelected, dx, dy);
+                    break;
+                case STAMINA_BAR:
+                    moveStaminaSubElement(config, subSelected, dx, dy);
+                    break;
+                case ARMOR_BAR:
+                    moveArmorSubElement(config, subSelected, dx, dy);
+                    break;
+                case AIR_BAR:
+                    moveAirSubElement(config, subSelected, dx, dy);
+                    break;
+            }
+        }
+    }
+    
+    private void handleArrowResize(int keyCode) {
+        ClientConfig config = ModConfigManager.getClient();
+        DraggableElement focused = EditModeManager.getFocusedElement();
+        
+        int dw = 0, dh = 0;
+        switch (keyCode) {
+            case GLFW.GLFW_KEY_UP: dh = -1; break;
+            case GLFW.GLFW_KEY_DOWN: dh = 1; break;
+            case GLFW.GLFW_KEY_LEFT: dw = -1; break;
+            case GLFW.GLFW_KEY_RIGHT: dw = 1; break;
+        }
+        
+        if (focused == null) {
+            // Non-focus mode: resize the keyboard-selected element's background
+            DraggableElement selected = EditModeManager.getKeyboardSelectedElement();
+            if (selected == null) return;
+            
+            switch (selected) {
+                case HEALTH_BAR:
+                    config.healthBackgroundWidth = Math.max(10, config.healthBackgroundWidth + dw);
+                    config.healthBackgroundHeight = Math.max(4, config.healthBackgroundHeight + dh);
+                    break;
+                case MANA_BAR:
+                    config.manaBackgroundWidth = Math.max(10, config.manaBackgroundWidth + dw);
+                    config.manaBackgroundHeight = Math.max(4, config.manaBackgroundHeight + dh);
+                    break;
+                case STAMINA_BAR:
+                    config.staminaBackgroundWidth = Math.max(10, config.staminaBackgroundWidth + dw);
+                    config.staminaBackgroundHeight = Math.max(4, config.staminaBackgroundHeight + dh);
+                    break;
+                case ARMOR_BAR:
+                    config.armorBackgroundWidth = Math.max(10, config.armorBackgroundWidth + dw);
+                    config.armorBackgroundHeight = Math.max(4, config.armorBackgroundHeight + dh);
+                    break;
+                case AIR_BAR:
+                    config.airBackgroundWidth = Math.max(10, config.airBackgroundWidth + dw);
+                    config.airBackgroundHeight = Math.max(4, config.airBackgroundHeight + dh);
+                    break;
+            }
+        } else {
+            // Focus mode: resize the keyboard-selected sub-element
+            SubElementType subSelected = EditModeManager.getKeyboardSelectedSubElement();
+            if (subSelected == null) return;
+            
+            switch (focused) {
+                case HEALTH_BAR:
+                    resizeHealthSubElement(config, subSelected, dw, dh);
+                    break;
+                case MANA_BAR:
+                    resizeManaSubElement(config, subSelected, dw, dh);
+                    break;
+                case STAMINA_BAR:
+                    resizeStaminaSubElement(config, subSelected, dw, dh);
+                    break;
+                case ARMOR_BAR:
+                    resizeArmorSubElement(config, subSelected, dw, dh);
+                    break;
+                case AIR_BAR:
+                    resizeAirSubElement(config, subSelected, dw, dh);
+                    break;
+            }
+        }
+    }
+    
+    // Helper methods for moving sub-elements
+    private void moveHealthSubElement(ClientConfig config, SubElementType subType, int dx, int dy) {
+        switch (subType) {
+            case BACKGROUND:
+                config.healthBackgroundXOffset += dx;
+                config.healthBackgroundYOffset += dy;
+                break;
+            case BAR_MAIN:
+                config.healthBarXOffset += dx;
+                config.healthBarYOffset += dy;
+                break;
+            case FOREGROUND_DETAIL:
+                config.healthOverlayXOffset += dx;
+                config.healthOverlayYOffset += dy;
+                break;
+            case TEXT:
+                config.healthTextXOffset += dx;
+                config.healthTextYOffset += dy;
+                break;
+            case ABSORPTION_TEXT:
+                config.healthAbsorptionTextXOffset += dx;
+                config.healthAbsorptionTextYOffset += dy;
+                break;
+        }
+    }
+    
+    private void moveManaSubElement(ClientConfig config, SubElementType subType, int dx, int dy) {
+        switch (subType) {
+            case BACKGROUND:
+                config.manaBackgroundXOffset += dx;
+                config.manaBackgroundYOffset += dy;
+                break;
+            case BAR_MAIN:
+                config.manaBarXOffset += dx;
+                config.manaBarYOffset += dy;
+                break;
+            case FOREGROUND_DETAIL:
+                config.manaOverlayXOffset += dx;
+                config.manaOverlayYOffset += dy;
+                break;
+            case TEXT:
+                config.manaTextXOffset += dx;
+                config.manaTextYOffset += dy;
+                break;
+        }
+    }
+    
+    private void moveStaminaSubElement(ClientConfig config, SubElementType subType, int dx, int dy) {
+        switch (subType) {
+            case BACKGROUND:
+                config.staminaBackgroundXOffset += dx;
+                config.staminaBackgroundYOffset += dy;
+                break;
+            case BAR_MAIN:
+                config.staminaBarXOffset += dx;
+                config.staminaBarYOffset += dy;
+                break;
+            case FOREGROUND_DETAIL:
+                config.staminaOverlayXOffset += dx;
+                config.staminaOverlayYOffset += dy;
+                break;
+            case TEXT:
+                config.staminaTextXOffset += dx;
+                config.staminaTextYOffset += dy;
+                break;
+        }
+    }
+    
+    private void moveArmorSubElement(ClientConfig config, SubElementType subType, int dx, int dy) {
+        switch (subType) {
+            case BACKGROUND:
+                config.armorBackgroundXOffset += dx;
+                config.armorBackgroundYOffset += dy;
+                break;
+            case BAR_MAIN:
+                config.armorBarXOffset += dx;
+                config.armorBarYOffset += dy;
+                break;
+            case TEXT:
+                config.armorTextXOffset += dx;
+                config.armorTextYOffset += dy;
+                break;
+            case ICON:
+                config.armorIconXOffset += dx;
+                config.armorIconYOffset += dy;
+                break;
+        }
+    }
+    
+    private void moveAirSubElement(ClientConfig config, SubElementType subType, int dx, int dy) {
+        switch (subType) {
+            case BACKGROUND:
+                config.airBackgroundXOffset += dx;
+                config.airBackgroundYOffset += dy;
+                break;
+            case BAR_MAIN:
+                config.airBarXOffset += dx;
+                config.airBarYOffset += dy;
+                break;
+            case TEXT:
+                config.airTextXOffset += dx;
+                config.airTextYOffset += dy;
+                break;
+            case ICON:
+                config.airIconXOffset += dx;
+                config.airIconYOffset += dy;
+                break;
+        }
+    }
+    
+    // Helper methods for resizing sub-elements
+    private void resizeHealthSubElement(ClientConfig config, SubElementType subType, int dw, int dh) {
+        switch (subType) {
+            case BACKGROUND:
+                config.healthBackgroundWidth = Math.max(10, config.healthBackgroundWidth + dw);
+                config.healthBackgroundHeight = Math.max(4, config.healthBackgroundHeight + dh);
+                break;
+            case BAR_MAIN:
+                config.healthBarWidth = Math.max(4, Math.min(256, config.healthBarWidth + dw));
+                config.healthBarHeight = Math.max(1, Math.min(32, config.healthBarHeight + dh));
+                break;
+            case FOREGROUND_DETAIL:
+                config.healthOverlayWidth = Math.max(10, Math.min(256, config.healthOverlayWidth + dw));
+                config.healthOverlayHeight = Math.max(4, Math.min(256, config.healthOverlayHeight + dh));
+                break;
+        }
+    }
+    
+    private void resizeManaSubElement(ClientConfig config, SubElementType subType, int dw, int dh) {
+        switch (subType) {
+            case BACKGROUND:
+                config.manaBackgroundWidth = Math.max(10, config.manaBackgroundWidth + dw);
+                config.manaBackgroundHeight = Math.max(4, config.manaBackgroundHeight + dh);
+                break;
+            case BAR_MAIN:
+                config.manaBarWidth = Math.max(4, Math.min(256, config.manaBarWidth + dw));
+                config.manaBarHeight = Math.max(1, Math.min(32, config.manaBarHeight + dh));
+                break;
+            case FOREGROUND_DETAIL:
+                config.manaOverlayWidth = Math.max(10, Math.min(256, config.manaOverlayWidth + dw));
+                config.manaOverlayHeight = Math.max(4, Math.min(256, config.manaOverlayHeight + dh));
+                break;
+        }
+    }
+    
+    private void resizeStaminaSubElement(ClientConfig config, SubElementType subType, int dw, int dh) {
+        switch (subType) {
+            case BACKGROUND:
+                config.staminaBackgroundWidth = Math.max(10, config.staminaBackgroundWidth + dw);
+                config.staminaBackgroundHeight = Math.max(4, config.staminaBackgroundHeight + dh);
+                break;
+            case BAR_MAIN:
+                config.staminaBarWidth = Math.max(4, Math.min(256, config.staminaBarWidth + dw));
+                config.staminaBarHeight = Math.max(1, Math.min(32, config.staminaBarHeight + dh));
+                break;
+            case FOREGROUND_DETAIL:
+                config.staminaOverlayWidth = Math.max(10, Math.min(256, config.staminaOverlayWidth + dw));
+                config.staminaOverlayHeight = Math.max(4, Math.min(256, config.staminaOverlayHeight + dh));
+                break;
+        }
+    }
+    
+    private void resizeArmorSubElement(ClientConfig config, SubElementType subType, int dw, int dh) {
+        switch (subType) {
+            case BACKGROUND:
+                config.armorBackgroundWidth = Math.max(10, config.armorBackgroundWidth + dw);
+                config.armorBackgroundHeight = Math.max(4, config.armorBackgroundHeight + dh);
+                break;
+            case BAR_MAIN:
+                config.armorBarWidth = Math.max(4, Math.min(256, config.armorBarWidth + dw));
+                config.armorBarHeight = Math.max(1, Math.min(32, config.armorBarHeight + dh));
+                break;
+        }
+    }
+    
+    private void resizeAirSubElement(ClientConfig config, SubElementType subType, int dw, int dh) {
+        switch (subType) {
+            case BACKGROUND:
+                config.airBackgroundWidth = Math.max(10, config.airBackgroundWidth + dw);
+                config.airBackgroundHeight = Math.max(4, config.airBackgroundHeight + dh);
+                break;
+            case BAR_MAIN:
+                config.airBarWidth = Math.max(4, Math.min(256, config.airBarWidth + dw));
+                config.airBarHeight = Math.max(1, Math.min(32, config.airBarHeight + dh));
+                break;
+        }
     }
 
     protected void clearWidgets() {

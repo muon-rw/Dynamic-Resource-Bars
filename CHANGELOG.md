@@ -1,3 +1,15 @@
+## 0.8.0
+### RESOURCE PACK FEATURES:
+- Add optional mask/stencil cutout feature **for bar layers only**
+- Add tiling/stretching/nine-slicing **for background, foreground, and overlay layers only**
+- Animation frames are now configurable
+### EDITOR CHANGES:
+- Add arrow-key move
+- Add shift+arrow-key resize
+- Add tab to cycle selected element
+### BUGFIXES:
+- Fix health values not updating while paused in 1.20.1 Fabric
+
 ## 0.7.1
 - Adjust default stamina bar color
 
