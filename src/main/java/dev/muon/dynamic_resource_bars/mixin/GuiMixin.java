@@ -62,6 +62,7 @@ public abstract class GuiMixin {
 
     #endif
 
+    // TODO: These Mixin targets could definitely be improved
     #if UPTO_20_1 && FABRIC
     @Shadow @Final public Minecraft minecraft;
     @Shadow @Final private static ResourceLocation GUI_ICONS_LOCATION;
@@ -87,7 +88,8 @@ public abstract class GuiMixin {
     private void replaceHearts(Gui instance, GuiGraphics guiGraphics, Player player, int x, int y, int height, int offsetHeartIndex, float maxHealth, int currentHealth, int displayHealth, int absorptionAmount, boolean renderHighlight, Operation<Void> original) {
         if (ModConfigManager.getClient().enableHealthBar) {
             float actualHealth = Minecraft.getInstance().player != null ? (Minecraft.getInstance().player).getHealth() : currentHealth;
-            HealthBarRenderer.render(guiGraphics, player, maxHealth, actualHealth, absorptionAmount, this.minecraft.getFrameTime());
+            float actualMaxHealth = Minecraft.getInstance().player != null ? (Minecraft.getInstance().player).getMaxHealth() : maxHealth;
+            HealthBarRenderer.render(guiGraphics, player, actualMaxHealth, actualHealth, absorptionAmount, this.minecraft.getFrameTime());
         } else {
             original.call(instance, guiGraphics, player, x, y, height, offsetHeartIndex, maxHealth, currentHealth, displayHealth, absorptionAmount, renderHighlight);
         }
