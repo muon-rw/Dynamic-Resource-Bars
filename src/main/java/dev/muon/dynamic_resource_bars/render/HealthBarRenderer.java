@@ -341,8 +341,8 @@ public class HealthBarRenderer {
             
             if (fillDirection == FillDirection.VERTICAL) {
                 // Calculate heights for the chunk
-                float startRatio = chunk.startValue / chunk.maxValue;
-                float endRatio = chunk.endValue / chunk.maxValue;
+                float startRatio = Math.max(0.0f, Math.min(1.0f, chunk.startValue / chunk.maxValue));
+                float endRatio = Math.max(0.0f, Math.min(1.0f, chunk.endValue / chunk.maxValue));
                 int startHeight = (int) (barRect.height() * startRatio);
                 int endHeight = (int) (barRect.height() * endRatio);
                 int chunkHeight = endHeight - startHeight;
@@ -360,8 +360,8 @@ public class HealthBarRenderer {
                 }
             } else { // HORIZONTAL
                 // Calculate widths for the chunk
-                float startRatio = chunk.startValue / chunk.maxValue;
-                float endRatio = chunk.endValue / chunk.maxValue;
+                float startRatio = Math.max(0.0f, Math.min(1.0f, chunk.startValue / chunk.maxValue));
+                float endRatio = Math.max(0.0f, Math.min(1.0f, chunk.endValue / chunk.maxValue));
                 int startWidth = (int) (barRect.width() * startRatio);
                 int endWidth = (int) (barRect.width() * endRatio);
                 int chunkWidth = endWidth - startWidth;
@@ -399,7 +399,7 @@ public class HealthBarRenderer {
                                       AnimationMetadata.AnimationData animData) {
         BarType barType = BarType.fromPlayerState(player);
         ResourceLocation barTexture = DynamicResourceBars.loc("textures/gui/" + barType.getTexture() + ".png");
-        float currentHealthRatio = (maxHealth == 0) ? 0.0f : (actualHealth / maxHealth);
+        float currentHealthRatio = (maxHealth == 0) ? 0.0f : Math.max(0.0f, Math.min(1.0f, actualHealth / maxHealth));
 
         FillDirection fillDirection = ModConfigManager.getClient().healthFillDirection;
 
@@ -747,8 +747,8 @@ public class HealthBarRenderer {
         ResourceLocation barTexture = DynamicResourceBars.loc("textures/gui/" + barType.getTexture() + ".png");
         
         if (fillDirection == FillDirection.VERTICAL) {
-            int currentHeight = (int) (barRect.height() * (currentHealth / maxHealth));
-            int restoredHeight = (int) (barRect.height() * (restoredHealth / maxHealth));
+            int currentHeight = (int) (barRect.height() * Math.max(0.0f, Math.min(1.0f, currentHealth / maxHealth)));
+            int restoredHeight = (int) (barRect.height() * Math.max(0.0f, Math.min(1.0f, restoredHealth / maxHealth)));
             int overlayHeight = restoredHeight - currentHeight;
             
             if (overlayHeight > 0) {
@@ -763,8 +763,8 @@ public class HealthBarRenderer {
                 );
             }
         } else { // HORIZONTAL
-            int currentWidth = (int) (barRect.width() * (currentHealth / maxHealth));
-            int restoredWidth = (int) (barRect.width() * (restoredHealth / maxHealth));
+            int currentWidth = (int) (barRect.width() * Math.max(0.0f, Math.min(1.0f, currentHealth / maxHealth)));
+            int restoredWidth = (int) (barRect.width() * Math.max(0.0f, Math.min(1.0f, restoredHealth / maxHealth)));
             int overlayWidth = restoredWidth - currentWidth;
             
             if (overlayWidth > 0) {

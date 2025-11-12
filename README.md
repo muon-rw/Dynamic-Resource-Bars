@@ -1005,8 +1005,7 @@ fantasy_bars/
   pack.mcmeta
   assets/dynamic_resource_bars/textures/gui/
     health_bar.png              ← Custom animated texture (any size)
-    health_bar.png.mcmeta       ← Custom timing & mask reference
-    health_bar_mask.png         ← Heart shape (matches bar dimensions)
+    health_bar.png.mcmeta       ← Custom timing 
     health_background.png       ← Ornate frame
     health_background.png.mcmeta ← Nine-slice for scaling
     health_foreground.png       ← Gold border
@@ -1024,8 +1023,7 @@ fantasy_bars/
 | File | Dimensions | Required? | Notes |
 |------|------------|-----------|-------|
 | `health_bar.png` | 256×1024 | ✅ Yes | Animated bar |
-| `health_bar.png.mcmeta` | N/A | ⚠️ Optional | Animation + mask |
-| `health_bar_mask.png` | 256×32 | ⚠️ Optional | For shaped bars |
+| `health_bar.png.mcmeta` | N/A | ⚠️ Optional | Animation|
 | `health_background.png` | 256×256 | ⚠️ Optional | Frame/container |
 | `health_background.png.mcmeta` | N/A | ⚠️ Optional | Nine-slice |
 | `health_foreground.png` | 256×256 | ⚠️ Optional | Border overlay |
@@ -1041,7 +1039,6 @@ fantasy_bars/
 |------|------------|-------|
 | `health_bar.png` | 512×2048 | Double resolution |
 | `health_bar.png.mcmeta` | N/A | Must specify height: 64 |
-| `health_bar_mask.png` | 512×64 | Match frame size! |
 | `health_background.png` | 512×512 | Can be any size |
 
 ### Dimension Formula Reference

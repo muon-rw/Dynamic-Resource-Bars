@@ -1,13 +1,19 @@
+## 0.8.1
+- Fix bar rendering when current resource value was not within maximum/minimum bounds
+
 ## 0.8.0
-- **BREAKING CHANGE FOR RESOURCE PACKS - IMPORTANT!** Size of a texture is now parsed automatically, instead of needing 256x256 sprite sheet.
-- **BREAKING CHANGE FOR RESOURCE PACKS - IMPORTANT!** Some layers are now tiled/stretched/nine-sliced BY DEFAULT! If you had a custom texture you don't want sliced, you'll need to override the relevant `.mcmeta` file in your resource pack
-- Editor rework! Added a right-click context menu to most on-screen elements, and removed most GUI buttons
-Add arrow-key move to editor
-- Add tiling/stretching/nine-slicing **for background, foreground, and overlay layers only** (via resource pack .mcmeta)
-- Add shift+arrow-key resize to editor
-- Add tab to cycle selected element to editor
-- Animation frames are now configurable (via resource pack .mcmeta)
-- Fix health values not updating while paused in 1.20.1 Fabric
+- **BREAKING CHANGES FOR RESOURCE PACKS - IMPORTANT!** Size of textures is now read/mapped automatically, instead of requiring a 256x256 sprite sheet.
+- **BREAKING CHANGE #2:** Many layers are now tiled, stretched, or nine-sliced BY DEFAULT! 
+- - If you had a custom layer texture you don't want to have this behavior, you'll need to override the relevant `.mcmeta` file in your resource pack
+- **Editor rework!** 
+- - Added a right-click context menu to most on-screen elements, and removed most GUI buttons
+- - Add arrow-key move
+- - Add shift+arrow-key resize
+- - Add tab to cycle selected element
+- **Resource Pack features (see mod assets' `.mcmeta` files for examples):**
+- - Add tiling/stretching/nine-slicing **for background, foreground, and overlay layers only**
+- - Animation frame height/timing is now configurable **for bars only**
+- Fix health values not updating while the inventory was open in 1.20.1 Fabric
 - Various internal cleanup
 
 ## 0.7.1

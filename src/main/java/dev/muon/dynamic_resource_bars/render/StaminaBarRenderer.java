@@ -329,8 +329,8 @@ public class StaminaBarRenderer {
             
             if (fillDirection == FillDirection.VERTICAL) {
                 // Calculate heights for the chunk
-                float startRatio = chunk.startValue / chunk.maxValue;
-                float endRatio = chunk.endValue / chunk.maxValue;
+                float startRatio = Math.max(0.0f, Math.min(1.0f, chunk.startValue / chunk.maxValue));
+                float endRatio = Math.max(0.0f, Math.min(1.0f, chunk.endValue / chunk.maxValue));
                 int startHeight = (int) (barRect.height() * startRatio);
                 int endHeight = (int) (barRect.height() * endRatio);
                 int chunkHeight = endHeight - startHeight;
@@ -348,8 +348,8 @@ public class StaminaBarRenderer {
                 }
             } else { // HORIZONTAL
                 // Calculate widths for the chunk
-                float startRatio = chunk.startValue / chunk.maxValue;
-                float endRatio = chunk.endValue / chunk.maxValue;
+                float startRatio = Math.max(0.0f, Math.min(1.0f, chunk.startValue / chunk.maxValue));
+                float endRatio = Math.max(0.0f, Math.min(1.0f, chunk.endValue / chunk.maxValue));
                 int startWidth = (int) (barRect.width() * startRatio);
                 int endWidth = (int) (barRect.width() * endRatio);
                 int chunkWidth = endWidth - startWidth;
@@ -435,7 +435,7 @@ public class StaminaBarRenderer {
         
         int totalBarWidth = barAreaRect.width();
         int barHeight = barAreaRect.height();
-        float currentStaminaRatio = (values.max == 0) ? 0.0f : (values.current / values.max);
+        float currentStaminaRatio = (values.max == 0) ? 0.0f : Math.max(0.0f, Math.min(1.0f, values.current / values.max));
 
         FillDirection fillDirection = ModConfigManager.getClient().staminaFillDirection;
 
@@ -686,8 +686,8 @@ public class StaminaBarRenderer {
         ResourceLocation barTexture = DynamicResourceBars.loc("textures/gui/" + barTextureStr + ".png");
 
         if (fillDirection == FillDirection.VERTICAL) {
-            int currentHeight = (int) (barRect.height() * (currentHunger / 20f));
-            int restoredHeight = (int) (barRect.height() * (restoredHunger / 20f));
+            int currentHeight = (int) (barRect.height() * Math.max(0.0f, Math.min(1.0f, currentHunger / 20f)));
+            int restoredHeight = (int) (barRect.height() * Math.max(0.0f, Math.min(1.0f, restoredHunger / 20f)));
             int overlayHeight = restoredHeight - currentHeight;
 
             if (overlayHeight > 0) {
@@ -702,8 +702,8 @@ public class StaminaBarRenderer {
                 );
             }
         } else { // HORIZONTAL
-            int currentWidth = (int) (barRect.width() * (currentHunger / 20f));
-            int restoredWidth = (int) (barRect.width() * (restoredHunger / 20f));
+            int currentWidth = (int) (barRect.width() * Math.max(0.0f, Math.min(1.0f, currentHunger / 20f)));
+            int restoredWidth = (int) (barRect.width() * Math.max(0.0f, Math.min(1.0f, restoredHunger / 20f)));
             int overlayWidth = restoredWidth - currentWidth;
 
             if (overlayWidth > 0) {

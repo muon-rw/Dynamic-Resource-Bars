@@ -260,7 +260,7 @@ public class ManaBarRenderer {
         FillDirection fillDirection = ModConfigManager.getClient().manaFillDirection;
 
         if (fillDirection == FillDirection.VERTICAL) {
-            int filledHeight = (int) (barHeight * (currentMana / maxManaTotal));
+            int filledHeight = (int) (barHeight * Math.max(0.0, Math.min(1.0, currentMana / maxManaTotal)));
             if (filledHeight <= 0 && currentMana > 0) filledHeight = 1;
             if (filledHeight > barHeight) filledHeight = barHeight;
 
@@ -278,7 +278,7 @@ public class ManaBarRenderer {
                         animData.textureWidth, animData.textureHeight);
             }
         } else { // HORIZONTAL
-            int filledWidth = (int) (totalBarWidth * (currentMana / maxManaTotal));
+            int filledWidth = (int) (totalBarWidth * Math.max(0.0, Math.min(1.0, currentMana / maxManaTotal)));
             if (filledWidth <= 0 && currentMana > 0) filledWidth = 1;
             if (filledWidth > totalBarWidth) filledWidth = totalBarWidth;
 
@@ -454,8 +454,8 @@ public class ManaBarRenderer {
             
             if (fillDirection == FillDirection.VERTICAL) {
                 // Calculate heights for the chunk
-                float startRatio = (float)(chunk.startValue / effectiveMaxForChunk);
-                float endRatio = (float)(chunk.endValue / effectiveMaxForChunk);
+                float startRatio = (float) Math.max(0.0, Math.min(1.0, chunk.startValue / effectiveMaxForChunk));
+                float endRatio = (float) Math.max(0.0, Math.min(1.0, chunk.endValue / effectiveMaxForChunk));
                 int startHeight = (int) (barRect.height() * startRatio);
                 int endHeight = (int) (barRect.height() * endRatio);
                 int chunkHeight = endHeight - startHeight;
@@ -473,8 +473,8 @@ public class ManaBarRenderer {
                 }
             } else { // HORIZONTAL
                 // Calculate widths for the chunk
-                float startRatio = (float)(chunk.startValue / effectiveMaxForChunk);
-                float endRatio = (float)(chunk.endValue / effectiveMaxForChunk);
+                float startRatio = (float) Math.max(0.0, Math.min(1.0, chunk.startValue / effectiveMaxForChunk));
+                float endRatio = (float) Math.max(0.0, Math.min(1.0, chunk.endValue / effectiveMaxForChunk));
                 int startWidth = (int) (barRect.width() * startRatio);
                 int endWidth = (int) (barRect.width() * endRatio);
                 int chunkWidth = endWidth - startWidth;
