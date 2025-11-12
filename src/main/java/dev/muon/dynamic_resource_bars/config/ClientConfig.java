@@ -8,8 +8,8 @@ import dev.muon.dynamic_resource_bars.util.HorizontalAlignment;
 import dev.muon.dynamic_resource_bars.util.TextBehavior;
 import dev.muon.dynamic_resource_bars.util.BarRenderBehavior;
 import dev.muon.dynamic_resource_bars.util.FillDirection;
-import dev.muon.dynamic_resource_bars.util.ManaBarBehavior;
-import dev.muon.dynamic_resource_bars.util.StaminaBarBehavior;
+import dev.muon.dynamic_resource_bars.provider.ManaBarBehavior;
+import dev.muon.dynamic_resource_bars.provider.StaminaBarBehavior;
 
 import java.io.Reader;
 import java.io.Writer;

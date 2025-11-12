@@ -8,9 +8,9 @@ import dev.muon.dynamic_resource_bars.render.ManaBarRenderer;
 import dev.muon.dynamic_resource_bars.render.AirBarRenderer;
 import dev.muon.dynamic_resource_bars.util.BarRenderBehavior;
 import dev.muon.dynamic_resource_bars.compat.ManaProviderManager;
-import dev.muon.dynamic_resource_bars.util.ManaBarBehavior;
-import dev.muon.dynamic_resource_bars.util.ManaProvider;
-import dev.muon.dynamic_resource_bars.util.StaminaBarBehavior;
+import dev.muon.dynamic_resource_bars.provider.ManaBarBehavior;
+import dev.muon.dynamic_resource_bars.provider.ManaProvider;
+import dev.muon.dynamic_resource_bars.provider.StaminaBarBehavior;
 #if FORGE
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;

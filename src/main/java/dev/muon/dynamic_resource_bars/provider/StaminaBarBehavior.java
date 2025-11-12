@@ -1,4 +1,4 @@
-package dev.muon.dynamic_resource_bars.util;
+package dev.muon.dynamic_resource_bars.provider;
 
 public enum StaminaBarBehavior {
     FOOD("food", "gui.dynamic_resource_bars.stamina_bar_behavior.food"),

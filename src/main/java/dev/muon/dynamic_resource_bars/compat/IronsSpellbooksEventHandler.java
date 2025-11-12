@@ -2,7 +2,7 @@ package dev.muon.dynamic_resource_bars.compat;
 
 import dev.muon.dynamic_resource_bars.DynamicResourceBars;
 import dev.muon.dynamic_resource_bars.config.ModConfigManager;
-import dev.muon.dynamic_resource_bars.util.ManaBarBehavior;
+import dev.muon.dynamic_resource_bars.provider.ManaBarBehavior;
 import dev.muon.dynamic_resource_bars.render.ManaBarRenderer;
 import net.minecraft.client.Minecraft;
 import net.minecraft.world.entity.player.Player;

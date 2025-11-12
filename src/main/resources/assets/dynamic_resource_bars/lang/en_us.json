@@ -21,10 +21,9 @@
   "gui.dynamic_resource_bars.hud_editor.help.main.line2": "Right-click a bar to see additional settings.",
   "gui.dynamic_resource_bars.hud_editor.help.main.line3": "Press [Tab] to cycle between elements.",
   "gui.dynamic_resource_bars.hud_editor.help.main.line4": "Arrow Keys to move, Shift+Arrow Keys to resize.",
-  "gui.dynamic_resource_bars.hud_editor.help.focus.line1": "Drag bar to move. Double-click to exit focus.",
-  "gui.dynamic_resource_bars.hud_editor.help.focus.line2.sub_element": "Drag sub-elements to adjust offsets (not for Armor/Air).",
-  "gui.dynamic_resource_bars.hud_editor.help.focus.line3": "Use buttons for other settings.",
-  "gui.dynamic_resource_bars.hud_editor.help.focus.line4": "ESC to save settings and close editor.",
+  "gui.dynamic_resource_bars.hud_editor.help.focus.line1": "Click and Drag Sub-Elements to move or resize.",
+  "gui.dynamic_resource_bars.hud_editor.help.focus.line2": "Right click sub-elements for additional settings.",
+  "gui.dynamic_resource_bars.hud_editor.help.focus.line3": "ESC to save settings and close editor.",
 
   "bar_behavior.vanilla": "Vanilla",
   "bar_behavior.custom": "Custom",

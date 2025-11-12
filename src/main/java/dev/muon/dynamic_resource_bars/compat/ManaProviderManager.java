@@ -1,9 +1,9 @@
 package dev.muon.dynamic_resource_bars.compat;
 
 import dev.muon.dynamic_resource_bars.config.ModConfigManager;
-import dev.muon.dynamic_resource_bars.util.ManaProvider;
-import dev.muon.dynamic_resource_bars.util.ManaProviderRegistry;
-import dev.muon.dynamic_resource_bars.util.ManaBarBehavior;
+import dev.muon.dynamic_resource_bars.provider.ManaProvider;
+import dev.muon.dynamic_resource_bars.provider.ManaProviderRegistry;
+import dev.muon.dynamic_resource_bars.provider.ManaBarBehavior;
 import dev.muon.dynamic_resource_bars.util.PlatformUtil;
 import net.minecraft.client.Minecraft;
 

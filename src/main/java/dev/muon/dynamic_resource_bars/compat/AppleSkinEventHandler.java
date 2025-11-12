@@ -2,7 +2,7 @@ package dev.muon.dynamic_resource_bars.compat;
 
 import dev.muon.dynamic_resource_bars.DynamicResourceBars;
 import dev.muon.dynamic_resource_bars.config.ModConfigManager;
-import dev.muon.dynamic_resource_bars.util.StaminaBarBehavior;
+import dev.muon.dynamic_resource_bars.provider.StaminaBarBehavior;
 
 #if FORGE
     import net.minecraftforge.api.distmarker.Dist;

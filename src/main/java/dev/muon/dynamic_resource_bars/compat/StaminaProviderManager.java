@@ -1,9 +1,9 @@
 package dev.muon.dynamic_resource_bars.compat;
 
 import dev.muon.dynamic_resource_bars.config.ModConfigManager;
-import dev.muon.dynamic_resource_bars.util.StaminaProvider;
-import dev.muon.dynamic_resource_bars.util.StaminaProviderRegistry;
-import dev.muon.dynamic_resource_bars.util.StaminaBarBehavior;
+import dev.muon.dynamic_resource_bars.provider.StaminaProvider;
+import dev.muon.dynamic_resource_bars.provider.StaminaProviderRegistry;
+import dev.muon.dynamic_resource_bars.provider.StaminaBarBehavior;
 import dev.muon.dynamic_resource_bars.util.PlatformUtil;
 import net.minecraft.client.Minecraft;
 

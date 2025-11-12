@@ -3,6 +3,7 @@ package dev.muon.dynamic_resource_bars.render;
 import com.mojang.blaze3d.systems.RenderSystem;
 import dev.muon.dynamic_resource_bars.DynamicResourceBars;
 import dev.muon.dynamic_resource_bars.config.ModConfigManager;
+import dev.muon.dynamic_resource_bars.provider.ManaProvider;
 import dev.muon.dynamic_resource_bars.util.*;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
@@ -89,7 +90,7 @@ public class ManaBarRenderer {
                                       y + ModConfigManager.getClient().manaBarYOffset, 
                                       ModConfigManager.getClient().manaBarWidth, 
                                       ModConfigManager.getClient().manaBarHeight);
-            case FOREGROUND_DETAIL:
+            case FOREGROUND:
                 return new ScreenRect(x + ModConfigManager.getClient().manaOverlayXOffset, 
                                       y + ModConfigManager.getClient().manaOverlayYOffset, 
                                       ModConfigManager.getClient().manaOverlayWidth,
@@ -173,7 +174,7 @@ public class ManaBarRenderer {
         renderReservedOverlay(graphics, manaProvider, animOffset, barRect, animData);
 
         if (ModConfigManager.getClient().enableManaForeground) {
-            ScreenRect fgRect = getSubElementRect(SubElementType.FOREGROUND_DETAIL, player);
+            ScreenRect fgRect = getSubElementRect(SubElementType.FOREGROUND, player);
             ResourceLocation fgTexture = DynamicResourceBars.loc("textures/gui/mana_foreground.png");
             AnimationMetadata.ScalingInfo fgScaling = AnimationMetadataCache.getManaForegroundScaling();
             AnimationMetadata.TextureDimensions fgDims = AnimationMetadataCache.getTextureDimensions(fgTexture);
@@ -217,7 +218,7 @@ public class ManaBarRenderer {
                 graphics.renderOutline(barRectOutline.x()-1, barRectOutline.y()-1, barRectOutline.width()+2, barRectOutline.height()+2, 0xA000FFFF);
                 
                 if (ModConfigManager.getClient().enableManaForeground) {
-                    ScreenRect fgRect = getSubElementRect(SubElementType.FOREGROUND_DETAIL, player);
+                    ScreenRect fgRect = getSubElementRect(SubElementType.FOREGROUND, player);
                     graphics.renderOutline(fgRect.x()-1, fgRect.y()-1, fgRect.width()+2, fgRect.height()+2, 0xA0FF00FF);
                 }
                 graphics.renderOutline(complexRect.x()-2, complexRect.y()-2, complexRect.width()+4, complexRect.height()+4, 0x80FFFFFF);

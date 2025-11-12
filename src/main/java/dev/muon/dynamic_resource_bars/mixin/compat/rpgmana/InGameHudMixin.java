@@ -9,7 +9,7 @@ import net.minecraft.world.entity.player.Player;
 import org.spongepowered.asm.mixin.Mixin;
 #if FABRIC
 import dev.muon.dynamic_resource_bars.config.ModConfigManager;
-import dev.muon.dynamic_resource_bars.util.ManaBarBehavior;
+import dev.muon.dynamic_resource_bars.provider.ManaBarBehavior;
 import dev.muon.dynamic_resource_bars.render.ManaBarRenderer;
 import dev.muon.dynamic_resource_bars.compat.ManaProviderManager;
 import com.cleannrooster.rpgmana.client.InGameHud;

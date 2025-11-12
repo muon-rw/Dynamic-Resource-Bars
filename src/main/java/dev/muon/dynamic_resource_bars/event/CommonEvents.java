@@ -7,7 +7,7 @@ import dev.muon.dynamic_resource_bars.render.ArmorBarRenderer;
 import dev.muon.dynamic_resource_bars.render.HealthBarRenderer;
 import dev.muon.dynamic_resource_bars.render.StaminaBarRenderer;
 import dev.muon.dynamic_resource_bars.util.BarRenderBehavior;
-import dev.muon.dynamic_resource_bars.util.StaminaBarBehavior;
+import dev.muon.dynamic_resource_bars.provider.StaminaBarBehavior;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.world.entity.player.Player;

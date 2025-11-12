@@ -4,6 +4,7 @@ package dev.muon.dynamic_resource_bars.render;
 import com.mojang.blaze3d.systems.RenderSystem;
 import dev.muon.dynamic_resource_bars.DynamicResourceBars;
 import dev.muon.dynamic_resource_bars.config.ModConfigManager;
+import dev.muon.dynamic_resource_bars.provider.StaminaProvider;
 import dev.muon.dynamic_resource_bars.util.*;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
@@ -104,7 +105,7 @@ public class StaminaBarRenderer {
                         y + ModConfigManager.getClient().staminaBarYOffset,
                         ModConfigManager.getClient().staminaBarWidth,
                         ModConfigManager.getClient().staminaBarHeight);
-            case FOREGROUND_DETAIL:
+            case FOREGROUND:
                 return new ScreenRect(x + ModConfigManager.getClient().staminaOverlayXOffset,
                         y + ModConfigManager.getClient().staminaOverlayYOffset,
                         ModConfigManager.getClient().staminaOverlayWidth,
@@ -208,7 +209,7 @@ public class StaminaBarRenderer {
         }
 
         if (ModConfigManager.getClient().enableStaminaForeground) {
-            ScreenRect fgRect = getSubElementRect(SubElementType.FOREGROUND_DETAIL, player);
+            ScreenRect fgRect = getSubElementRect(SubElementType.FOREGROUND, player);
             ResourceLocation fgTexture = DynamicResourceBars.loc("textures/gui/stamina_foreground.png");
             AnimationMetadata.ScalingInfo fgScaling = AnimationMetadataCache.getStaminaForegroundScaling();
             AnimationMetadata.TextureDimensions fgDims = AnimationMetadataCache.getTextureDimensions(fgTexture);
@@ -251,7 +252,7 @@ public class StaminaBarRenderer {
                 graphics.renderOutline(barRectOutline.x() - 1, barRectOutline.y() - 1, barRectOutline.width() + 2, barRectOutline.height() + 2, 0xA0FFA500);
 
                 if (ModConfigManager.getClient().enableStaminaForeground) {
-                    ScreenRect fgRect = getSubElementRect(SubElementType.FOREGROUND_DETAIL, player);
+                    ScreenRect fgRect = getSubElementRect(SubElementType.FOREGROUND, player);
                     graphics.renderOutline(fgRect.x() - 1, fgRect.y() - 1, fgRect.width() + 2, fgRect.height() + 2, 0xA0FF00FF);
                 }
                 graphics.renderOutline(complexRect.x() - 2, complexRect.y() - 2, complexRect.width() + 4, complexRect.height() + 4, 0x80FFFFFF);

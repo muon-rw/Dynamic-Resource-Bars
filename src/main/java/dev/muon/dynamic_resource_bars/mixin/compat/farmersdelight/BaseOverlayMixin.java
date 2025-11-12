@@ -2,7 +2,7 @@ package dev.muon.dynamic_resource_bars.mixin.compat.farmersdelight;
 
 import net.minecraft.client.Minecraft;
 import org.spongepowered.asm.mixin.Mixin;
-import dev.muon.dynamic_resource_bars.util.StaminaBarBehavior;
+import dev.muon.dynamic_resource_bars.provider.StaminaBarBehavior;
 
 #if NEWER_THAN_20_1 && FABRIC
 import net.minecraft.client.DeltaTracker;

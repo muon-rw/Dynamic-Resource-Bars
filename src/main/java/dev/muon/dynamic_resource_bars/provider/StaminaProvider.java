@@ -1,4 +1,4 @@
-package dev.muon.dynamic_resource_bars.util;
+package dev.muon.dynamic_resource_bars.provider;
 
 import net.minecraft.world.entity.player.Player;
 

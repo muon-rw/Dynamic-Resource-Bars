@@ -6,7 +6,7 @@ import com.hollingsworth.arsnouveau.client.ClientInfo;
 import com.hollingsworth.arsnouveau.setup.registry.CapabilityRegistry;
 import com.hollingsworth.arsnouveau.client.gui.GuiManaHUD;
 #endif
-import dev.muon.dynamic_resource_bars.util.ManaProvider;
+import dev.muon.dynamic_resource_bars.provider.ManaProvider;
 import dev.muon.dynamic_resource_bars.util.PlatformUtil;
 import net.minecraft.client.Minecraft;
 import net.minecraft.world.entity.player.Player;

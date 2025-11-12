@@ -1,5 +1,6 @@
 package dev.muon.dynamic_resource_bars.util;
 
+import dev.muon.dynamic_resource_bars.provider.StaminaBarBehavior;
 import lombok.Getter;
 import lombok.Setter;
 import net.minecraft.client.Minecraft;

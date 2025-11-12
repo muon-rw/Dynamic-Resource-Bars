@@ -1,33 +1,31 @@
-package dev.muon.dynamic_resource_bars.util;
+package dev.muon.dynamic_resource_bars.provider;
 
 import org.jetbrains.annotations.Nullable;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Supplier;
 
-public class StaminaProviderRegistry {
+public class ManaProviderRegistry {
 
-    // Use Supplier to potentially defer provider instantiation if needed
-    private static final List<Supplier<StaminaProvider>> registeredProviders = new ArrayList<>();
-    private static StaminaProvider activeProvider = null;
+    private static final List<Supplier<ManaProvider>> registeredProviders = new ArrayList<>();
+    private static ManaProvider activeProvider = null;
 
-    public static void registerProvider(Supplier<StaminaProvider> providerSupplier) {
+    public static void registerProvider(Supplier<ManaProvider> providerSupplier) {
         registeredProviders.add(providerSupplier);
         // For now, automatically activate the first registered provider
         if (activeProvider == null) {
             setActiveProvider(providerSupplier.get()); 
         }
+        // TODO: Log registration?
     }
 
-    public static void setActiveProvider(@Nullable StaminaProvider provider) {
+    public static void setActiveProvider(@Nullable ManaProvider provider) {
         activeProvider = provider;
     }
     
     @Nullable
-    public static StaminaProvider getActiveProvider() {
-         // Ensure the active provider is instantiated if it hasn't been already
+    public static ManaProvider getActiveProvider() {
         if (activeProvider == null && !registeredProviders.isEmpty()) {
-            // Activate the first one by default if none is active
              setActiveProvider(registeredProviders.get(0).get());
         }
         return activeProvider;
@@ -37,7 +35,7 @@ public class StaminaProviderRegistry {
         return !registeredProviders.isEmpty();
     }
 
-    public static List<Supplier<StaminaProvider>> getRegisteredProviders() {
+    public static List<Supplier<ManaProvider>> getRegisteredProviders() {
         return List.copyOf(registeredProviders); // Return immutable copy
     }
 

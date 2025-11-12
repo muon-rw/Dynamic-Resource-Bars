@@ -2,12 +2,11 @@ package dev.muon.dynamic_resource_bars.mixin.compat.manaattributes;
 
 import dev.muon.dynamic_resource_bars.compat.ManaProviderManager;
 import dev.muon.dynamic_resource_bars.render.ManaBarRenderer;
-import dev.muon.dynamic_resource_bars.util.ManaBarBehavior;
+import dev.muon.dynamic_resource_bars.provider.ManaBarBehavior;
 import net.minecraft.client.Minecraft;
 import net.minecraft.world.entity.player.Player;
 import org.spongepowered.asm.mixin.Mixin;
 import dev.muon.dynamic_resource_bars.config.ModConfigManager;
-import dev.muon.dynamic_resource_bars.util.ManaSource;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;

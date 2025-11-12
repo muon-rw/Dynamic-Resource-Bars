@@ -24,9 +24,9 @@ public class NineSliceRenderer {
      * This is the main entry point that delegates to appropriate rendering method.
      */
     public static void renderWithScaling(GuiGraphics graphics, ResourceLocation texture,
-                                        AnimationMetadata.ScalingInfo scalingInfo,
-                                        int x, int y, int width, int height,
-                                        int textureWidth, int textureHeight) {
+                                         AnimationMetadata.ScalingInfo scalingInfo,
+                                         int x, int y, int width, int height,
+                                         int textureWidth, int textureHeight) {
         
         if (scalingInfo.mode == AnimationMetadata.ScalingMode.NONE) {
             // No scaling - 1:1 UV sampling (sample exactly what fits)
@@ -135,7 +135,7 @@ public class NineSliceRenderer {
             }
         }
         
-        RenderSystem.disableBlend();
+        // Note: Don't disable blend here - let the calling code manage blend state lifecycle
     }
     
     /**
@@ -172,7 +172,6 @@ public class NineSliceRenderer {
         if (centerWidth < 0 || centerHeight < 0) {
             // Borders too large for render area, just stretch whole texture from source region
             graphics.blit(texture, x, y, source.u, source.v, width, height, textureWidth, textureHeight);
-            RenderSystem.disableBlend();
             return;
         }
         
@@ -184,7 +183,6 @@ public class NineSliceRenderer {
             );
             // Just stretch the entire source region
             graphics.blit(texture, x, y, source.u, source.v, width, height, textureWidth, textureHeight);
-            RenderSystem.disableBlend();
             return;
         }
         
@@ -254,7 +252,7 @@ public class NineSliceRenderer {
                 source.u + source.width - r, source.v + source.height - b, r, b, textureWidth, textureHeight);
         }
         
-        RenderSystem.disableBlend();
+        // Note: Don't disable blend here - let the calling code manage blend state lifecycle
     }
     
     /**

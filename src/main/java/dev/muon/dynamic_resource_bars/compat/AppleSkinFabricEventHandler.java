@@ -2,7 +2,7 @@ package dev.muon.dynamic_resource_bars.compat;
 
 #if FABRIC
 import dev.muon.dynamic_resource_bars.config.ModConfigManager;
-import dev.muon.dynamic_resource_bars.util.StaminaBarBehavior;
+import dev.muon.dynamic_resource_bars.provider.StaminaBarBehavior;
 import squeek.appleskin.api.event.HUDOverlayEvent;
 #endif
 public class AppleSkinFabricEventHandler {

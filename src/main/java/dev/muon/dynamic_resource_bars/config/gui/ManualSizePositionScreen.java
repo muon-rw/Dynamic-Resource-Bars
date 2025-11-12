@@ -112,13 +112,13 @@ public class ManualSizePositionScreen extends Screen {
     private boolean hasWidth(SubElementType subElement) {
         return subElement == SubElementType.BACKGROUND || 
                subElement == SubElementType.BAR_MAIN || 
-               subElement == SubElementType.FOREGROUND_DETAIL;
+               subElement == SubElementType.FOREGROUND;
     }
     
     private boolean hasHeight(SubElementType subElement) {
         return subElement == SubElementType.BACKGROUND || 
                subElement == SubElementType.BAR_MAIN || 
-               subElement == SubElementType.FOREGROUND_DETAIL;
+               subElement == SubElementType.FOREGROUND;
     }
 
     private int[] getCurrentValues(ClientConfig config) {
@@ -127,7 +127,7 @@ public class ManualSizePositionScreen extends Screen {
             case HEALTH_BAR -> switch (subElement) {
                 case BACKGROUND -> new int[]{config.healthBackgroundXOffset, config.healthBackgroundYOffset, config.healthBackgroundWidth, config.healthBackgroundHeight};
                 case BAR_MAIN -> new int[]{config.healthBarXOffset, config.healthBarYOffset, config.healthBarWidth, config.healthBarHeight};
-                case FOREGROUND_DETAIL -> new int[]{config.healthOverlayXOffset, config.healthOverlayYOffset, config.healthOverlayWidth, config.healthOverlayHeight};
+                case FOREGROUND -> new int[]{config.healthOverlayXOffset, config.healthOverlayYOffset, config.healthOverlayWidth, config.healthOverlayHeight};
                 case TEXT -> new int[]{config.healthTextXOffset, config.healthTextYOffset, 0, 0};
                 case ABSORPTION_TEXT -> new int[]{config.healthAbsorptionTextXOffset, config.healthAbsorptionTextYOffset, 0, 0};
                 default -> new int[]{0, 0, 0, 0};
@@ -135,14 +135,14 @@ public class ManualSizePositionScreen extends Screen {
             case STAMINA_BAR -> switch (subElement) {
                 case BACKGROUND -> new int[]{config.staminaBackgroundXOffset, config.staminaBackgroundYOffset, config.staminaBackgroundWidth, config.staminaBackgroundHeight};
                 case BAR_MAIN -> new int[]{config.staminaBarXOffset, config.staminaBarYOffset, config.staminaBarWidth, config.staminaBarHeight};
-                case FOREGROUND_DETAIL -> new int[]{config.staminaOverlayXOffset, config.staminaOverlayYOffset, config.staminaOverlayWidth, config.staminaOverlayHeight};
+                case FOREGROUND -> new int[]{config.staminaOverlayXOffset, config.staminaOverlayYOffset, config.staminaOverlayWidth, config.staminaOverlayHeight};
                 case TEXT -> new int[]{config.staminaTextXOffset, config.staminaTextYOffset, 0, 0};
                 default -> new int[]{0, 0, 0, 0};
             };
             case MANA_BAR -> switch (subElement) {
                 case BACKGROUND -> new int[]{config.manaBackgroundXOffset, config.manaBackgroundYOffset, config.manaBackgroundWidth, config.manaBackgroundHeight};
                 case BAR_MAIN -> new int[]{config.manaBarXOffset, config.manaBarYOffset, config.manaBarWidth, config.manaBarHeight};
-                case FOREGROUND_DETAIL -> new int[]{config.manaOverlayXOffset, config.manaOverlayYOffset, config.manaOverlayWidth, config.manaOverlayHeight};
+                case FOREGROUND -> new int[]{config.manaOverlayXOffset, config.manaOverlayYOffset, config.manaOverlayWidth, config.manaOverlayHeight};
                 case TEXT -> new int[]{config.manaTextXOffset, config.manaTextYOffset, 0, 0};
                 default -> new int[]{0, 0, 0, 0};
             };
@@ -187,7 +187,7 @@ public class ManualSizePositionScreen extends Screen {
                             config.healthBarWidth = width;
                             config.healthBarHeight = height;
                             break;
-                        case FOREGROUND_DETAIL:
+                        case FOREGROUND:
                             config.healthOverlayXOffset = xOffset;
                             config.healthOverlayYOffset = yOffset;
                             config.healthOverlayWidth = width;
@@ -217,7 +217,7 @@ public class ManualSizePositionScreen extends Screen {
                             config.staminaBarWidth = width;
                             config.staminaBarHeight = height;
                             break;
-                        case FOREGROUND_DETAIL:
+                        case FOREGROUND:
                             config.staminaOverlayXOffset = xOffset;
                             config.staminaOverlayYOffset = yOffset;
                             config.staminaOverlayWidth = width;
@@ -243,7 +243,7 @@ public class ManualSizePositionScreen extends Screen {
                             config.manaBarWidth = width;
                             config.manaBarHeight = height;
                             break;
-                        case FOREGROUND_DETAIL:
+                        case FOREGROUND:
                             config.manaOverlayXOffset = xOffset;
                             config.manaOverlayYOffset = yOffset;
                             config.manaOverlayWidth = width;
@@ -333,7 +333,7 @@ public class ManualSizePositionScreen extends Screen {
         Component subElementName = switch (subElement) {
             case BACKGROUND -> Component.translatable("gui.dynamic_resource_bars.subelement.background");
             case BAR_MAIN -> Component.translatable("gui.dynamic_resource_bars.subelement.bar_main");
-            case FOREGROUND_DETAIL -> Component.translatable("gui.dynamic_resource_bars.subelement.foreground");
+            case FOREGROUND -> Component.translatable("gui.dynamic_resource_bars.subelement.foreground");
             case TEXT -> Component.translatable("gui.dynamic_resource_bars.subelement.text");
             case ICON -> Component.translatable("gui.dynamic_resource_bars.subelement.icon");
             case ABSORPTION_TEXT -> Component.translatable("gui.dynamic_resource_bars.subelement.absorption_text");

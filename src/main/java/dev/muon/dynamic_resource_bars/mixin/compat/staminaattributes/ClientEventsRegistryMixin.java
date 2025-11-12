@@ -2,7 +2,7 @@ package dev.muon.dynamic_resource_bars.mixin.compat.staminaattributes;
 
 import dev.muon.dynamic_resource_bars.compat.StaminaProviderManager;
 import dev.muon.dynamic_resource_bars.render.StaminaBarRenderer;
-import dev.muon.dynamic_resource_bars.util.StaminaBarBehavior;
+import dev.muon.dynamic_resource_bars.provider.StaminaBarBehavior;
 import net.minecraft.client.Minecraft;
 import net.minecraft.world.entity.player.Player;
 import org.spongepowered.asm.mixin.Mixin;

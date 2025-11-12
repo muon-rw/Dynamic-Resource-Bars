@@ -1,4 +1,4 @@
-package dev.muon.dynamic_resource_bars.util;
+package dev.muon.dynamic_resource_bars.provider;
 
 public enum ManaBarBehavior {
     OFF("gui.dynamic_resource_bars.mana_behavior.off"),

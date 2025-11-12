@@ -123,7 +123,7 @@ public class HealthBarRenderer {
                                       y + ModConfigManager.getClient().healthBarYOffset, 
                                       ModConfigManager.getClient().healthBarWidth, 
                                       ModConfigManager.getClient().healthBarHeight);
-            case FOREGROUND_DETAIL:
+            case FOREGROUND:
                 return new ScreenRect(x + ModConfigManager.getClient().healthOverlayXOffset, 
                                       y + ModConfigManager.getClient().healthOverlayYOffset, 
                                       ModConfigManager.getClient().healthOverlayWidth,
@@ -267,7 +267,7 @@ public class HealthBarRenderer {
                 graphics.renderOutline(barRect.x()-1, barRect.y()-1, barRect.width()+2, barRect.height()+2, 0xA000FF00);
                 
                 if (ModConfigManager.getClient().enableHealthForeground) {
-                    ScreenRect fgRect = getSubElementRect(SubElementType.FOREGROUND_DETAIL, player);
+                    ScreenRect fgRect = getSubElementRect(SubElementType.FOREGROUND, player);
                     graphics.renderOutline(fgRect.x()-1, fgRect.y()-1, fgRect.width()+2, fgRect.height()+2, 0xA0FF00FF);
                 }
                 
@@ -529,7 +529,7 @@ public class HealthBarRenderer {
         }
 
         if (ModConfigManager.getClient().enableHealthForeground) {
-            ScreenRect fgRect = getSubElementRect(SubElementType.FOREGROUND_DETAIL, player);
+            ScreenRect fgRect = getSubElementRect(SubElementType.FOREGROUND, player);
             ResourceLocation fgTexture = DynamicResourceBars.loc("textures/gui/health_foreground.png");
             AnimationMetadata.ScalingInfo fgScaling = AnimationMetadataCache.getHealthForegroundScaling();
             AnimationMetadata.TextureDimensions fgDims = AnimationMetadataCache.getTextureDimensions(fgTexture);
