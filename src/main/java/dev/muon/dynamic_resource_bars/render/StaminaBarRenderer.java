@@ -266,15 +266,37 @@ public class StaminaBarRenderer {
     }
     
     private static void updateChunkTracking(Player player, BarValues values, StaminaProvider provider, float partialTicks) {
+        AnimationMetadata.AnimationData animData = AnimationMetadataCache.getStaminaBarAnimation();
+        boolean interpolateEnabled = animData.interpolate;
+        boolean vanillaTiling = animData.vanillatiling;
+
         // Clean up expired chunks and those covered by current fill
         Iterator<FadingChunk> it = fadingChunks.iterator();
         while (it.hasNext()) {
             FadingChunk chunk = it.next();
-            // Remove if expired or if current value covers this chunk
-            if (chunk.isExpired() || 
-                (chunk.isMounted == values.isMounted && values.current >= chunk.endValue)) {
+            boolean sameBarState = chunk.isMounted == values.isMounted;
+            boolean chunkCovered = false;
+            if (sameBarState) {
+                if (vanillaTiling) {
+                    float currentRatio = RenderUtil.toRenderRatio(values.current, chunk.maxValue, true);
+                    float chunkEndRatio = RenderUtil.toRenderRatio(chunk.endValue, chunk.maxValue, true);
+                    chunkCovered = currentRatio >= chunkEndRatio;
+                } else {
+                    chunkCovered = values.current >= chunk.endValue;
+                }
+            }
+
+            if (chunk.isExpired() || chunkCovered) {
                 it.remove();
             }
+        }
+
+        if (!interpolateEnabled) {
+            fadingChunks.clear();
+            previousValue = values.current;
+            previousMax = values.max;
+            wasMounted = values.isMounted;
+            return;
         }
         
         // Check if we need to create a new chunk
@@ -290,14 +312,29 @@ public class StaminaBarRenderer {
                 texture = provider.getBarTexture(player, values.current);
             }
             
-            // Load animation data (all stamina bar variants share the same animation properties)
-            AnimationMetadata.AnimationData animData = AnimationMetadataCache.getStaminaBarAnimation();
             float ticks = player.tickCount + partialTicks;
             int animOffset = AnimationMetadata.calculateAnimationOffset(animData, ticks);
             
             // Create chunk for the lost portion, clamping to 0 minimum
-            float chunkStart = Math.max(0, values.current);
-            fadingChunks.add(new FadingChunk(chunkStart, previousValue, values.max, texture, animOffset, values.isMounted));
+            float chunkStart = Math.max(0.0f, values.current);
+            float chunkEnd = previousValue;
+
+            if (vanillaTiling) {
+                float visibleStartRatio = RenderUtil.toRenderRatio(chunkStart, values.max, true);
+                float visibleEndRatio = RenderUtil.toRenderRatio(chunkEnd, values.max, true);
+
+                if (visibleEndRatio <= visibleStartRatio) {
+                    previousValue = values.current;
+                    previousMax = values.max;
+                    wasMounted = values.isMounted;
+                    return;
+                }
+
+                chunkStart = visibleStartRatio * values.max;
+                chunkEnd = visibleEndRatio * values.max;
+            }
+
+            fadingChunks.add(new FadingChunk(chunkStart, chunkEnd, values.max, texture, animOffset, values.isMounted));
         }
         
         // Update tracking values
@@ -329,8 +366,8 @@ public class StaminaBarRenderer {
             
             if (fillDirection == FillDirection.VERTICAL) {
                 // Calculate heights for the chunk
-                float startRatio = Math.max(0.0f, Math.min(1.0f, chunk.startValue / chunk.maxValue));
-                float endRatio = Math.max(0.0f, Math.min(1.0f, chunk.endValue / chunk.maxValue));
+                float startRatio = RenderUtil.toRenderRatio(chunk.startValue, chunk.maxValue, animData.vanillatiling);
+                float endRatio = RenderUtil.toRenderRatio(chunk.endValue, chunk.maxValue, animData.vanillatiling);
                 int startHeight = (int) (barRect.height() * startRatio);
                 int endHeight = (int) (barRect.height() * endRatio);
                 int chunkHeight = endHeight - startHeight;
@@ -348,8 +385,8 @@ public class StaminaBarRenderer {
                 }
             } else { // HORIZONTAL
                 // Calculate widths for the chunk
-                float startRatio = Math.max(0.0f, Math.min(1.0f, chunk.startValue / chunk.maxValue));
-                float endRatio = Math.max(0.0f, Math.min(1.0f, chunk.endValue / chunk.maxValue));
+                float startRatio = RenderUtil.toRenderRatio(chunk.startValue, chunk.maxValue, animData.vanillatiling);
+                float endRatio = RenderUtil.toRenderRatio(chunk.endValue, chunk.maxValue, animData.vanillatiling);
                 int startWidth = (int) (barRect.width() * startRatio);
                 int endWidth = (int) (barRect.width() * endRatio);
                 int chunkWidth = endWidth - startWidth;
@@ -435,7 +472,7 @@ public class StaminaBarRenderer {
         
         int totalBarWidth = barAreaRect.width();
         int barHeight = barAreaRect.height();
-        float currentStaminaRatio = (values.max == 0) ? 0.0f : Math.max(0.0f, Math.min(1.0f, values.current / values.max));
+        float currentStaminaRatio = RenderUtil.toRenderRatio(values.current, values.max, animData.vanillatiling);
 
         FillDirection fillDirection = ModConfigManager.getClient().staminaFillDirection;
 
@@ -602,7 +639,7 @@ public class StaminaBarRenderer {
         RenderSystem.enableBlend();
         RenderSystem.defaultBlendFunc();
 
-        float saturationPercent = Math.min(1.0f, saturation / 20f);
+        float saturationPercent = RenderUtil.applyVanillaTiling(saturation / 20f, animData.vanillatiling);
         FillDirection fillDirection = ModConfigManager.getClient().staminaFillDirection;
 
         // Use pulsing opacity instead of frame animation
@@ -684,10 +721,12 @@ public class StaminaBarRenderer {
         }
         
         ResourceLocation barTexture = DynamicResourceBars.loc("textures/gui/" + barTextureStr + ".png");
+        float currentRatio = RenderUtil.toRenderRatio(currentHunger, 20.0f, animData.vanillatiling);
+        float restoredRatio = RenderUtil.toRenderRatio(restoredHunger, 20.0f, animData.vanillatiling);
 
         if (fillDirection == FillDirection.VERTICAL) {
-            int currentHeight = (int) (barRect.height() * Math.max(0.0f, Math.min(1.0f, currentHunger / 20f)));
-            int restoredHeight = (int) (barRect.height() * Math.max(0.0f, Math.min(1.0f, restoredHunger / 20f)));
+            int currentHeight = (int) (barRect.height() * currentRatio);
+            int restoredHeight = (int) (barRect.height() * restoredRatio);
             int overlayHeight = restoredHeight - currentHeight;
 
             if (overlayHeight > 0) {
@@ -702,8 +741,8 @@ public class StaminaBarRenderer {
                 );
             }
         } else { // HORIZONTAL
-            int currentWidth = (int) (barRect.width() * Math.max(0.0f, Math.min(1.0f, currentHunger / 20f)));
-            int restoredWidth = (int) (barRect.width() * Math.max(0.0f, Math.min(1.0f, restoredHunger / 20f)));
+            int currentWidth = (int) (barRect.width() * currentRatio);
+            int restoredWidth = (int) (barRect.width() * restoredRatio);
             int overlayWidth = restoredWidth - currentWidth;
 
             if (overlayWidth > 0) {

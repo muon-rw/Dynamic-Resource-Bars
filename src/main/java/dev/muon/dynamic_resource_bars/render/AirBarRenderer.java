@@ -185,7 +185,7 @@ public class AirBarRenderer {
                 backgroundWidth, backgroundHeight, bgDims.width, bgDims.height
         );
 
-        float airPercent = (maxAir == 0) ? 0.0f : Math.min(1.0f, (float) currentAir / maxAir);
+        float airPercent = RenderUtil.toRenderRatio(currentAir, maxAir, animData.vanillatiling);
         ResourceLocation airBarTexture = DynamicResourceBars.loc("textures/gui/air_bar.png");
 
         if (fillDirection == FillDirection.VERTICAL) {

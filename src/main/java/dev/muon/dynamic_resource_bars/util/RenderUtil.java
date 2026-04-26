@@ -13,6 +13,45 @@ public class RenderUtil {
     public static final long TEXT_DISPLAY_DURATION = 2000L;
     public static final long TEXT_FADEOUT_DURATION = 500L;
     public static final int BASE_TEXT_ALPHA = 200;
+    private static final int VANILLA_BAR_STEPS = 20;
+
+    private static float clamp01(float value) {
+        return Math.max(0.0f, Math.min(1.0f, value));
+    }
+
+    private static double clamp01(double value) {
+        return Math.max(0.0d, Math.min(1.0d, value));
+    }
+
+    public static float toRenderRatio(float current, float max, boolean vanillaTiling) {
+        if (max <= 0.0f) {
+            return 0.0f;
+        }
+        return applyVanillaTiling(clamp01(current / max), vanillaTiling);
+    }
+
+    public static double toRenderRatio(double current, double max, boolean vanillaTiling) {
+        if (max <= 0.0d) {
+            return 0.0d;
+        }
+        return applyVanillaTiling(clamp01(current / max), vanillaTiling);
+    }
+
+    public static float applyVanillaTiling(float ratio, boolean vanillaTiling) {
+        float clamped = clamp01(ratio);
+        if (!vanillaTiling || clamped <= 0.0f) {
+            return clamped;
+        }
+        return Math.min(1.0f, (float) Math.ceil(clamped * VANILLA_BAR_STEPS) / VANILLA_BAR_STEPS);
+    }
+
+    public static double applyVanillaTiling(double ratio, boolean vanillaTiling) {
+        double clamped = clamp01(ratio);
+        if (!vanillaTiling || clamped <= 0.0d) {
+            return clamped;
+        }
+        return Math.min(1.0d, Math.ceil(clamped * VANILLA_BAR_STEPS) / VANILLA_BAR_STEPS);
+    }
 
     public static void renderText(float current, float max, GuiGraphics graphics, int baseX, int baseY, int color, HorizontalAlignment alignment) {
         Minecraft minecraft = Minecraft.getInstance();

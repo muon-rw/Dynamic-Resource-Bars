@@ -290,14 +290,34 @@ public class HealthBarRenderer {
     }
     
     private static void updateChunkTracking(Player player, float currentHealth, float maxHealth, float partialTicks) {
+        AnimationMetadata.AnimationData animData = AnimationMetadataCache.getHealthBarAnimation();
+        boolean interpolateEnabled = animData.interpolate;
+        boolean vanillaTiling = animData.vanillatiling;
+
         // Clean up expired chunks and those covered by current fill
         Iterator<FadingChunk> it = fadingChunks.iterator();
         while (it.hasNext()) {
             FadingChunk chunk = it.next();
-            // Remove if expired or if current health covers this chunk
-            if (chunk.isExpired() || currentHealth >= chunk.endValue) {
+            // Remove if expired or if current health covers this chunk.
+            boolean chunkCovered;
+            if (vanillaTiling) {
+                float currentRatio = RenderUtil.toRenderRatio(currentHealth, chunk.maxValue, true);
+                float chunkEndRatio = RenderUtil.toRenderRatio(chunk.endValue, chunk.maxValue, true);
+                chunkCovered = currentRatio >= chunkEndRatio;
+            } else {
+                chunkCovered = currentHealth >= chunk.endValue;
+            }
+
+            if (chunk.isExpired() || chunkCovered) {
                 it.remove();
             }
+        }
+
+        if (!interpolateEnabled) {
+            fadingChunks.clear();
+            previousHealth = currentHealth;
+            previousMaxHealth = maxHealth;
+            return;
         }
         
         // Check if we need to create a new chunk
@@ -306,14 +326,28 @@ public class HealthBarRenderer {
             BarType barType = BarType.fromPlayerState(player);
             String texture = barType.getTexture();
             
-            // Load animation data (all health bar variants share the same animation properties)
-            AnimationMetadata.AnimationData animData = AnimationMetadataCache.getHealthBarAnimation();
             float ticks = player.tickCount + partialTicks;
             int animOffset = AnimationMetadata.calculateAnimationOffset(animData, ticks);
             
             // Create chunk for the lost portion, clamping to 0 minimum
-            float chunkStart = Math.max(0, currentHealth);
-            fadingChunks.add(new FadingChunk(chunkStart, previousHealth, maxHealth, texture, animOffset));
+            float chunkStart = Math.max(0.0f, currentHealth);
+            float chunkEnd = previousHealth;
+
+            if (vanillaTiling) {
+                float visibleStartRatio = RenderUtil.toRenderRatio(chunkStart, maxHealth, true);
+                float visibleEndRatio = RenderUtil.toRenderRatio(chunkEnd, maxHealth, true);
+
+                if (visibleEndRatio <= visibleStartRatio) {
+                    previousHealth = currentHealth;
+                    previousMaxHealth = maxHealth;
+                    return;
+                }
+
+                chunkStart = visibleStartRatio * maxHealth;
+                chunkEnd = visibleEndRatio * maxHealth;
+            }
+
+            fadingChunks.add(new FadingChunk(chunkStart, chunkEnd, maxHealth, texture, animOffset));
         }
         
         // Update tracking values
@@ -341,8 +375,8 @@ public class HealthBarRenderer {
             
             if (fillDirection == FillDirection.VERTICAL) {
                 // Calculate heights for the chunk
-                float startRatio = Math.max(0.0f, Math.min(1.0f, chunk.startValue / chunk.maxValue));
-                float endRatio = Math.max(0.0f, Math.min(1.0f, chunk.endValue / chunk.maxValue));
+                float startRatio = RenderUtil.toRenderRatio(chunk.startValue, chunk.maxValue, animData.vanillatiling);
+                float endRatio = RenderUtil.toRenderRatio(chunk.endValue, chunk.maxValue, animData.vanillatiling);
                 int startHeight = (int) (barRect.height() * startRatio);
                 int endHeight = (int) (barRect.height() * endRatio);
                 int chunkHeight = endHeight - startHeight;
@@ -360,8 +394,8 @@ public class HealthBarRenderer {
                 }
             } else { // HORIZONTAL
                 // Calculate widths for the chunk
-                float startRatio = Math.max(0.0f, Math.min(1.0f, chunk.startValue / chunk.maxValue));
-                float endRatio = Math.max(0.0f, Math.min(1.0f, chunk.endValue / chunk.maxValue));
+                float startRatio = RenderUtil.toRenderRatio(chunk.startValue, chunk.maxValue, animData.vanillatiling);
+                float endRatio = RenderUtil.toRenderRatio(chunk.endValue, chunk.maxValue, animData.vanillatiling);
                 int startWidth = (int) (barRect.width() * startRatio);
                 int endWidth = (int) (barRect.width() * endRatio);
                 int chunkWidth = endWidth - startWidth;
@@ -399,7 +433,7 @@ public class HealthBarRenderer {
                                       AnimationMetadata.AnimationData animData) {
         BarType barType = BarType.fromPlayerState(player);
         ResourceLocation barTexture = DynamicResourceBars.loc("textures/gui/" + barType.getTexture() + ".png");
-        float currentHealthRatio = (maxHealth == 0) ? 0.0f : Math.max(0.0f, Math.min(1.0f, actualHealth / maxHealth));
+        float currentHealthRatio = RenderUtil.toRenderRatio(actualHealth, maxHealth, animData.vanillatiling);
 
         FillDirection fillDirection = ModConfigManager.getClient().healthFillDirection;
 
@@ -745,10 +779,12 @@ public class HealthBarRenderer {
         // Use the bar type based on the player's current state
         BarType barType = BarType.fromPlayerState(player);
         ResourceLocation barTexture = DynamicResourceBars.loc("textures/gui/" + barType.getTexture() + ".png");
+        float currentRatio = RenderUtil.toRenderRatio(currentHealth, maxHealth, animData.vanillatiling);
+        float restoredRatio = RenderUtil.toRenderRatio(restoredHealth, maxHealth, animData.vanillatiling);
         
         if (fillDirection == FillDirection.VERTICAL) {
-            int currentHeight = (int) (barRect.height() * Math.max(0.0f, Math.min(1.0f, currentHealth / maxHealth)));
-            int restoredHeight = (int) (barRect.height() * Math.max(0.0f, Math.min(1.0f, restoredHealth / maxHealth)));
+            int currentHeight = (int) (barRect.height() * currentRatio);
+            int restoredHeight = (int) (barRect.height() * restoredRatio);
             int overlayHeight = restoredHeight - currentHeight;
             
             if (overlayHeight > 0) {
@@ -763,8 +799,8 @@ public class HealthBarRenderer {
                 );
             }
         } else { // HORIZONTAL
-            int currentWidth = (int) (barRect.width() * Math.max(0.0f, Math.min(1.0f, currentHealth / maxHealth)));
-            int restoredWidth = (int) (barRect.width() * Math.max(0.0f, Math.min(1.0f, restoredHealth / maxHealth)));
+            int currentWidth = (int) (barRect.width() * currentRatio);
+            int restoredWidth = (int) (barRect.width() * restoredRatio);
             int overlayWidth = restoredWidth - currentWidth;
             
             if (overlayWidth > 0) {

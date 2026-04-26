@@ -260,7 +260,8 @@ public class ManaBarRenderer {
         FillDirection fillDirection = ModConfigManager.getClient().manaFillDirection;
 
         if (fillDirection == FillDirection.VERTICAL) {
-            int filledHeight = (int) (barHeight * Math.max(0.0, Math.min(1.0, currentMana / maxManaTotal)));
+            double filledRatio = RenderUtil.toRenderRatio(currentMana, maxManaTotal, animData.vanillatiling);
+            int filledHeight = (int) (barHeight * filledRatio);
             if (filledHeight <= 0 && currentMana > 0) filledHeight = 1;
             if (filledHeight > barHeight) filledHeight = barHeight;
 
@@ -278,7 +279,8 @@ public class ManaBarRenderer {
                         animData.textureWidth, animData.textureHeight);
             }
         } else { // HORIZONTAL
-            int filledWidth = (int) (totalBarWidth * Math.max(0.0, Math.min(1.0, currentMana / maxManaTotal)));
+            double filledRatio = RenderUtil.toRenderRatio(currentMana, maxManaTotal, animData.vanillatiling);
+            int filledWidth = (int) (totalBarWidth * filledRatio);
             if (filledWidth <= 0 && currentMana > 0) filledWidth = 1;
             if (filledWidth > totalBarWidth) filledWidth = totalBarWidth;
 
@@ -401,27 +403,59 @@ public class ManaBarRenderer {
     private static void updateChunkTracking(Player player, ManaProvider manaProvider, float partialTicks) {
         double currentMana = manaProvider.getCurrentMana();
         float maxMana = manaProvider.getMaxMana();
+        AnimationMetadata.AnimationData animData = AnimationMetadataCache.getManaBarAnimation();
+        boolean interpolateEnabled = animData.interpolate;
+        boolean vanillaTiling = animData.vanillatiling;
         
         // Clean up expired chunks and those covered by current fill
         Iterator<FadingChunk> it = fadingChunks.iterator();
         while (it.hasNext()) {
             FadingChunk chunk = it.next();
-            // Remove if expired or if current mana covers this chunk
-            if (chunk.isExpired() || currentMana >= chunk.endValue) {
+            boolean chunkCovered;
+            if (vanillaTiling) {
+                double currentRatio = RenderUtil.toRenderRatio(currentMana, chunk.maxValue, true);
+                double chunkEndRatio = RenderUtil.toRenderRatio(chunk.endValue, chunk.maxValue, true);
+                chunkCovered = currentRatio >= chunkEndRatio;
+            } else {
+                chunkCovered = currentMana >= chunk.endValue;
+            }
+
+            if (chunk.isExpired() || chunkCovered) {
                 it.remove();
             }
+        }
+
+        if (!interpolateEnabled) {
+            fadingChunks.clear();
+            previousMana = currentMana;
+            previousMaxMana = maxMana;
+            return;
         }
         
         // Check if we need to create a new chunk
         if (previousMana > 0 && currentMana < previousMana && previousMaxMana == maxMana) {
-            // Load animation data from .mcmeta (or use config defaults)
-            AnimationMetadata.AnimationData animData = AnimationMetadataCache.getManaBarAnimation();
             float ticks = player.tickCount + partialTicks;
             int animOffset = AnimationMetadata.calculateAnimationOffset(animData, ticks);
             
             // Create chunk for the lost portion, clamping to 0 minimum
-            double chunkStart = Math.max(0, currentMana);
-            fadingChunks.add(new FadingChunk(chunkStart, previousMana, maxMana, animOffset));
+            double chunkStart = Math.max(0.0d, currentMana);
+            double chunkEnd = previousMana;
+
+            if (vanillaTiling) {
+                double visibleStartRatio = RenderUtil.toRenderRatio(chunkStart, maxMana, true);
+                double visibleEndRatio = RenderUtil.toRenderRatio(chunkEnd, maxMana, true);
+
+                if (visibleEndRatio <= visibleStartRatio) {
+                    previousMana = currentMana;
+                    previousMaxMana = maxMana;
+                    return;
+                }
+
+                chunkStart = visibleStartRatio * maxMana;
+                chunkEnd = visibleEndRatio * maxMana;
+            }
+
+            fadingChunks.add(new FadingChunk(chunkStart, chunkEnd, maxMana, animOffset));
         }
         
         // Update tracking values
@@ -454,8 +488,8 @@ public class ManaBarRenderer {
             
             if (fillDirection == FillDirection.VERTICAL) {
                 // Calculate heights for the chunk
-                float startRatio = (float) Math.max(0.0, Math.min(1.0, chunk.startValue / effectiveMaxForChunk));
-                float endRatio = (float) Math.max(0.0, Math.min(1.0, chunk.endValue / effectiveMaxForChunk));
+                float startRatio = (float) RenderUtil.toRenderRatio(chunk.startValue, effectiveMaxForChunk, animData.vanillatiling);
+                float endRatio = (float) RenderUtil.toRenderRatio(chunk.endValue, effectiveMaxForChunk, animData.vanillatiling);
                 int startHeight = (int) (barRect.height() * startRatio);
                 int endHeight = (int) (barRect.height() * endRatio);
                 int chunkHeight = endHeight - startHeight;
@@ -473,8 +507,8 @@ public class ManaBarRenderer {
                 }
             } else { // HORIZONTAL
                 // Calculate widths for the chunk
-                float startRatio = (float) Math.max(0.0, Math.min(1.0, chunk.startValue / effectiveMaxForChunk));
-                float endRatio = (float) Math.max(0.0, Math.min(1.0, chunk.endValue / effectiveMaxForChunk));
+                float startRatio = (float) RenderUtil.toRenderRatio(chunk.startValue, effectiveMaxForChunk, animData.vanillatiling);
+                float endRatio = (float) RenderUtil.toRenderRatio(chunk.endValue, effectiveMaxForChunk, animData.vanillatiling);
                 int startWidth = (int) (barRect.width() * startRatio);
                 int endWidth = (int) (barRect.width() * endRatio);
                 int chunkWidth = endWidth - startWidth;
