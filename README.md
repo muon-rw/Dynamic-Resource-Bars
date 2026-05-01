@@ -12,14 +12,6 @@ by muon-rw
 
 ---
 
-# WARNING: THIS GUIDE WAS WRITTEN BY AN LLM, IT PROBABLY SUCKS
-# I'M STILL WORKING ON IMPROVING THE GUIDE MANUALLY, BUT IT'S REALLY LONG 
-# IF YOU ACTUALLY WANT TO MAKE A RESOURCE PACK FOR THIS MOD, FEEL FREE TO ASK ME QUESTIONS ON DISCORD
-
----
-
-With that out of the way:
-
 ## Table of Contents
 1. [Common Questions](#common-questions)
 2. [Quick Start: Recoloring Bars](#quick-start-recoloring-bars)
