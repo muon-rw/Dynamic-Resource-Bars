@@ -14,12 +14,12 @@ import java.util.function.ObjIntConsumer;
 /**
  * Wires {@link HudBarOrchestrator} into NeoForge's GUI layer registry.
  *
- * <h3>Vanilla layer fallback ({@code wrapLayer})</h3>
+ * ly on<p>Vanilla layer fallback ({@code wrapLayer})</p>
  * Each vanilla bar is wrapped via {@link RegisterGuiLayersEvent#wrapLayer}, which gives us the
  * pre-existing layer so the orchestrator can fall back to vanilla rendering for {@code VANILLA}
  * mode without us having to re-implement Mojang's bar pixel pushing.
  *
- * <h3>Why we mutate {@code Gui.leftHeight} / {@code rightHeight}</h3>
+ * <p>Why we mutate {@code Gui.leftHeight} / {@code rightHeight}</p>
  * NeoForge patches Mojang's {@link Gui} with two running counters that subsequent vanilla layers
  * read to position themselves above (or below) the stack — armor at {@code H - leftHeight + 10},
  * food at {@code H - rightHeight}, and so on. Each vanilla bar increments the counter by ~10.

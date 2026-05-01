@@ -34,7 +34,7 @@ import java.util.List;
  * tracking on value loss, animated bar fill, sub-element rect math, text rendering, and
  * edit-mode outlines.
  *
- * <h3>Adding a new bar</h3>
+ * <p>Adding a new bar</p>
  * <ol>
  *   <li>Add config fields to {@link dev.muon.dynamic_resource_bars.config.ClientConfig} for
  *       layout (background/bar/foreground/text rects), anchor, fill direction, text behavior.</li>

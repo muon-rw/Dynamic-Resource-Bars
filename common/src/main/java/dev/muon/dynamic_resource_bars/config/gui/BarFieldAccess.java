@@ -7,7 +7,7 @@ import dev.muon.dynamic_resource_bars.util.SubElementType;
 import dev.muon.dynamic_resource_bars.util.TextBehavior;
 
 /**
- * Indirection layer that lets the editor screens read & write a bar's layout fields
+ * Indirection layer that lets the editor screens read and write a bar's layout fields
  * without a switch on {@link DraggableElement} at every call site.
  *
  * <p>Adding a new bar = add a new {@code public static final BarFieldAccess} constant

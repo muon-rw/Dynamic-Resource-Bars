@@ -37,7 +37,7 @@ import java.util.function.Supplier;
 /**
  * Drag-and-drop HUD editor.
  *
- * <h3>Modes</h3>
+ * <p>Modes</p>
  * <ul>
  *   <li><b>Bar mode</b> (default): click a bar to select it; drag to move the whole bar; arrow
  *       keys nudge it.</li>
@@ -49,7 +49,7 @@ import java.util.function.Supplier;
  * </ul>
  *
  * <p>Bars are rendered on top of the editor's dim overlay so the player can see what they
- * are editing — the editor's {@link #renderBackground} draws a flat dim instead of the
+ * are editing — the editor's {@link #extractBackground(GuiGraphicsExtractor, int, int, float)} draws a flat dim instead of the
  * default blur, then bars are painted afterwards in {@link #extractRenderState}.
  */
 public class HudEditorScreen extends Screen {

@@ -7,7 +7,7 @@ import dev.muon.dynamic_resource_bars.util.HorizontalAlignment;
 import dev.muon.dynamic_resource_bars.util.TextBehavior;
 
 /**
- * Per-frame snapshot of all config values that drive bar layout & visibility.
+ * Per-frame snapshot of all config values that drive bar layout and visibility.
  * Each {@link AbstractBarRenderer} subclass builds one of these from its own
  * config-prefixed {@link dev.muon.dynamic_resource_bars.config.ClientConfig} fields,
  * so the abstract render code never has to know which bar it is rendering.
