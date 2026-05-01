@@ -1,211 +1,96 @@
 # Dynamic RPG Resource Bars
-by muon-rw
-### Animated, adjustable resource bars for Minecraft!
 
-[![Download on CurseForge](https://img.shields.io/badge/CurseForge-Download-orange)](https://www.curseforge.com/minecraft/mc-mods/dynamic-rpg-resource-bars)
-[![Download on Modrinth](https://img.shields.io/badge/Modrinth-Download-green)](https://modrinth.com/mod/dynamic-resource-bars)
+Animated, adjustable resource bars for Minecraft. By muon-rw.
 
-
----
-
-# Resource Pack Creator Guide
+[![CurseForge](https://img.shields.io/badge/CurseForge-Download-orange)](https://www.curseforge.com/minecraft/mc-mods/dynamic-rpg-resource-bars)
+[![Modrinth](https://img.shields.io/badge/Modrinth-Download-green)](https://modrinth.com/mod/dynamic-resource-bars)
 
 ---
 
-## Table of Contents
-1. [Common Questions](#common-questions)
-2. [Quick Start: Recoloring Bars](#quick-start-recoloring-bars)
-3. [File Structure](#file-structure)
-4. [Texture Requirements](#texture-requirements)
-5. [Animation System](#animation-system)
-6. [Scaling System](#scaling-system-nine-slice--tiling)
-7. [Combining Features](#combining-features-practical-examples)
-8. [Feature Matrix](#feature-compatibility-matrix)
-9. [In-Game HUD Editor](#in-game-hud-editor)
-10. [Troubleshooting](#troubleshooting)
+# Resource Pack Guide
 
----
+This guide covers everything you need to make a resource pack: file layout, animation, scaling, and the in-game HUD editor.
 
-## Common Questions
+## Quick start: recolor the bars
 
-**Q: How do I change bar colors?**  
-A: Replace bar textures in a resource pack. See [Quick Start](#quick-start-recoloring-bars).
+1. Create a pack at `resourcepacks/my_bars/` with a `pack.mcmeta`.
+2. Drop a recolored `health_bar.png` into `assets/dynamic_resource_bars/textures/gui/`.
+3. Enable the pack in-game and reload with **F3+T**.
 
-**Q: Can I make rounded bars, or other shapes**  
-A: It's possible, but to do so, you'll need to each frame of the bar textures themselves (finding some way to automate this is highly recommended - Pixel Composer is great!)
+That's it! No additional `.mcmeta` or config is required if you aren't resizing things. 
+Even if you are, for non-animated textures, the mod generally auto-detects PNG dimensions and applies sensible defaults per layer.
 
-**Q: Can I use high-resolution (HD) textures?**  
-A: Yes! The mod auto-detects texture dimensions. Use 512x2048 or any size. Power of 2 texture sizes are recommended!
+## File layout
 
-**Q: How do I add decorative borders to backgrounds?**  
-A: Use [nine-slice scaling](#scaling-system-nine-slice--tiling) with tile mode for borders.
-
-**Q: Do I need .mcmeta files?**  
-A: No! The mod uses smart defaults. Only add .mcmeta to customize.
-
-**Q: What's the difference between texture size and rendered size?**  
-A: **Texture size** = PNG file dimensions (256x1024). **Rendered size** = on-screen pixels (74x4). The mod scales automatically!
-
-**Q: Why can't I use nine-slice on bars?**  
-A: Bars use UV sampling to show fill percentage. Use transparency in your bar textures for custom shapes!
-
-**Q: Can I mix features (HD + nine-slice)?**  
-A: Yes! See [Combining Features](#combining-features-practical-examples) for examples.
-
----
-
-## Quick Start: Recoloring Bars
-
-**Q**: "How do I change bar colors?"
-
-**A**: Replace the bar textures in a resource pack!
-
-### Step 1: Create Resource Pack Structure
 ```
-resourcepacks/
-  my_custom_bars/
-    pack.mcmeta
-    assets/
-      dynamic_resource_bars/
-        textures/
-          gui/
-            health_bar.png          ← Replace this!
-            health_bar.png.mcmeta   ← Optional: animation settings
-            stamina_bar.png         ← Replace this!
-            mana_bar.png            ← Replace this!
-            air_bar.png             ← Replace this!
+my_pack/
+├── pack.mcmeta
+└── assets/dynamic_resource_bars/textures/gui/
+    ├── health_bar.png              ─┐
+    ├── health_bar.png.mcmeta        │
+    ├── stamina_bar.png              │  Bars (animated vertical strips,
+    ├── stamina_bar.png.mcmeta       │  default 256×1024 = 32 frames of 32px)
+    ├── mana_bar.png                 │
+    ├── mana_bar.png.mcmeta          │
+    ├── air_bar.png                  │
+    ├── air_bar.png.mcmeta          ─┘
+    │
+    ├── health_bar_poisoned.png     ─┐
+    ├── health_bar_withered.png      │
+    ├── health_bar_frozen.png        │  Bar variants inherit
+    ├── health_bar_scorched.png      │  their parent's animation
+    ├── stamina_bar_warning.png      │  settings
+    ├── stamina_bar_critical.png     │
+    ├── stamina_bar_hunger.png       │
+    ├── stamina_bar_mounted.png      │
+    ├── stamina_bar_blood.png       ─┘
+    │
+    ├── health_background.png       ─┐
+    ├── health_foreground.png        │
+    ├── stamina_background.png       │  Static layers
+    ├── stamina_foreground.png       │  (default 256×256)
+    ├── mana_background.png          │
+    ├── mana_foreground.png          │
+    ├── air_background.png           │
+    ├── armor_background.png         │
+    ├── armor_bar.png               ─┘  Armor bar is static by default, so no .mcmeta here
+    │
+    ├── absorption_overlay.png      ─┐
+    ├── regeneration_overlay.png     │
+    ├── protection_overlay.png       │
+    ├── heat_overlay.png             │  Status overlays
+    ├── cold_overlay.png             │
+    ├── wetness_overlay.png          │
+    ├── hardcore_overlay.png         │
+    ├── comfort_overlay.png          │
+    ├── nourishment_overlay.png     ─┘
+    │
+    ├── air/                        ── Bubble icons by tier — air_0…air_4
+    │   ├── air_0.png … air_4.png      plus *_pop variants that flash briefly
+    │   └── air_1_pop.png … air_4_pop.png   when crossing a tier
+    │
+    └── armors/                     ── Armor icons — tier_0.png … tier_10.png,
+        └── tier_0.png … tier_10.png    picked by armorValue / maxExpectedArmor
 ```
 
-### Step 2: Create pack.mcmeta
-```json
-{
-  "pack": {
-    "pack_format": 15,
-    "description": "My Custom Bars"
-  }
-}
-```
+All files are optional. The mod falls back to its bundled defaults for anything you don't override.
 
-### Step 3: Replace Bar Textures
-- **Copy original textures** from the mod's assets as a starting point
-- **Edit colors** in your image editor (Photoshop, GIMP, Aseprite, etc.)
-- **Dimensions**: Standard is 256 x 1024 (but any size works!)
-  - Want higher resolution? Use 512 x 2048! (update .mcmeta accordingly)
-  - Want smaller files? Use 128 x 512!
-- **Save as PNG** with transparency support
+## Texture sizes
 
-### Step 4: Load & Test
-1. Place your resource pack in `.minecraft/resourcepacks/`
-2. Enable it in-game (Options → Resource Packs)
-3. Press **F3 + T** to reload resource packs
-4. Your new colors appear instantly!
+PNG dimensions are auto-detected. Use whatever resolution you want as long as the bar's height divides evenly into frames:
 
----
+| Style    | Bar size     | Frame height |
+|----------|--------------|-------------:|
+| Standard | 256 × 1024   |           32 |
+| HD 2x    | 512 × 2048   |           64 |
+| Compact  | 128 × 512    |           32 |
 
-## File Structure
+Bars use vertical strips: each frame is stacked top-to-bottom in the PNG. Backgrounds, foregrounds, and overlays can be any size.
 
-### Complete Resource Pack Layout
-```
-resourcepacks/
-  your_pack_name/
-    pack.mcmeta                     ← Required: pack metadata
-    pack.png                        ← Optional: pack icon
-    assets/
-      dynamic_resource_bars/
-        textures/
-          gui/
-            # === BAR TEXTURES ===
-            health_bar.png          (256x1024 - 32 frames of 32px each)
-            health_bar.png.mcmeta   (animation settings)
-            health_bar_poisoned.png (status variant)
-            health_bar_withered.png
-            health_bar_frozen.png
-            health_bar_scorched.png
-            
-            stamina_bar.png         (256x1024 - 32 frames)
-            stamina_bar.png.mcmeta
-            stamina_bar_warning.png
-            stamina_bar_critical.png
-            stamina_bar_hunger.png
-            stamina_bar_mounted.png
-            stamina_bar_blood.png
-            
-            mana_bar.png            (256x1024 - 32 frames)
-            mana_bar.png.mcmeta
-            
-            air_bar.png             (256x1024 - 32 frames)
-            air_bar.png.mcmeta
-            
-            # === BACKGROUNDS ===
-            health_background.png   (256x256 - static)
-            stamina_background.png
-            mana_background.png
-            air_background.png
-            
-            # === FOREGROUNDS ===
-            health_foreground.png   (256x256 - static overlay)
-            stamina_foreground.png
-            mana_foreground.png
-            
-            # === STATUS OVERLAYS ===
-            absorption_overlay.png  (256x256)
-            regeneration_overlay.png
-            protection_overlay.png
-            heat_overlay.png
-            cold_overlay.png
-            wetness_overlay.png
-            hardcore_overlay.png
-            comfort_overlay.png
-            nourishment_overlay.png
-```
+## Animation (`.mcmeta` for bars)
 
----
+Standard Minecraft animation format. Only the `height` field is required for non-default frame sizes.
 
-## Texture Requirements
-
-### Texture Dimensions
-
-✨ **Texture sizes are auto-detected!** The mod reads your PNG dimensions automatically.
-
-**Recommended dimensions** (standard, but not required):
-
-| Texture Type | Standard Size | Format | Notes |
-|--------------|---------------|--------|-------|
-| Bar (animated) | **256 x 1024** | PNG + Alpha | 32 frames of 32px each (standard) |
-| Bar (custom) | **Any width x (height × frames)** | PNG + Alpha | Width auto-detected, height ÷ frame height must be whole number |
-| Background/Overlay | **256 x 256** | PNG + Alpha | Static (non-animated), standard size |
-
-### How Auto-Detection Works
-
-1. **Texture width**: Automatically detected from your PNG file
-   - Standard is 256px, but you can use 512px, 128px, or any size!
-   - UV calculations automatically adapt
-
-2. **Texture height**: Automatically detected from your PNG file
-   - Must be evenly divisible by frame height from `.mcmeta`
-   - Example: 2048px texture ÷ 64px frame = 32 frames
-
-### Rendered Size vs Texture Size
-
-**Important distinction**:
-- **Texture size**: Dimensions of your PNG file (e.g., 256x1024)
-- **Rendered size**: On-screen pixels (e.g., 74x4) - controlled by config/editor
-- The mod automatically scales textures to fit rendered size!
-
-### Supported Formats
-- **PNG** with alpha channel (transparency)
-- **8-bit RGBA** recommended for file size
-- **No JPG** (doesn't support transparency)
-
----
-
-## Animation System
-
-All bars support custom animations via `.mcmeta` files (standard Minecraft format).
-
-### Basic .mcmeta Example
-
-**File**: `health_bar.png.mcmeta`
 ```json
 {
   "animation": {
@@ -216,149 +101,34 @@ All bars support custom animations via `.mcmeta` files (standard Minecraft forma
 }
 ```
 
-### Properties
+| Field         | Default | Notes                               |
+|---------------|--------:|-------------------------------------|
+| `frametime`   |       3 | Ticks per frame (lower = faster).   |
+| `height`      |      32 | Frame height in pixels.             |
+| `interpolate` |   false | Smooth blending between frames.     |
 
-| Property | Default | Description |
-|----------|---------|-------------|
-| `frametime` | 3 | Ticks per frame (3 = 0.15s at 20 TPS). Lower = faster. |
-| `interpolate` | false | Smooth blending between frames. Usually false for pixel art. |
-| `height` | 32 | Height of each frame in pixels. Total frames = texture height ÷ this. |
+Variants (`health_bar_poisoned.png`, etc.) inherit the base bar's `.mcmeta`, so all variants for a bar must share frame dimensions.
 
-### Animation Examples
+## Scaling (`.mcmeta` for backgrounds, foregrounds, overlays)
 
-**Fast animation (2 ticks per frame)**:
-```json
-{
-  "animation": {
-    "frametime": 2,
-    "height": 32
-  }
-}
-```
+Bars sample UV space to show fill percentage and **don't support scaling**. Everything else does, via a `dynamic_resource_bars.scaling` block.
 
-**Slow animation (10 ticks per frame)**:
-```json
-{
-  "animation": {
-    "frametime": 10,
-    "height": 32
-  }
-}
-```
-
-**Large frames (64px, 16 total frames)**:
-```json
-{
-  "animation": {
-    "frametime": 3,
-    "height": 64
-  }
-}
-```
-*Note: Texture sheet must be 256 x 1024 (64 × 16 = 1024)*
-
-**Static texture (no animation)**:
-```json
-{
-  "animation": {
-    "frametime": 999999,
-    "height": 256
-  }
-}
-```
-*Or omit .mcmeta entirely and make texture 256 x 32*
-
-### Variant Textures Share Settings
-
-All variants of a bar type share animation settings from the base `.mcmeta`:
-
-- `health_bar_poisoned.png`, `health_bar_withered.png`, etc. → use `health_bar.png.mcmeta`
-- `stamina_bar_warning.png`, `stamina_bar_critical.png`, etc. → use `stamina_bar.png.mcmeta`
-
-**This means**: All variants must use the same frame height and dimensions!
-
-### Texture Size Flexibility
-
-✨ **NEW**: The mod auto-detects your texture dimensions!
-
-You can now use:
-- **Standard**: 256 x 1024 (32 frames of 32px)
-- **High-res**: 512 x 2048 (32 frames of 64px)
-- **Compact**: 128 x 512 (16 frames of 32px)
-- **Any size**: As long as height ÷ frame_height is a whole number
-
-The mod reads your PNG dimensions and adapts UV calculations automatically.
-
-### Fallback Behavior
-
-If no `.mcmeta` file is found:
-- Uses default: 32 frames, 32px per frame, 3 ticks per frame
-- Texture dimensions: Auto-detected from PNG (defaults to 256x1024 if missing)
-
----
-
-## Scaling System (Nine-Slice & Tiling)
-
-Control how textures scale to fit different sizes using `.mcmeta` files!
-
-### Scaling Modes
-
-**Four modes available**:
-
-1. **None**: No scaling (1:1 UV sampling, pixel-perfect)
-2. **Stretch**: Simple scaling to fit
-3. **Tile**: Repeat/pattern the texture
-4. **Nine-slice**: Scale with borders (stretch or tile edges/center)
-
-### Mode 1: No Scaling (1:1 Sampling)
+### Simple modes
 
 ```json
-{
-  "dynamic_resource_bars": {
-    "scaling": "none"
-  }
-}
+{ "dynamic_resource_bars": { "scaling": "stretch" } }
 ```
-- Samples texture at 1:1 ratio (no transforms)
-- Samples exactly `width×height` pixels from texture
-- Best for: Icons, pixel-perfect overlays
-- **Original behavior** before scaling was added
 
-### Mode 2: Simple Stretch
+`"none"` (1:1 sampling), `"stretch"`, or `"tile"`.
 
-```json
-{
-  "dynamic_resource_bars": {
-    "scaling": "stretch"
-  }
-}
-```
-- Scales texture to fit render area
-- Best for: Solid colors, gradients, simple overlays
-
-### Mode 3: Simple Tile
-
-```json
-{
-  "dynamic_resource_bars": {
-    "scaling": "tile"
-  }
-}
-```
-- Repeats texture pattern
-- Best for: Repeating patterns, textures
-
-### Mode 4: Nine-Slice Scaling
+### Nine-slice
 
 ```json
 {
   "dynamic_resource_bars": {
     "scaling": {
       "type": "nine_slice",
-      "left": 4,
-      "right": 4,
-      "top": 3,
-      "bottom": 3,
+      "left": 4, "right": 4, "top": 3, "bottom": 3,
       "edges": "stretch",
       "center": "stretch"
     }
@@ -366,685 +136,59 @@ Control how textures scale to fit different sizes using `.mcmeta` files!
 }
 ```
 
-**Nine regions**:
-```
-┌──┬─────┬──┐
-│TL│ Top │TR│  Corners = fixed size
-├──┼─────┼──┤
-│L │  C  │R │  Edges = stretch or tile
-├──┼─────┼──┤  Center = stretch or tile
-│BL│ Bot │BR│
-└──┴─────┴──┘
-```
+Corners are fixed; `edges` and `center` can each be `"stretch"` (default) or `"tile"`.
 
-- **`left/right/top/bottom`**: Border widths (pixels, fixed size)
-- **`edges`**: "stretch" or "tile" (optional, default: stretch)
-- **`center`**: "stretch" or "tile" (optional, default: stretch)
-- **`source`**: Region to use (optional, defaults to full texture)
-  - `u`, `v`: Offset in texture (default: 0, 0)
-  - `width`, `height`: Size of region to use
+### Source region (texture smaller than its sheet)
 
-**Use cases**:
+If your graphic only fills part of the PNG (e.g., 80×10 in a 256×256 sheet), point the renderer at the right area:
 
-| Use Case | Edges | Center | Example |
-|----------|-------|--------|---------|
-| **Smooth background** | stretch | stretch | Gradient borders |
-| **Decorative frame** | tile | stretch | Ornate borders with pattern |
-| **Textured overlay** | tile | tile | Heat/cold effects |
-
-### Source Region (For Compact Textures)
-
-**Important**: If your actual graphic doesn't fill the entire texture sheet, you **must** specify the `source` region!
-
-#### When You Need Source Regions
-
-If your texture file is 256×256 but your actual graphic is only 80×10 in the corner, the mod will try to scale/tile the full 256×256 (including empty space). Use `source` to tell it where the real graphic is:
-
-```json
-{
-  "dynamic_resource_bars": {
-    "scaling": {
-      "type": "nine_slice",
-      "left": 2,
-      "right": 2,
-      "top": 2,
-      "bottom": 2,
-      "edges": "stretch",
-      "center": "stretch",
-      "source": {
-        "u": 0,
-        "v": 0,
-        "width": 80,
-        "height": 10
-      }
-    }
-  }
-}
-```
-
-**Field meanings**:
-- **`u`**: X offset in texture sheet (default: 0 = left edge)
-- **`v`**: Y offset in texture sheet (default: 0 = top edge)
-- **`width`**: Width of actual graphic
-- **`height`**: Height of actual graphic
-
-**Default placement**: If `u` and `v` are omitted, defaults to `(0, 0)` = **top-left corner**
-
-**Examples**:
-```json5
-// Graphic in top-left (most common)
-"source": { "width": 80, "height": 10 }  // u:0, v:0 implied
-
-// Graphic at offset position
-"source": { "u": 20, "v": 30, "width": 80, "height": 10 }
-
-// Full sheet (no source needed)
-// Omit "source" entirely if graphic fills entire sheet
-```
-
-**When to use**:
-- ✅ Small textures in large sheets (most bundled overlays are 80×10 in 256×256 sheets)
-- ✅ Avoiding texture sheet resizing (which can cause UV issues)
-- ✅ Keeping original file dimensions for compatibility
-
-**When NOT needed**:
-- ❌ Your graphic fills the entire texture sheet (e.g., full 256×256)
-
-### Smart Defaults (No .mcmeta Needed!)
-
-If you don't specify scaling, the mod applies smart defaults:
-
-| Texture Type | Default Scaling |
-|--------------|-----------------|
-| **Backgrounds** | nine-slice (4,4,3,3) with stretch |
-| **Foregrounds** | nine-slice (4,4,3,3) with stretch |
-| **Animated overlays** | nine-slice (3,3,2,2) with tile |
-| **Static overlays** | simple stretch |
-
-### Important: Bars Don't Support Scaling
-
-⚠️ **Bar textures** (health_bar.png, mana_bar.png, etc.) **do not support nine-slice or tiling**.
-
-**Why?** Bars use:
-- **UV sampling** to show fill percentage (not scaling)
-- Applying nine-slice would require complex UV remapping per frame
-
-**What this means**:
-- ✅ Backgrounds, foregrounds, overlays → Can use nine-slice/tiling
-- ❌ Bar animated textures → Use transparency for custom shapes instead
-- ✅ Bar dimensions are capped at texture sheet width (auto-detected)
-
----
-
-## Combining Features: Practical Examples
-
-### Example 1: HD Bars
-
-**Goal**: 2x resolution bars with smooth visuals
-
-**Files needed**:
-```
-health_bar.png (512x2048)
-health_bar.png.mcmeta
-```
-
-**health_bar.png.mcmeta**:
-```json
-{
-  "animation": {
-    "frametime": 3,
-    "height": 64
-  }
-}
-```
-
-**Steps**:
-1. Create 512x2048 bar texture (double resolution)
-2. Add `.mcmeta` with height: 64
-3. Reload and enjoy HD bars!
-
-**Why it works**:
-- Auto-detection reads 512x2048 dimensions
-- Everything scales automatically!
-
----
-
-### Example 2: Decorative Frame with Patterned Border
-
-**Goal**: Background with ornate border that preserves pattern
-
-**Files needed**:
-```
-health_background.png (256x256)
-health_background.png.mcmeta
-```
-
-**health_background.png.mcmeta**:
-```json
-{
-  "dynamic_resource_bars": {
-    "scaling": {
-      "type": "nine_slice",
-      "left": 8,
-      "right": 8,
-      "top": 6,
-      "bottom": 6,
-      "edges": "tile",
-      "center": "stretch"
-    }
-  }
-}
-```
-
-**Design tips**:
-- Put decorative pattern in 8px left/right borders
-- Put decorative pattern in 6px top/bottom borders
-- Center can be solid color (will stretch)
-- Corners (8x6) stay fixed
-
-**Result**: Border pattern repeats perfectly, no matter the size!
-
----
-
-### Example 3: Fire Overlay with Texture Pattern
-
-**Goal**: Heat overlay that preserves fire texture pattern
-
-**Files needed**:
-```
-heat_overlay.png (64x64)
-heat_overlay.png.mcmeta
-```
-
-**heat_overlay.png.mcmeta**:
-```json
-{
-  "dynamic_resource_bars": {
-    "scaling": "tile"
-  }
-}
-```
-
-**Design tip**: Create seamless tileable texture (edges wrap)
-
-**Result**: Fire pattern tiles across bar width without stretching!
-
----
-
-### Example 4: Complete Themed Pack
-
-**Goal**: Full visual overhaul with custom everything
-
-**Files structure**:
-```
-fantasy_pack/
-  pack.mcmeta
-  assets/dynamic_resource_bars/textures/gui/
-    # HD bars (512x2048)
-    health_bar.png
-    health_bar.png.mcmeta (animation)
-    
-    # Decorative backgrounds (256x256)
-    health_background.png
-    health_background.png.mcmeta (nine-slice tile)
-    
-    # Overlay foregrounds (256x256)
-    health_foreground.png
-    health_foreground.png.mcmeta (nine-slice stretch)
-    
-    # Pattern overlays (64x64)
-    heat_overlay.png
-    heat_overlay.png.mcmeta (tile)
-    cold_overlay.png
-    cold_overlay.png.mcmeta (tile)
-```
-
-**Features used**:
-- ✅ HD textures (512x2048 bars)
-- ✅ Decorative borders (nine-slice tile)
-- ✅ Patterned overlays (simple tile)
-
-**Result**: Professional-grade themed resource pack!
-
----
-
-## Layer System
-
-Bars are rendered in multiple layers for visual depth and status effects.
-
-### Layer Order (bottom to top)
-
-1. **Background** (`health_background.png`) - Behind everything
-2. **Bar** (`health_bar.png`) - Main animated bar
-3. **Status Overlays** - Applied over bar (absorption, regen, heat, etc.)
-4. **Foreground** (`health_foreground.png`) - Frame/border on top
-
-### Customizing Layers
-
-All layers are optional! Replace only what you want:
-
-**Minimal pack** (just recolor bars):
-```
-assets/dynamic_resource_bars/textures/gui/
-  ├── health_bar.png  ← Only this! (256x1024 standard size)
-```
-
-**High-res pack** (2x resolution):
-```
-assets/dynamic_resource_bars/textures/gui/
-  ├── health_bar.png        ← 512x2048 (double resolution)
-  ├── health_bar.png.mcmeta ← height: 64 (double frame size)
-```
-
-**Full pack** (complete visual overhaul):
-```
-assets/dynamic_resource_bars/textures/gui/
-  ├── health_bar.png           ← Animated bar (any size!)
-  ├── health_background.png    ← Frame/container
-  ├── health_foreground.png    ← Border overlay
-  ├── absorption_overlay.png   ← Status effects
-  └── regeneration_overlay.png
-```
-
-### Layer Dimensions
-
-| Layer | Size | Alpha Channel |
-|-------|------|---------------|
-| Background | 256 x 256 | Required |
-| Foreground | 256 x 256 | Required |
-| Overlays | 256 x 256 | Required (for transparency) |
-
-### Toggling Layers In-Game
-
-Users can toggle layers via config:
-- `enableHealthBackground` (true/false)
-- `enableHealthForeground` (true/false)
-- `enableStaminaBackground` (true/false)
-- etc.
-
-**Resource pack tip**: Design layers to work independently so users can mix and match!
-
----
-
-## In-Game HUD Editor
-
-Dynamic Resource Bars includes a powerful in-game editor for positioning and customizing bars.
-
-### Opening the Editor
-
-**In-game**: Open via mod config menu
-- Mods button → Dynamic Resource Bars → Config → "Open HUD Editor" button
-
-### Editor Features
-
-#### 1. **Drag & Drop Positioning**
-- Click and drag any bar to reposition
-- Real-time preview as you drag
-- Snaps to pixel grid
-
-#### 2. **Keyboard Controls**
-- **Tab**: Cycle through bars
-- **Arrow keys**: Move selected bar 1px at a time
-- **Shift + Arrow keys**: Resize selected bar 1px at a time
-- **Green outline**: Shows currently selected bar
-
-#### 3. **Sub-Elements**
-Each bar has draggable sub-elements:
-- **Background** (yellow outline when focused)
-- **Bar** (green outline when focused)
-- **Foreground** (magenta outline when focused)
-- **Text** (cyan outline when focused)
-
-#### 4. **Anchor Points**
-Bars can anchor to screen regions:
-- Top-left, Top-center, Top-right
-- Middle-left, Middle-center, Middle-right
-- Bottom-left, Bottom-center, Bottom-right
-
-**Why anchors matter**: Bars stay in relative position when window resizes!
-
-#### 5. **Fill Direction**
-Toggle bar fill direction:
-- **Horizontal**: Left-to-right (or right-to-left)
-- **Vertical**: Bottom-to-top
-
-### Editor Tips
-
-✅ **Best practices**:
-- Start with anchor point, then fine-tune with offsets
-- Use keyboard for precise 1px adjustments
-- Test at different window sizes
-- Save often (editor auto-saves to config)
-
----
-
-## Feature Compatibility Matrix
-
-What works with what:
-
-| Feature | Bars | Backgrounds | Foregrounds | Overlays |
-|---------|:----:|:-----------:|:-----------:|:--------:|
-| **Custom animations** | ✅ | ❌ | ❌ | ❌ |
-| **Auto-detected size** | ✅ | ✅ | ✅ | ✅ |
-| **Nine-slice scaling** | ❌ | ✅ | ✅ | ✅ |
-| **Tile mode** | ❌ | ✅ | ✅ | ✅ |
-
-**Key insights**:
-- **Bars** = Animation with UV sampling for fill percentage
-- **Backgrounds/Foregrounds/Overlays** = Nine-slice or Tile (full texture rendering)
-- **Bars don't scale** because they use UV sampling to show fill percentage
-
----
-
-## Quick Reference: .mcmeta Syntax
-
-### For Bars (Animated)
-```json
-{
-  "animation": {
-    "frametime": 3,
-    "height": 32
-  }
-}
-```
-
-### For No Scaling (1:1 Sampling)
-```json
-{
-  "dynamic_resource_bars": {
-    "scaling": "none",
-    "source": {
-      "width": 80,
-      "height": 10
-    }
-  }
-}
-```
-
-### For Backgrounds (Nine-Slice Stretch)
-```json
-{
-  "dynamic_resource_bars": {
-    "scaling": {
-      "type": "nine_slice",
-      "left": 4,
-      "right": 4,
-      "top": 3,
-      "bottom": 3,
-      "edges": "stretch",
-      "center": "stretch"
-    }
-  }
-}
-```
-
-### For Small Texture in Large Sheet (Source Region)
-```json
-{
-  "dynamic_resource_bars": {
-    "scaling": {
-      "type": "nine_slice",
-      "left": 2,
-      "right": 2,
-      "top": 2,
-      "bottom": 2,
-      "source": {
-        "width": 80,
-        "height": 10
-      }
-    }
-  }
-}
-```
-
-### For Overlays (Nine-Slice Tile)
-```json
-{
-  "dynamic_resource_bars": {
-    "scaling": {
-      "type": "nine_slice",
-      "left": 3, "right": 3, "top": 2, "bottom": 2,
-      "edges": "tile",
-      "center": "tile"
-    }
-  }
-}
-```
-
-### For Simple Tile
-```json
-{
-  "dynamic_resource_bars": {
-    "scaling": "tile"
-  }
-}
-```
-
-### No .mcmeta Needed!
-Smart defaults are applied automatically based on texture type. Only add `.mcmeta` if you want to customize!
-
----
-
-## Troubleshooting
-
-### Common Issues
-
-#### "My bars aren't showing the custom textures!"
-
-**Checklist**:
-1. Resource pack is enabled? (Options → Resource Packs)
-2. Pack is above vanilla in the list? (higher priority)
-3. File paths match exactly? (`dynamic_resource_bars/textures/gui/`)
-4. Files are named correctly? (`health_bar.png`, not `healthbar.png`)
-5. Reloaded resource packs? (F3 + T)
-
-#### "Animation is too fast/slow!"
-
-Edit `.mcmeta` file:
-- **Too fast**: Increase `frametime` (try 5-10)
-- **Too slow**: Decrease `frametime` (try 1-2)
-- Reload with F3 + T
-
-#### "Bar looks stretched/wrong!"
-
-Check these requirements:
-- **Height must be divisible**: texture_height ÷ frame_height must be whole number
-- **Frame height in .mcmeta**: Must match your actual frame size
-- **Rendered size**: Config values are separate from texture size
-
-#### "Colors are wrong/washed out!"
-
-Check image editor export settings:
-- Use **PNG-24** or **PNG-32** (with alpha)
-- Ensure **sRGB color space**
-- Disable any "web optimization" that reduces colors
-
-#### "Nine-slice borders look wrong!"
-
-Check your border dimensions:
-- Borders must be smaller than texture size
-- Example: 8px borders need at least 16px texture (8+8)
-- Use smaller borders for small textures
-- Test: Temporarily set edges/center to "stretch" to verify dimensions
-
-#### "Nine-slice includes empty space from my texture sheet!"
-
-Your texture is smaller than the full sheet (e.g., 80x10 in 256x256 sheet).
-
-**Solution**: Use `source` to specify the region:
 ```json
 {
   "dynamic_resource_bars": {
     "scaling": {
       "type": "nine_slice",
       "left": 2, "right": 2, "top": 2, "bottom": 2,
-      "source": {
-        "width": 80,
-        "height": 10
-      }
+      "source": { "u": 0, "v": 0, "width": 80, "height": 10 }
     }
   }
 }
 ```
 
-This tells the mod to only use the 80x10 region (starting at 0,0) instead of the full 256x256.
+`u`/`v` default to 0. `source` also works on simple modes.
 
-#### "Tiled overlay has visible seams!"
+### Defaults when no `.mcmeta` is present
 
-Your texture isn't seamless:
-- Edges of texture must wrap perfectly
-- Use "offset" in image editor to test wraparound
-- Or use nine-slice with stretch instead of tile
-- Many image editors have "make seamless" filters
+| Layer                    | Default scaling                   |
+|--------------------------|-----------------------------------|
+| Background / Foreground  | nine-slice `(4,4,3,3)`, stretch   |
+| Animated overlay         | nine-slice `(3,3,2,2)`, tile      |
+| Static overlay           | stretch                           |
+| Bar                      | n/a (UV sampling)                 |
 
-#### "HD bars work but config won't let me set full width!"
+The bundled `EXAMPLE_*.mcmeta` files in the mod's assets show every mode in working form — copy one and tweak.
 
-Known limitation (tracked for future fix):
-- Config sliders assume 256px texture width
-- Workaround: Edit config file manually
-  - `.minecraft/config/dynamic_resource_bars-client.toml`
-  - Set `healthBarWidth = 512` (or your texture width)
-- Editor drag limits also assume 256px
-- Future update will auto-detect max values from texture
+## In-game HUD editor
 
-### Getting Help
+Open via the mod config menu. The editor lets you reposition every element live.
 
-1. **Check logs**: `.minecraft/logs/latest.log` for error messages
-2. **Validation warnings**: Mod logs dimension mismatches and missing textures
-3. **Test with default**: Disable your pack to verify mod works
-4. **Share pack structure**: Post your file tree when asking for help
+- **Drag** to move; **Tab** cycles through bars; **arrow keys** nudge by 1px; **Shift+arrows** resize.
+- **Right-click** any element for a context menu (anchor, fill direction, reset, etc.).
+- Each bar has draggable sub-elements: background, bar, foreground, and text. The selected element is outlined.
+- Anchor a bar to one of nine screen regions so it stays in place when the window resizes.
+- Fill direction can be horizontal or vertical.
 
----
+Changes save to `config/dynamic_resource_bars-client.toml`.
 
-## Advanced Topics
+## Troubleshooting
 
-### See Also
-- **Mod config**: `.minecraft/config/dynamic_resource_bars-client.toml`
-- **In-game editor**: Access via config menu to customize positioning
+**Custom textures don't show up.** Check the pack is enabled and at the top of the list, the path is exactly `assets/dynamic_resource_bars/textures/gui/`, and filenames match (e.g., `health_bar.png`, not `healthbar.png`). Reload with **F3+T**.
 
-### Recently Implemented Features
-- ✅ **Texture auto-detection** - Use any PNG size
-- ✅ **Nine-slice scaling** - Tile/stretch modes for backgrounds and overlays
+**Bar looks stretched or cuts mid-frame.** Texture height must be evenly divisible by `height` in the `.mcmeta`. All variants of a bar must use the same frame dimensions.
 
----
+**Nine-slice tiles in empty space.** Your graphic doesn't fill the sheet — add a `source` region.
 
-## Examples Gallery
+**Tiled overlay has visible seams.** The texture isn't seamless. Use your editor's offset/wrap test, or switch to nine-slice with stretched edges.
 
-### Minimal Recolor Pack (Standard Resolution)
-```
-my_red_bars/
-  pack.mcmeta
-  assets/dynamic_resource_bars/textures/gui/
-    health_bar.png     ← Red tinted (256x1024)
-    stamina_bar.png    ← Red tinted (256x1024)
-    mana_bar.png       ← Red tinted (256x1024)
-```
+**HD bars work but config sliders cap at 256px.** Known limitation. Edit `config/dynamic_resource_bars-client.toml` directly and set, e.g., `healthBarWidth = 512`.
 
-### High-Resolution Pack (2x Resolution)
-```
-hd_bars/
-  pack.mcmeta
-  assets/dynamic_resource_bars/textures/gui/
-    health_bar.png            ← 512x2048 (double resolution)
-    health_bar.png.mcmeta     ← height: 64 (double frame size)
-    stamina_bar.png           ← 512x2048
-    stamina_bar.png.mcmeta    ← height: 64
-    mana_bar.png              ← 512x2048
-    mana_bar.png.mcmeta       ← height: 64
-```
-
-### Simple Recolor Pack
-```
-recolor_pack/
-  pack.mcmeta
-  assets/dynamic_resource_bars/textures/gui/
-    health_bar.png            ← 256x1024 recolored
-    stamina_bar.png           ← 256x1024 recolored
-    mana_bar.png              ← 256x1024 recolored
-```
-
-### Decorative Frames Pack (Nine-Slice)
-```
-ornate_bars/
-  pack.mcmeta
-  assets/dynamic_resource_bars/textures/gui/
-    health_background.png             ← 256x256 with decorative border
-    health_background.png.mcmeta      ← Nine-slice with tile edges
-    health_foreground.png             ← 256x256 gold frame
-    health_foreground.png.mcmeta      ← Nine-slice with stretch
-```
-
-**health_background.png.mcmeta**:
-```json
-{
-  "dynamic_resource_bars": {
-    "scaling": {
-      "type": "nine_slice",
-      "left": 8,
-      "right": 8,
-      "top": 6,
-      "bottom": 6,
-      "edges": "tile",
-      "center": "stretch"
-    }
-  }
-}
-```
-
-### Complete Overhaul Pack
-```
-fantasy_bars/
-  pack.mcmeta
-  assets/dynamic_resource_bars/textures/gui/
-    health_bar.png              ← Custom animated texture (any size)
-    health_bar.png.mcmeta       ← Custom timing 
-    health_background.png       ← Ornate frame
-    health_background.png.mcmeta ← Nine-slice for scaling
-    health_foreground.png       ← Gold border
-    health_foreground.png.mcmeta ← Nine-slice for scaling
-    absorption_overlay.png      ← Custom effect
-    # ... and all other bars
-```
-
----
-
-## Cheat Sheet: File Naming & Dimensions
-
-### Standard Resource Pack Files
-
-| File | Dimensions | Required? | Notes |
-|------|------------|-----------|-------|
-| `health_bar.png` | 256×1024 | ✅ Yes | Animated bar |
-| `health_bar.png.mcmeta` | N/A | ⚠️ Optional | Animation|
-| `health_background.png` | 256×256 | ⚠️ Optional | Frame/container |
-| `health_background.png.mcmeta` | N/A | ⚠️ Optional | Nine-slice |
-| `health_foreground.png` | 256×256 | ⚠️ Optional | Border overlay |
-| `health_foreground.png.mcmeta` | N/A | ⚠️ Optional | Nine-slice |
-
-**Pattern**: `{bar_type}_{layer}.png` where:
-- `bar_type` = health, mana, stamina, air
-- `layer` = bar, background, foreground, mask
-
-### HD Resource Pack Files (2x)
-
-| File | Dimensions | Notes |
-|------|------------|-------|
-| `health_bar.png` | 512×2048 | Double resolution |
-| `health_bar.png.mcmeta` | N/A | Must specify height: 64 |
-| `health_background.png` | 512×512 | Can be any size |
-
-### Dimension Formula Reference
-
-```
-Bar texture height = frame_height × frame_count
-Mask dimensions = bar_texture_width × frame_height
-Background/overlay = Any size (will scale with nine-slice)
-
-Standard: 256 × 1024 = 32 × 32 frames
-HD 2x:    512 × 2048 = 64 × 32 frames
-Compact:  128 × 512  = 32 × 16 frames
-```
-
----
-
-**Pro tip**: Check `assets/dynamic_resource_bars/textures/gui/` in the mod for `EXAMPLE_*.mcmeta` files showing all features!
+For anything else, check `logs/latest.log` — the mod logs detected dimensions and any `.mcmeta` parse errors.
