@@ -50,3 +50,10 @@ replay_*.log
 *.jfr
 /IMPLEMENTATION_STATUS.md
 /TODO.md
+
+# MixinMCP auto-injected rules
+.claude/skills/mixin-writing/SKILL.md
+.claude/skills/mixin-writing/references/at-reference.md
+.claude/skills/mixin-writing/references/expressions-language.md
+.claude/skills/mixinmcp-tools/SKILL.md
+.claude/skills/mixinmcp-tools/references/toolchains.md
