@@ -1,6 +1,6 @@
 # Dynamic RPG Resource Bars
 
-Animated, adjustable resource bars for Minecraft. By muon-rw.
+Animated, adjustable resource bars for Minecraft.
 
 [![CurseForge](https://img.shields.io/badge/CurseForge-Download-orange)](https://www.curseforge.com/minecraft/mc-mods/dynamic-rpg-resource-bars)
 [![Modrinth](https://img.shields.io/badge/Modrinth-Download-green)](https://modrinth.com/mod/dynamic-resource-bars)
