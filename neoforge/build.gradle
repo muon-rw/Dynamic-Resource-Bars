@@ -4,6 +4,15 @@ plugins {
     id 'dev.mixinmcp.decompile'
 }
 
+// Loom provides `localRuntime` out of the box; MDG does not, so wire it up here.
+// Deps in `localRuntime` are on the dev runtime classpath but aren't exposed in
+// `runtimeElements`, so they don't propagate transitively to maven consumers.
+configurations {
+    localRuntime
+    runtimeClasspath.extendsFrom(localRuntime)
+    testRuntimeClasspath.extendsFrom(localRuntime)
+}
+
 dependencies {
     implementation("me.fzzyhmstrs:fzzy_config:${fzzy_config}+neoforge")
 
@@ -16,7 +25,8 @@ dependencies {
 
     implementation "dev.muon.combat_attributes:combat_attributes-neoforge:${combat_attributes_version}+${minecraft_version}"
 
-    implementation "curse.maven:appleskin-248787:7854456"
+    compileOnly "curse.maven:appleskin-248787:7854456"
+    localRuntime "curse.maven:appleskin-248787:7854456"
 
     // FD has no NeoForge port for this MC version yet; compileOnly against the Fabric Refabricated
     // jar lets common's FarmersDelightCompat references resolve. Runtime is gated by isModLoaded

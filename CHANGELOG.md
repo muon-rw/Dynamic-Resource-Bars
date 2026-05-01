@@ -1,3 +1,6 @@
+## 0.9.1
+- Safely default to Combat Attributes mana/stamina providers when present
+
 ## 0.9.0
 - Rewrite from the ground up for 26.1.2 only, Fabric/Neoforge. Dropped Blahaj/Stonecutter
 - Lots of internal cleanup for easier maintainability/portability

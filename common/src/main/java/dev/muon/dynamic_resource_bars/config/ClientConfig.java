@@ -3,6 +3,7 @@ package dev.muon.dynamic_resource_bars.config;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import dev.muon.dynamic_resource_bars.Constants; // For logging
+import dev.muon.dynamic_resource_bars.platform.Services;
 import dev.muon.dynamic_resource_bars.util.HUDPositioning;
 import dev.muon.dynamic_resource_bars.util.HorizontalAlignment;
 import dev.muon.dynamic_resource_bars.util.TextBehavior;
@@ -27,6 +28,13 @@ public class ClientConfig {
             .enableComplexMapKeySerialization() // Good practice
             // .registerTypeAdapter(Path.class, new PathTypeAdapter()) // Example if complex types need adapters
             .create();
+
+    private static final String COMBAT_ATTRIBUTES_MOD_ID = "combat_attributes";
+
+    // One-way marker: flips to true the first time we load with Combat Attributes present.
+    // Lets us upgrade the legacy stamina default (FOOD) to COMBAT_ATTRIBUTES exactly once,
+    // without ever overriding choices the user made while CA was already on the classpath.
+    public boolean combatAttributesSeen = false;
 
     // General
     public static final float DEFAULT_TEXT_SCALING_FACTOR = 0.5f;
@@ -166,7 +174,7 @@ public class ClientConfig {
     public float staminaTextSize;
 
     // Mana Defaults & Fields
-    public static final ManaBarBehavior DEFAULT_MANA_BAR_BEHAVIOR = ManaBarBehavior.OFF;
+    public static final ManaBarBehavior DEFAULT_MANA_BAR_BEHAVIOR = ManaBarBehavior.COMBAT_ATTRIBUTES;
     public static final HUDPositioning.BarPlacement DEFAULT_MANA_BAR_ANCHOR = HUDPositioning.BarPlacement.ABOVE_UTILITIES;
     public static final boolean DEFAULT_ENABLE_MANA_BACKGROUND = true;
     public static final boolean DEFAULT_ENABLE_MANA_FOREGROUND = true;
@@ -341,11 +349,35 @@ public class ClientConfig {
 
     /** Builds a fresh, defaults-only instance — used by editor "reset to defaults" actions. */
     public static ClientConfig createDefaults() {
-        return new ClientConfig();
+        ClientConfig cfg = new ClientConfig();
+        applyCombatAttributesDefaults(cfg);
+        return cfg;
+    }
+
+    /**
+     * Upgrades the legacy stamina default (FOOD) to COMBAT_ATTRIBUTES the first time we observe
+     * CA on the classpath. Runs at most once per config — once {@link #combatAttributesSeen}
+     * flips to true, the user's choices are treated as deliberate and never overridden, even if
+     * CA is later removed and re-added.
+     *
+     * <p>Mana is not migrated: its default is already COMBAT_ATTRIBUTES, and the only non-default
+     * value (OFF) is necessarily a deliberate user choice.
+     *
+     * @return true if any field changed (caller should persist).
+     */
+    private static boolean applyCombatAttributesDefaults(ClientConfig cfg) {
+        if (!Services.PLATFORM.isModLoaded(COMBAT_ATTRIBUTES_MOD_ID)) return false;
+        if (cfg.combatAttributesSeen) return false;
+        if (cfg.staminaBarBehavior == StaminaBarBehavior.FOOD) {
+            cfg.staminaBarBehavior = StaminaBarBehavior.COMBAT_ATTRIBUTES;
+        }
+        cfg.combatAttributesSeen = true;
+        return true;
     }
 
     // Private constructor to enforce singleton via getInstance and initialize defaults
     private ClientConfig() {
+        this.combatAttributesSeen = false;
         this.textScalingFactor = DEFAULT_TEXT_SCALING_FACTOR;
         this.globalTextColor = DEFAULT_TEXT_COLOR;
         this.globalTextOpacity = DEFAULT_TEXT_OPACITY;
@@ -543,9 +575,10 @@ public class ClientConfig {
         // This is a simple way to handle upgrades where new config options are added
         // A more sophisticated approach might involve version numbers and explicit migration
         boolean modifiedByDefaults = ensureDefaults(loadedConfig);
+        boolean migratedForCombatAttributes = applyCombatAttributesDefaults(loadedConfig);
 
 
-        if (newConfigCreated || modifiedByDefaults) {
+        if (newConfigCreated || modifiedByDefaults || migratedForCombatAttributes) {
             Constants.LOG.info("Saving new or updated default config to {}.", CONFIG_FILE_PATH);
             loadedConfig.save(); // Save if it's new or if defaults were applied
         }
