@@ -1,3 +1,7 @@
+## 0.9.2
+- Add configurable fadeout hold - bars/text will wait this long after meeting their condition before fading when set to fade
+- Fixes for Combat Attributes stamina rendering
+
 ## 0.9.1
 - Safely default to Combat Attributes mana/stamina providers when present
 

@@ -40,6 +40,10 @@ public class ClientConfig {
     public static final float DEFAULT_TEXT_SCALING_FACTOR = 0.5f;
     public double textScalingFactor = DEFAULT_TEXT_SCALING_FACTOR;
 
+    /** Milliseconds the bar (and its text) holds at full opacity after a smart-fade trigger fires before it begins fading. */
+    public static final int DEFAULT_FADE_HOLD_DURATION = 1500;
+    public int fadeHoldDuration = DEFAULT_FADE_HOLD_DURATION;
+
     // Global text defaults
     public static final int DEFAULT_TEXT_COLOR = 0xFFFFFF; // White
     public static final int DEFAULT_TEXT_OPACITY = 200; // Out of 255
@@ -379,6 +383,7 @@ public class ClientConfig {
     private ClientConfig() {
         this.combatAttributesSeen = false;
         this.textScalingFactor = DEFAULT_TEXT_SCALING_FACTOR;
+        this.fadeHoldDuration = DEFAULT_FADE_HOLD_DURATION;
         this.globalTextColor = DEFAULT_TEXT_COLOR;
         this.globalTextOpacity = DEFAULT_TEXT_OPACITY;
         this.globalTextSize = DEFAULT_TEXT_SIZE;
@@ -595,6 +600,9 @@ public class ClientConfig {
         // This is verbose but clear. A more reflection-based approach is possible but complex.
 
         // General - textScalingFactor is double, defaults are handled by constructor/GSON field init.
+
+        // Negative values would invert the fade math; clamp before render reads it.
+        if (cfg.fadeHoldDuration < 0) { cfg.fadeHoldDuration = DEFAULT_FADE_HOLD_DURATION; modified = true; }
 
         // Health
         if (cfg.healthBarAnchor == null) { cfg.healthBarAnchor = DEFAULT_HEALTH_BAR_ANCHOR; modified = true; }

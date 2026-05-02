@@ -23,6 +23,7 @@ public class ModConfigScreen extends Screen {
     private EditBox textColorBox;
     private EditBox textOpacityBox;
     private EditBox textSizeBox;
+    private EditBox fadeHoldBox;
 
     public ModConfigScreen(Screen parent) {
         super(Component.literal(Constants.MOD_NAME + " Configuration"));
@@ -113,6 +114,27 @@ public class ModConfigScreen extends Screen {
             }
         });
         this.addRenderableWidget(textSizeBox);
+        currentY += buttonHeight + 5;
+
+        fadeHoldBox = new EditBox(this.font, editX, currentY, editBoxWidth, buttonHeight, Component.empty());
+        fadeHoldBox.setValue(String.valueOf(config.fadeHoldDuration));
+        fadeHoldBox.setMaxLength(5);
+        fadeHoldBox.setTooltip(Tooltip.create(
+                Component.translatable("gui.dynamic_resource_bars.config.tooltip.fade_hold_duration")));
+        fadeHoldBox.setResponder(text -> {
+            try {
+                int ms = Integer.parseInt(text);
+                if (ms >= 0 && ms <= 60000) {
+                    config.fadeHoldDuration = ms;
+                    fadeHoldBox.setTextColor(0xE0E0E0);
+                } else {
+                    fadeHoldBox.setTextColor(0xFF5555);
+                }
+            } catch (NumberFormatException e) {
+                fadeHoldBox.setTextColor(0xFF5555);
+            }
+        });
+        this.addRenderableWidget(fadeHoldBox);
 
         this.addRenderableWidget(Button.builder(
                         Component.translatable("gui.done"),
@@ -131,6 +153,7 @@ public class ModConfigScreen extends Screen {
         drawLabel(graphics, "gui.dynamic_resource_bars.config.label.text_color", labelX, textColorBox);
         drawLabel(graphics, "gui.dynamic_resource_bars.config.label.text_opacity", labelX, textOpacityBox);
         drawLabel(graphics, "gui.dynamic_resource_bars.config.label.text_size", labelX, textSizeBox);
+        drawLabel(graphics, "gui.dynamic_resource_bars.config.label.fade_hold_duration", labelX, fadeHoldBox);
     }
 
     private void drawLabel(GuiGraphicsExtractor graphics, String key, int x, EditBox box) {

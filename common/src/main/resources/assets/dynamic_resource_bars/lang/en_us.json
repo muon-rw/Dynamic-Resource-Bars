@@ -81,6 +81,8 @@
   "gui.dynamic_resource_bars.config.label.text_color": "Text Color:",
   "gui.dynamic_resource_bars.config.label.text_opacity": "Max Text Opacity:",
   "gui.dynamic_resource_bars.config.label.text_size": "Text Scaling:",
+  "gui.dynamic_resource_bars.config.label.fade_hold_duration": "Fade Hold (ms):",
+  "gui.dynamic_resource_bars.config.tooltip.fade_hold_duration": "Milliseconds the bar holds at full opacity after a smart-fade trigger fires before it begins fading. Applies to both the bar and its text.",
 
   "gui.dynamic_resource_bars.mana_behavior.off": "Off",
   "gui.dynamic_resource_bars.mana_behavior.combat_attributes": "Combat Attributes",

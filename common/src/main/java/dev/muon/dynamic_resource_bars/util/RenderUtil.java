@@ -11,9 +11,13 @@ import org.joml.Matrix3x2fStack;
 
 public class RenderUtil {
     public static final long BAR_FADEOUT_DURATION = 1500L;
-    public static final long TEXT_DISPLAY_DURATION = 2000L;
     public static final long TEXT_FADEOUT_DURATION = 500L;
     public static final int BASE_TEXT_ALPHA = 200;
+
+    /** Total time a bar's "smart fade" trigger keeps text drawable: hold + fadeout. */
+    public static long textDisplayDuration() {
+        return ModConfigManager.getClient().fadeHoldDuration + TEXT_FADEOUT_DURATION;
+    }
 
     public static void renderText(float current, float max, GuiGraphicsExtractor graphics,
                                   int baseX, int baseY, int color, HorizontalAlignment alignment) {
@@ -68,10 +72,12 @@ public class RenderUtil {
     }
 
     public static int calculateTextAlpha(long timeSinceEvent) {
+        long hold = ModConfigManager.getClient().fadeHoldDuration;
+        long total = hold + TEXT_FADEOUT_DURATION;
         int alpha;
-        if (timeSinceEvent < TEXT_DISPLAY_DURATION) {
-            alpha = timeSinceEvent > TEXT_DISPLAY_DURATION - TEXT_FADEOUT_DURATION
-                    ? (int) (BASE_TEXT_ALPHA * (TEXT_DISPLAY_DURATION - timeSinceEvent) / TEXT_FADEOUT_DURATION)
+        if (timeSinceEvent < total) {
+            alpha = timeSinceEvent > hold
+                    ? (int) (BASE_TEXT_ALPHA * (total - timeSinceEvent) / TEXT_FADEOUT_DURATION)
                     : BASE_TEXT_ALPHA;
         } else {
             alpha = 0;

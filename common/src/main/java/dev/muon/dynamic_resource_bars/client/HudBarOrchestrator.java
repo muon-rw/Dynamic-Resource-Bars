@@ -100,4 +100,18 @@ public final class HudBarOrchestrator {
         StaminaBarRenderer.INSTANCE.render(graphics, player, deltaTracker);
         return true;
     }
+
+    /**
+     * Drives the render from Combat Attributes' stamina layer slot. When our stamina source is
+     * CA, our DRB-styled bar takes over CA's slot (CA's own pip-bar render is replaced); otherwise
+     * the caller falls through to CA's own render. The stamina-bar position itself comes from
+     * {@code staminaBarAnchor} in config — this hook only decides which layer triggers the render.
+     */
+    public static boolean renderStaminaFromCASlot(GuiGraphicsExtractor graphics, DeltaTracker deltaTracker) {
+        if (ModConfigManager.getClient().staminaBarBehavior != StaminaBarBehavior.COMBAT_ATTRIBUTES) return false;
+        Player player = clientPlayer();
+        if (player == null) return false;
+        StaminaBarRenderer.INSTANCE.render(graphics, player, deltaTracker);
+        return true;
+    }
 }

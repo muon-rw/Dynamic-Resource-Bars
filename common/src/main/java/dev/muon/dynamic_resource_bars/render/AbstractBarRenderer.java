@@ -1,6 +1,7 @@
 package dev.muon.dynamic_resource_bars.render;
 
 import com.mojang.blaze3d.systems.RenderSystem;
+import dev.muon.dynamic_resource_bars.config.ModConfigManager;
 import dev.muon.dynamic_resource_bars.util.AnimationMetadata;
 import dev.muon.dynamic_resource_bars.util.AnimationMetadataCache;
 import dev.muon.dynamic_resource_bars.util.BarVisibility;
@@ -220,7 +221,7 @@ public abstract class AbstractBarRenderer {
                         fullValueStartTime = System.currentTimeMillis();
                     }
                     lastValue = current;
-                    yield (System.currentTimeMillis() - fullValueStartTime) < RenderUtil.TEXT_DISPLAY_DURATION;
+                    yield (System.currentTimeMillis() - fullValueStartTime) < RenderUtil.textDisplayDuration();
                 }
                 lastValue = current;
                 yield true;
@@ -248,8 +249,9 @@ public abstract class AbstractBarRenderer {
         boolean shouldFade = shouldFadeWhenFull(player, current, max);
         setVisibility(!shouldFade || EditModeManager.isEditModeEnabled());
 
+        long offDuration = ModConfigManager.getClient().fadeHoldDuration + RenderUtil.BAR_FADEOUT_DURATION;
         if (!isVisible() && !EditModeManager.isEditModeEnabled()
-                && (System.currentTimeMillis() - barDisabledStartTime) > RenderUtil.BAR_FADEOUT_DURATION) {
+                && (System.currentTimeMillis() - barDisabledStartTime) > offDuration) {
             return;
         }
 
@@ -510,7 +512,10 @@ public abstract class AbstractBarRenderer {
     public final float currentAlpha() {
         if (isVisible()) return 1f;
         long elapsed = System.currentTimeMillis() - barDisabledStartTime;
-        if (elapsed >= RenderUtil.BAR_FADEOUT_DURATION) return 0f;
-        return Math.max(0f, 1f - (elapsed / (float) RenderUtil.BAR_FADEOUT_DURATION));
+        long hold = ModConfigManager.getClient().fadeHoldDuration;
+        if (elapsed < hold) return 1f;
+        long fadeElapsed = elapsed - hold;
+        if (fadeElapsed >= RenderUtil.BAR_FADEOUT_DURATION) return 0f;
+        return Math.max(0f, 1f - (fadeElapsed / (float) RenderUtil.BAR_FADEOUT_DURATION));
     }
 }
