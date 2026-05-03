@@ -8,6 +8,8 @@ Animated, adjustable resource bars for Minecraft.
 ---
 
 # Resource Pack Guide
+> [!WARNING] 
+> This guide applies to **26.1.2 *only***. 
 
 This guide covers everything you need to make a resource pack: file layout, animation, scaling, and the in-game HUD editor.
 
