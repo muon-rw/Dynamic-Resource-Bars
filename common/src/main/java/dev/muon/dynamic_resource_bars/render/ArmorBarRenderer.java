@@ -46,18 +46,18 @@ public class ArmorBarRenderer extends AbstractBarRenderer {
                 c.armorBackgroundWidth, c.armorBackgroundHeight,
                 c.armorBackgroundXOffset, c.armorBackgroundYOffset,
                 c.armorBarWidth, c.armorBarHeight, c.armorBarXOffset, c.armorBarYOffset,
-                // No foreground for armor; echo bar dims so editor outlines stay visible at 0×0.
-                c.armorBarWidth, c.armorBarHeight, 0, 0,
-                c.armorTextXOffset, c.armorTextYOffset, c.armorTextColor, c.armorTextOpacity, c.armorTextAlign,
+                c.armorOverlayWidth, c.armorOverlayHeight, c.armorOverlayXOffset, c.armorOverlayYOffset,
+                c.armorTextXOffset, c.armorTextYOffset, c.armorTextWidth, c.armorTextHeight,
+                c.armorTextColor, c.armorTextOpacity, c.armorTextAlign,
                 c.armorTotalXOffset, c.armorTotalYOffset,
                 c.armorBarAnchor,
-                c.enableArmorBackground, false /* no foreground */, c.armorBarVisibility,
+                c.enableArmorBackground, c.enableArmorForeground, c.armorBarVisibility,
                 c.armorFillDirection, c.showArmorText
         );
     }
 
     @Override protected Identifier backgroundTexture() { return Constants.loc("textures/gui/armor_background.png"); }
-    @Override protected Identifier foregroundTexture() { return Constants.loc("textures/gui/armor_background.png"); }
+    @Override protected Identifier foregroundTexture() { return Constants.loc("textures/gui/armor_foreground.png"); }
     @Override protected Identifier barTexture(Player p, float c, float m) { return Constants.loc("textures/gui/armor_bar.png"); }
     /** Armor bar is static — single-frame "animation" yields a 0 offset every frame. */
     @Override protected AnimationMetadata.AnimationData barAnimation() {
@@ -69,7 +69,7 @@ public class ArmorBarRenderer extends AbstractBarRenderer {
                 AnimationMetadata.TextureType.BACKGROUND);
     }
     @Override protected AnimationMetadata.ScalingInfo foregroundScaling() {
-        return backgroundScaling();
+        return AnimationMetadataCache.getArmorForegroundScaling();
     }
 
     @Override
@@ -107,9 +107,10 @@ public class ArmorBarRenderer extends AbstractBarRenderer {
         if (totalProtection > 0) {
             float protRatio = Math.min(1f, (float) totalProtection / Math.max(1, c.maxExpectedProt));
             float pulse = 0.5f + (TickHandler.getOverlayFlashAlpha() * 0.5f);
-            int adjustedW = c.enableArmorIcon ? barRect.width() - (c.armorIconSize / 2) : barRect.width();
+            int iconReserve = c.enableArmorIcon ? c.armorIconWidth / 2 : 0;
+            int adjustedW = barRect.width() - iconReserve;
             int overlayW = (int) (adjustedW * protRatio);
-            int overlayX = barRect.x() + (c.enableArmorIcon ? c.armorIconSize / 2 : 0);
+            int overlayX = barRect.x() + iconReserve;
             if (overlayW > 0) {
                 Identifier tex = Constants.loc("textures/gui/protection_overlay.png");
                 AnimationMetadata.TextureDimensions dims = AnimationMetadataCache.getTextureDimensions(tex);
@@ -140,7 +141,7 @@ public class ArmorBarRenderer extends AbstractBarRenderer {
             return new ScreenRect(
                     complexRect.x() + c.armorIconXOffset,
                     complexRect.y() + c.armorIconYOffset,
-                    c.armorIconSize, c.armorIconSize);
+                    c.armorIconWidth, c.armorIconHeight);
         }
         return super.getCustomSubElementRect(type, player, complexRect);
     }

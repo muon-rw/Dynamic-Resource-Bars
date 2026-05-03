@@ -335,7 +335,7 @@ public abstract class AbstractBarRenderer {
             case FOREGROUND -> new ScreenRect(x + cfg.overlayXOffset(), y + cfg.overlayYOffset(),
                     cfg.overlayWidth(), cfg.overlayHeight());
             case TEXT -> new ScreenRect(x + cfg.textXOffset(), y + cfg.textYOffset(),
-                    cfg.barWidth(), cfg.barHeight());
+                    cfg.textWidth(), cfg.textHeight());
             case ICON, ABSORPTION_TEXT -> getCustomSubElementRect(type, player, complex);
         };
     }
@@ -458,7 +458,7 @@ public abstract class AbstractBarRenderer {
             case RIGHT -> textRect.x() + textRect.width();
             case LEFT -> textRect.x();
         };
-        RenderUtil.renderText(current, max, graphics, baseX, textY, color, alignment);
+        RenderUtil.renderText(current, max, graphics, baseX, textY, cfg.textHeight(), color, alignment);
     }
 
     private int computeTextColor(float current, float max, float barAlpha, BarConfig cfg) {
@@ -489,7 +489,11 @@ public abstract class AbstractBarRenderer {
                 ScreenRect fg = getSubElementRect(SubElementType.FOREGROUND, player, cfg);
                 graphics.outline(fg.x() - 1, fg.y() - 1, fg.width() + 2, fg.height() + 2, 0xA0FF00FF);
             }
-            graphics.outline(complex.x() - 2, complex.y() - 2, complex.width() + 4, complex.height() + 4, 0x80FFFFFF);
+            // In focus mode the user can't move the complex anyway; suppress the outer wrapper
+            // outline to reduce visual clutter when the background drifts away from the complex.
+            if (!EditModeManager.isFocusMode()) {
+                graphics.outline(complex.x() - 2, complex.y() - 2, complex.width() + 4, complex.height() + 4, 0x80FFFFFF);
+            }
         } else {
             graphics.outline(complex.x() - 1, complex.y() - 1, complex.width() + 2, complex.height() + 2, 0x80FFFFFF);
         }

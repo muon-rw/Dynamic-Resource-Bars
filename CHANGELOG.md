@@ -1,3 +1,6 @@
+## 0.9.3
+- More editor improvements
+
 ## 0.9.2
 - Add configurable fadeout hold - bars/text will wait this long after meeting their condition before fading when set to fade
 - Fixes for Combat Attributes stamina rendering

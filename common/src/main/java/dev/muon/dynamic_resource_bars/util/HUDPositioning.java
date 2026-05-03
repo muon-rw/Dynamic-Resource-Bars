@@ -7,20 +7,26 @@ import net.minecraft.client.Minecraft;
 
 public class HUDPositioning {
     public enum BarPlacement {
-        HEALTH(AnchorSide.LEFT),
-        ARMOR(AnchorSide.LEFT),
-        HUNGER(AnchorSide.RIGHT),
-        AIR(AnchorSide.RIGHT),
-        ABOVE_UTILITIES(AnchorSide.LEFT);
+        HEALTH(AnchorSide.LEFT, "bar_placement.health"),
+        ARMOR(AnchorSide.LEFT, "bar_placement.armor"),
+        HUNGER(AnchorSide.RIGHT, "bar_placement.hunger"),
+        AIR(AnchorSide.RIGHT, "bar_placement.air"),
+        ABOVE_UTILITIES(AnchorSide.LEFT, "bar_placement.above_utilities");
 
         private final AnchorSide side;
+        private final String translationKey;
 
-        BarPlacement(AnchorSide side) {
+        BarPlacement(AnchorSide side, String translationKey) {
             this.side = side;
+            this.translationKey = translationKey;
         }
 
         public AnchorSide getSide() {
             return side;
+        }
+
+        public String getTranslationKey() {
+            return translationKey;
         }
 
         public BarPlacement getNext() {

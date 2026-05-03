@@ -27,10 +27,11 @@ public class ManualSizePositionScreen extends Screen {
     private EditBox bgWidth, bgHeight;
     private EditBox barWidth, barHeight;
     private EditBox overlayWidth, overlayHeight;
+    private EditBox textWidth, textHeight;
     private EditBox bgX, bgY;
     private EditBox totalX, totalY;
-    private EditBox iconX, iconY, iconSize;
-    private EditBox absorptionTextX, absorptionTextY;
+    private EditBox iconX, iconY, iconWidth, iconHeight;
+    private EditBox absorptionTextX, absorptionTextY, absorptionTextWidth, absorptionTextHeight;
 
     private final boolean hasIcon;
     private final boolean hasAbsorptionText;
@@ -40,8 +41,8 @@ public class ManualSizePositionScreen extends Screen {
         this.parentScreen = parent;
         this.element = element;
         this.access = BarFieldAccess.forElement(element);
-        this.hasIcon = element == DraggableElement.ARMOR_BAR || element == DraggableElement.AIR_BAR;
-        this.hasAbsorptionText = element == DraggableElement.HEALTH_BAR;
+        this.hasIcon = access != null && access.hasIcon();
+        this.hasAbsorptionText = access != null && access.hasAbsorptionText();
     }
 
     @Override
@@ -80,6 +81,10 @@ public class ManualSizePositionScreen extends Screen {
         overlayWidth = intBox(leftEditX, yLeft, boxWidth, boxHeight, access.overlayWidth(c), 1, 256);
         yLeft += boxHeight + rowSpacing;
         overlayHeight = intBox(leftEditX, yLeft, boxWidth, boxHeight, access.overlayHeight(c), 1, 256);
+        yLeft += boxHeight + groupGap;
+        textWidth = intBox(leftEditX, yLeft, boxWidth, boxHeight, access.textWidth(c), 1, 256);
+        yLeft += boxHeight + rowSpacing;
+        textHeight = intBox(leftEditX, yLeft, boxWidth, boxHeight, access.textHeight(c), 1, 64);
 
         // Right column — positions + per-bar extras
         int yRight = yStart;
@@ -97,7 +102,9 @@ public class ManualSizePositionScreen extends Screen {
             yRight += boxHeight + rowSpacing;
             iconY = intBox(rightEditX, yRight, boxWidth, boxHeight, access.iconY(c), Integer.MIN_VALUE, Integer.MAX_VALUE);
             yRight += boxHeight + rowSpacing;
-            iconSize = intBox(rightEditX, yRight, boxWidth, boxHeight, access.iconSize(c), 1, 64);
+            iconWidth = intBox(rightEditX, yRight, boxWidth, boxHeight, access.iconWidth(c), 1, 64);
+            yRight += boxHeight + rowSpacing;
+            iconHeight = intBox(rightEditX, yRight, boxWidth, boxHeight, access.iconHeight(c), 1, 64);
         }
 
         if (hasAbsorptionText) {
@@ -105,6 +112,10 @@ public class ManualSizePositionScreen extends Screen {
             absorptionTextX = intBox(rightEditX, yRight, boxWidth, boxHeight, access.absorptionTextX(c), Integer.MIN_VALUE, Integer.MAX_VALUE);
             yRight += boxHeight + rowSpacing;
             absorptionTextY = intBox(rightEditX, yRight, boxWidth, boxHeight, access.absorptionTextY(c), Integer.MIN_VALUE, Integer.MAX_VALUE);
+            yRight += boxHeight + rowSpacing;
+            absorptionTextWidth = intBox(rightEditX, yRight, boxWidth, boxHeight, access.absorptionTextWidth(c), 1, 256);
+            yRight += boxHeight + rowSpacing;
+            absorptionTextHeight = intBox(rightEditX, yRight, boxWidth, boxHeight, access.absorptionTextHeight(c), 1, 64);
         }
 
         addRenderableWidget(bgWidth);
@@ -113,6 +124,8 @@ public class ManualSizePositionScreen extends Screen {
         addRenderableWidget(barHeight);
         addRenderableWidget(overlayWidth);
         addRenderableWidget(overlayHeight);
+        addRenderableWidget(textWidth);
+        addRenderableWidget(textHeight);
         addRenderableWidget(bgX);
         addRenderableWidget(bgY);
         addRenderableWidget(totalX);
@@ -120,11 +133,14 @@ public class ManualSizePositionScreen extends Screen {
         if (hasIcon) {
             addRenderableWidget(iconX);
             addRenderableWidget(iconY);
-            addRenderableWidget(iconSize);
+            addRenderableWidget(iconWidth);
+            addRenderableWidget(iconHeight);
         }
         if (hasAbsorptionText) {
             addRenderableWidget(absorptionTextX);
             addRenderableWidget(absorptionTextY);
+            addRenderableWidget(absorptionTextWidth);
+            addRenderableWidget(absorptionTextHeight);
         }
 
         int doneWidth = 100;
@@ -136,26 +152,11 @@ public class ManualSizePositionScreen extends Screen {
     }
 
     private EditBox intBox(int x, int y, int w, int h, int initial, int min, int max) {
-        EditBox box = new EditBox(this.font, x, y, w, h, Component.empty());
-        box.setValue(String.valueOf(initial));
-        box.setResponder(text -> {
-            try {
-                int v = Integer.parseInt(text);
-                box.setTextColor(v >= min && v <= max ? 0xE0E0E0 : 0xFF5555);
-            } catch (NumberFormatException e) {
-                box.setTextColor(0xFF5555);
-            }
-        });
-        return box;
+        return FieldEditorUtils.intBox(this.font, x, y, w, h, initial, min, max);
     }
 
     private int parseSafely(EditBox box, int defaultVal, int min, int max) {
-        try {
-            int v = Integer.parseInt(box.getValue());
-            return Math.max(min, Math.min(max, v));
-        } catch (NumberFormatException e) {
-            return defaultVal;
-        }
+        return FieldEditorUtils.parseSafely(box, defaultVal, min, max);
     }
 
     private void applyAll() {
@@ -168,16 +169,21 @@ public class ManualSizePositionScreen extends Screen {
         access.setBarHeight(c, parseSafely(barHeight, access.barHeight(c), 1, 32));
         access.setOverlayWidth(c, parseSafely(overlayWidth, access.overlayWidth(c), 1, 256));
         access.setOverlayHeight(c, parseSafely(overlayHeight, access.overlayHeight(c), 1, 256));
+        access.setTextWidth(c, parseSafely(textWidth, access.textWidth(c), 1, 256));
+        access.setTextHeight(c, parseSafely(textHeight, access.textHeight(c), 1, 64));
         access.setTotalX(c, parseSafely(totalX, access.totalX(c), Integer.MIN_VALUE, Integer.MAX_VALUE));
         access.setTotalY(c, parseSafely(totalY, access.totalY(c), Integer.MIN_VALUE, Integer.MAX_VALUE));
         if (hasIcon) {
             access.setIconX(c, parseSafely(iconX, access.iconX(c), Integer.MIN_VALUE, Integer.MAX_VALUE));
             access.setIconY(c, parseSafely(iconY, access.iconY(c), Integer.MIN_VALUE, Integer.MAX_VALUE));
-            access.setIconSize(c, parseSafely(iconSize, access.iconSize(c), 1, 64));
+            access.setIconWidth(c, parseSafely(iconWidth, access.iconWidth(c), 1, 64));
+            access.setIconHeight(c, parseSafely(iconHeight, access.iconHeight(c), 1, 64));
         }
         if (hasAbsorptionText) {
             access.setAbsorptionTextX(c, parseSafely(absorptionTextX, access.absorptionTextX(c), Integer.MIN_VALUE, Integer.MAX_VALUE));
             access.setAbsorptionTextY(c, parseSafely(absorptionTextY, access.absorptionTextY(c), Integer.MIN_VALUE, Integer.MAX_VALUE));
+            access.setAbsorptionTextWidth(c, parseSafely(absorptionTextWidth, access.absorptionTextWidth(c), 1, 256));
+            access.setAbsorptionTextHeight(c, parseSafely(absorptionTextHeight, access.absorptionTextHeight(c), 1, 64));
         }
         c.save();
     }
@@ -195,6 +201,8 @@ public class ManualSizePositionScreen extends Screen {
         drawLabel(graphics, "gui.dynamic_resource_bars.resize.label.bar_height", leftLabelX, barHeight);
         drawLabel(graphics, "gui.dynamic_resource_bars.resize.label.overlay_width", leftLabelX, overlayWidth);
         drawLabel(graphics, "gui.dynamic_resource_bars.resize.label.overlay_height", leftLabelX, overlayHeight);
+        drawLabel(graphics, "gui.dynamic_resource_bars.resize.label.text_width", leftLabelX, textWidth);
+        drawLabel(graphics, "gui.dynamic_resource_bars.resize.label.text_height", leftLabelX, textHeight);
 
         int rightLabelX = bgX.getX() - 5 - 100;
         drawLabel(graphics, "gui.dynamic_resource_bars.resize.label.background_x_offset", rightLabelX, bgX);
@@ -204,17 +212,19 @@ public class ManualSizePositionScreen extends Screen {
         if (hasIcon) {
             drawLabel(graphics, "gui.dynamic_resource_bars.resize.label.icon_x_offset", rightLabelX, iconX);
             drawLabel(graphics, "gui.dynamic_resource_bars.resize.label.icon_y_offset", rightLabelX, iconY);
-            drawLabel(graphics, "gui.dynamic_resource_bars.resize.label.icon_size", rightLabelX, iconSize);
+            drawLabel(graphics, "gui.dynamic_resource_bars.resize.label.icon_width", rightLabelX, iconWidth);
+            drawLabel(graphics, "gui.dynamic_resource_bars.resize.label.icon_height", rightLabelX, iconHeight);
         }
         if (hasAbsorptionText) {
             drawLabel(graphics, "gui.dynamic_resource_bars.resize.label.absorption_text_x_offset", rightLabelX, absorptionTextX);
             drawLabel(graphics, "gui.dynamic_resource_bars.resize.label.absorption_text_y_offset", rightLabelX, absorptionTextY);
+            drawLabel(graphics, "gui.dynamic_resource_bars.resize.label.absorption_text_width", rightLabelX, absorptionTextWidth);
+            drawLabel(graphics, "gui.dynamic_resource_bars.resize.label.absorption_text_height", rightLabelX, absorptionTextHeight);
         }
     }
 
     private void drawLabel(GuiGraphicsExtractor graphics, String key, int x, EditBox box) {
-        int y = box.getY() + (box.getHeight() - this.font.lineHeight) / 2;
-        graphics.text(this.font, Component.translatable(key), x, y, 0xFFFFFFFF, true);
+        FieldEditorUtils.drawLabel(graphics, this.font, key, x, box);
     }
 
     @Override

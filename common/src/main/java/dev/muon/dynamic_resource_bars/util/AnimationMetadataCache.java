@@ -164,8 +164,18 @@ public class AnimationMetadataCache {
     }
     
     public static AnimationMetadata.ScalingInfo getAirBackgroundScaling() {
-        return getScalingOrLoad(Constants.loc("textures/gui/air_background.png"), 
+        return getScalingOrLoad(Constants.loc("textures/gui/air_background.png"),
             AnimationMetadata.TextureType.BACKGROUND);
+    }
+
+    public static AnimationMetadata.ScalingInfo getArmorForegroundScaling() {
+        return getScalingOrLoad(Constants.loc("textures/gui/armor_foreground.png"),
+            AnimationMetadata.TextureType.FOREGROUND);
+    }
+
+    public static AnimationMetadata.ScalingInfo getAirForegroundScaling() {
+        return getScalingOrLoad(Constants.loc("textures/gui/air_foreground.png"),
+            AnimationMetadata.TextureType.FOREGROUND);
     }
     
     // Overlay scaling getters

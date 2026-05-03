@@ -27,6 +27,8 @@ public record BarConfig(
         int overlayYOffset,
         int textXOffset,
         int textYOffset,
+        int textWidth,
+        int textHeight,
         int textColor,
         int textOpacity,
         HorizontalAlignment textAlign,

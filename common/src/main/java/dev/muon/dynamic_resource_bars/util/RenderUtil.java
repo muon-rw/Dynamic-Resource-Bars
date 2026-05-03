@@ -19,14 +19,19 @@ public class RenderUtil {
         return ModConfigManager.getClient().fadeHoldDuration + TEXT_FADEOUT_DURATION;
     }
 
+    /** Vanilla font line height; used to derive font scale from a per-bar text height. */
+    public static final int FONT_LINE_HEIGHT = 9;
+
+    /**
+     * Renders the "current / max" text at the given base position scaled to fit {@code textHeight}
+     * pixels of vertical space. Final scale = {@code (textHeight / 9) × globalTextSize}.
+     */
     public static void renderText(float current, float max, GuiGraphicsExtractor graphics,
-                                  int baseX, int baseY, int color, HorizontalAlignment alignment) {
+                                  int baseX, int baseY, int textHeight, int color, HorizontalAlignment alignment) {
         Minecraft minecraft = Minecraft.getInstance();
         Matrix3x2fStack pose = graphics.pose();
         pose.pushMatrix();
-        float scalingFactor = (float) ModConfigManager.getClient().textScalingFactor;
-        float globalTextSize = ModConfigManager.getClient().globalTextSize;
-        float finalScale = scalingFactor * globalTextSize;
+        float finalScale = computeScale(textHeight);
 
         pose.scale(finalScale, finalScale);
         int scaledX = (int) (baseX / finalScale);
@@ -48,27 +53,34 @@ public class RenderUtil {
         pose.popMatrix();
     }
 
-    public static void renderText(float current, float max, GuiGraphicsExtractor graphics,
-                                  int baseX, int baseY, int color) {
-        renderText(current, max, graphics, baseX, baseY, color, HorizontalAlignment.CENTER);
-    }
-
     public static void renderAdditionText(String text, GuiGraphicsExtractor graphics,
-                                          int baseX, int baseY, int color) {
+                                          int baseX, int baseY, int textHeight, int color,
+                                          HorizontalAlignment alignment) {
         Minecraft minecraft = Minecraft.getInstance();
         Matrix3x2fStack pose = graphics.pose();
         pose.pushMatrix();
-        float scalingFactor = (float) ModConfigManager.getClient().textScalingFactor;
-        float globalTextSize = ModConfigManager.getClient().globalTextSize;
-        float finalScale = scalingFactor * globalTextSize;
+        float finalScale = computeScale(textHeight);
 
-        int xPos = (int) (baseX / finalScale);
+        int scaledX = (int) (baseX / finalScale);
         int yPos = (int) (baseY / finalScale) - (minecraft.font.lineHeight / 2);
         pose.scale(finalScale, finalScale);
 
-        graphics.text(minecraft.font, text, xPos, yPos, color, true);
+        int textWidth = minecraft.font.width(text);
+        int actualX = switch (alignment) {
+            case CENTER -> scaledX - (textWidth / 2);
+            case RIGHT -> scaledX - textWidth;
+            case LEFT -> scaledX;
+        };
+
+        graphics.text(minecraft.font, text, actualX, yPos, color, true);
 
         pose.popMatrix();
+    }
+
+    private static float computeScale(int textHeight) {
+        float scale = (textHeight / (float) FONT_LINE_HEIGHT) * ModConfigManager.getClient().globalTextSize;
+        // Clamp to a sane minimum so degenerate textHeight never produces invisible text.
+        return Math.max(0.05f, scale);
     }
 
     public static int calculateTextAlpha(long timeSinceEvent) {

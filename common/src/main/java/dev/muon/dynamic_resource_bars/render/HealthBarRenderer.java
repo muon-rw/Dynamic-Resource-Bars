@@ -9,6 +9,7 @@ import dev.muon.dynamic_resource_bars.util.AnimationMetadata;
 import dev.muon.dynamic_resource_bars.util.AnimationMetadataCache;
 import dev.muon.dynamic_resource_bars.util.DraggableElement;
 import dev.muon.dynamic_resource_bars.util.EditModeManager;
+import dev.muon.dynamic_resource_bars.util.HorizontalAlignment;
 import dev.muon.dynamic_resource_bars.util.NineSliceRenderer;
 import dev.muon.dynamic_resource_bars.util.RenderUtil;
 import dev.muon.dynamic_resource_bars.util.ScreenRect;
@@ -71,7 +72,8 @@ public class HealthBarRenderer extends AbstractBarRenderer {
                 c.healthBackgroundXOffset, c.healthBackgroundYOffset,
                 c.healthBarWidth, c.healthBarHeight, c.healthBarXOffset, c.healthBarYOffset,
                 c.healthOverlayWidth, c.healthOverlayHeight, c.healthOverlayXOffset, c.healthOverlayYOffset,
-                c.healthTextXOffset, c.healthTextYOffset, c.healthTextColor, c.healthTextOpacity, c.healthTextAlign,
+                c.healthTextXOffset, c.healthTextYOffset, c.healthTextWidth, c.healthTextHeight,
+                c.healthTextColor, c.healthTextOpacity, c.healthTextAlign,
                 c.healthTotalXOffset, c.healthTotalYOffset,
                 c.healthBarAnchor,
                 c.enableHealthBackground, c.enableHealthForeground, c.healthBarVisibility,
@@ -182,18 +184,24 @@ public class HealthBarRenderer extends AbstractBarRenderer {
 
     @Override
     protected void renderAuxiliaryText(GuiGraphicsExtractor graphics, Player player, float alpha) {
+        ClientConfig c = ModConfigManager.getClient();
+        if (!c.enableHealthAbsorptionText) return;
         float absorption = player.getAbsorptionAmount();
         if (absorption <= 0 && !EditModeManager.isEditModeEnabled()) return;
         String text = "+" + (EditModeManager.isEditModeEnabled() && absorption == 0 ? "8" : (int) absorption);
         ScreenRect rect = getSubElementRect(SubElementType.ABSORPTION_TEXT, player);
-        int x = rect.x();
+        HorizontalAlignment alignment = c.healthAbsorptionTextAlign;
+        int baseX = switch (alignment) {
+            case CENTER -> rect.x() + rect.width() / 2;
+            case RIGHT -> rect.x() + rect.width();
+            case LEFT -> rect.x();
+        };
         int y = rect.y() + (rect.height() / 2);
-        ClientConfig c = ModConfigManager.getClient();
         int baseColor = c.healthTextColor & 0xFFFFFF;
         int textAlpha = (int) (c.healthTextOpacity * alpha);
         textAlpha = Math.max(10, Math.min(255, textAlpha));
         int color = (textAlpha << 24) | baseColor;
-        RenderUtil.renderAdditionText(text, graphics, x, y, color);
+        RenderUtil.renderAdditionText(text, graphics, baseX, y, c.healthAbsorptionTextHeight, color, alignment);
     }
 
     @Override
@@ -203,8 +211,8 @@ public class HealthBarRenderer extends AbstractBarRenderer {
             return new ScreenRect(
                     complexRect.x() + c.healthAbsorptionTextXOffset,
                     complexRect.y() + c.healthAbsorptionTextYOffset,
-                    50,
-                    c.healthBarHeight);
+                    c.healthAbsorptionTextWidth,
+                    c.healthAbsorptionTextHeight);
         }
         return super.getCustomSubElementRect(type, player, complexRect);
     }

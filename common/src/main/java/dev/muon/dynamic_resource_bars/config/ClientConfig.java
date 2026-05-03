@@ -36,10 +36,6 @@ public class ClientConfig {
     // without ever overriding choices the user made while CA was already on the classpath.
     public boolean combatAttributesSeen = false;
 
-    // General
-    public static final float DEFAULT_TEXT_SCALING_FACTOR = 0.5f;
-    public double textScalingFactor = DEFAULT_TEXT_SCALING_FACTOR;
-
     /** Milliseconds the bar (and its text) holds at full opacity after a smart-fade trigger fires before it begins fading. */
     public static final int DEFAULT_FADE_HOLD_DURATION = 1500;
     public int fadeHoldDuration = DEFAULT_FADE_HOLD_DURATION;
@@ -47,12 +43,14 @@ public class ClientConfig {
     // Global text defaults
     public static final int DEFAULT_TEXT_COLOR = 0xFFFFFF; // White
     public static final int DEFAULT_TEXT_OPACITY = 200; // Out of 255
-    public static final float DEFAULT_TEXT_SIZE = 1.0f;
+    public static final float DEFAULT_GLOBAL_TEXT_SIZE = 1.0f;
+    public static final int DEFAULT_BAR_TEXT_WIDTH = 40;
+    public static final int DEFAULT_BAR_TEXT_HEIGHT = 4;
 
     // Global text fields
     public int globalTextColor = DEFAULT_TEXT_COLOR;
     public int globalTextOpacity = DEFAULT_TEXT_OPACITY;
-    public float globalTextSize = DEFAULT_TEXT_SIZE;
+    public float globalTextSize = DEFAULT_GLOBAL_TEXT_SIZE;
 
     // Health Defaults & Fields
     public static final BarRenderBehavior DEFAULT_HEALTH_BAR_BEHAVIOR = BarRenderBehavior.CUSTOM;
@@ -77,13 +75,18 @@ public class ClientConfig {
     public static final int DEFAULT_HEALTH_OVERLAY_Y_OFFSET = -3;
     public static final int DEFAULT_HEALTH_BACKGROUND_X_OFFSET = 0;
     public static final int DEFAULT_HEALTH_BACKGROUND_Y_OFFSET = 0;
-    public static final int DEFAULT_HEALTH_TEXT_X_OFFSET = 3;
+    public static final int DEFAULT_HEALTH_TEXT_X_OFFSET = 20;
     public static final int DEFAULT_HEALTH_TEXT_Y_OFFSET = 3;
     public static final int DEFAULT_HEALTH_TEXT_COLOR = DEFAULT_TEXT_COLOR;
     public static final int DEFAULT_HEALTH_TEXT_OPACITY = DEFAULT_TEXT_OPACITY;
-    public static final float DEFAULT_HEALTH_TEXT_SIZE = DEFAULT_TEXT_SIZE;
-    public static final int DEFAULT_HEALTH_ABSORPTION_TEXT_X_OFFSET = 65;
+    public static final int DEFAULT_HEALTH_TEXT_WIDTH = DEFAULT_BAR_TEXT_WIDTH;
+    public static final int DEFAULT_HEALTH_TEXT_HEIGHT = DEFAULT_BAR_TEXT_HEIGHT;
+    public static final int DEFAULT_HEALTH_ABSORPTION_TEXT_X_OFFSET = 43;
     public static final int DEFAULT_HEALTH_ABSORPTION_TEXT_Y_OFFSET = 3;
+    public static final int DEFAULT_HEALTH_ABSORPTION_TEXT_WIDTH = 30;
+    public static final int DEFAULT_HEALTH_ABSORPTION_TEXT_HEIGHT = 4;
+    public static final boolean DEFAULT_ENABLE_HEALTH_ABSORPTION_TEXT = true;
+    public static final HorizontalAlignment DEFAULT_HEALTH_ABSORPTION_TEXT_ALIGN = HorizontalAlignment.RIGHT;
 
     public BarRenderBehavior healthBarBehavior;
     public HUDPositioning.BarPlacement healthBarAnchor;
@@ -111,9 +114,14 @@ public class ClientConfig {
     public int healthTextYOffset;
     public int healthTextColor;
     public int healthTextOpacity;
-    public float healthTextSize;
+    public int healthTextWidth;
+    public int healthTextHeight;
     public int healthAbsorptionTextXOffset;
     public int healthAbsorptionTextYOffset;
+    public int healthAbsorptionTextWidth;
+    public int healthAbsorptionTextHeight;
+    public boolean enableHealthAbsorptionText;
+    public HorizontalAlignment healthAbsorptionTextAlign;
 
     // Stamina Defaults & Fields
     public static final boolean DEFAULT_ENABLE_STAMINA_BAR = true;
@@ -141,11 +149,12 @@ public class ClientConfig {
     public static final int DEFAULT_STAMINA_TOTAL_Y_OFFSET = 0;
     public static final int DEFAULT_STAMINA_BACKGROUND_X_OFFSET = 0;
     public static final int DEFAULT_STAMINA_BACKGROUND_Y_OFFSET = 0;
-    public static final int DEFAULT_STAMINA_TEXT_X_OFFSET = 3;
+    public static final int DEFAULT_STAMINA_TEXT_X_OFFSET = 20;
     public static final int DEFAULT_STAMINA_TEXT_Y_OFFSET = 3;
     public static final int DEFAULT_STAMINA_TEXT_COLOR = DEFAULT_TEXT_COLOR;
     public static final int DEFAULT_STAMINA_TEXT_OPACITY = DEFAULT_TEXT_OPACITY;
-    public static final float DEFAULT_STAMINA_TEXT_SIZE = DEFAULT_TEXT_SIZE;
+    public static final int DEFAULT_STAMINA_TEXT_WIDTH = DEFAULT_BAR_TEXT_WIDTH;
+    public static final int DEFAULT_STAMINA_TEXT_HEIGHT = DEFAULT_BAR_TEXT_HEIGHT;
 
     public StaminaBarBehavior staminaBarBehavior;
     public boolean mergeMountHealth;
@@ -175,7 +184,8 @@ public class ClientConfig {
     public int staminaTextYOffset;
     public int staminaTextColor;
     public int staminaTextOpacity;
-    public float staminaTextSize;
+    public int staminaTextWidth;
+    public int staminaTextHeight;
 
     // Mana Defaults & Fields
     public static final ManaBarBehavior DEFAULT_MANA_BAR_BEHAVIOR = ManaBarBehavior.COMBAT_ATTRIBUTES;
@@ -200,8 +210,10 @@ public class ClientConfig {
     public static final int DEFAULT_MANA_OVERLAY_Y_OFFSET = -3;
     public static final int DEFAULT_MANA_OVERLAY_WIDTH = 81;
     public static final int DEFAULT_MANA_OVERLAY_HEIGHT = 9;
-    public static final int DEFAULT_MANA_TEXT_X_OFFSET = 3;
+    public static final int DEFAULT_MANA_TEXT_X_OFFSET = 20;
     public static final int DEFAULT_MANA_TEXT_Y_OFFSET = 3;
+    public static final int DEFAULT_MANA_TEXT_WIDTH = DEFAULT_BAR_TEXT_WIDTH;
+    public static final int DEFAULT_MANA_TEXT_HEIGHT = DEFAULT_BAR_TEXT_HEIGHT;
 
     public ManaBarBehavior manaBarBehavior = DEFAULT_MANA_BAR_BEHAVIOR;
     public HUDPositioning.BarPlacement manaBarAnchor = DEFAULT_MANA_BAR_ANCHOR;
@@ -229,7 +241,8 @@ public class ClientConfig {
     public int manaTextYOffset;
     public int manaTextColor;
     public int manaTextOpacity;
-    public float manaTextSize;
+    public int manaTextWidth;
+    public int manaTextHeight;
 
     // Armor Defaults & Fields
     public static final BarRenderBehavior DEFAULT_ARMOR_BAR_BEHAVIOR = BarRenderBehavior.HIDDEN;
@@ -248,16 +261,23 @@ public class ClientConfig {
     public static final int DEFAULT_ARMOR_TOTAL_X_OFFSET = 0;
     public static final int DEFAULT_ARMOR_TOTAL_Y_OFFSET = 0;
     public static final boolean DEFAULT_ENABLE_ARMOR_ICON = true;
-    public static final int DEFAULT_ARMOR_ICON_SIZE = 16;
+    public static final int DEFAULT_ARMOR_ICON_WIDTH = 16;
+    public static final int DEFAULT_ARMOR_ICON_HEIGHT = 16;
     public static final int DEFAULT_PROT_OVERLAY_ANIMATION_CYCLES = 16;
     public static final int DEFAULT_PROT_OVERLAY_FRAME_HEIGHT = 4;
     public static final int DEFAULT_ARMOR_ICON_X_OFFSET = 0;
     public static final int DEFAULT_ARMOR_ICON_Y_OFFSET = -4;
-    public static final int DEFAULT_ARMOR_TEXT_X_OFFSET = 3;
+    public static final boolean DEFAULT_ENABLE_ARMOR_FOREGROUND = false;
+    public static final int DEFAULT_ARMOR_OVERLAY_WIDTH = 80;
+    public static final int DEFAULT_ARMOR_OVERLAY_HEIGHT = 10;
+    public static final int DEFAULT_ARMOR_OVERLAY_X_OFFSET = 0;
+    public static final int DEFAULT_ARMOR_OVERLAY_Y_OFFSET = -3;
+    public static final int DEFAULT_ARMOR_TEXT_X_OFFSET = 20;
     public static final int DEFAULT_ARMOR_TEXT_Y_OFFSET = 3;
     public static final int DEFAULT_ARMOR_TEXT_COLOR = DEFAULT_TEXT_COLOR;
     public static final int DEFAULT_ARMOR_TEXT_OPACITY = DEFAULT_TEXT_OPACITY;
-    public static final float DEFAULT_ARMOR_TEXT_SIZE = DEFAULT_TEXT_SIZE;
+    public static final int DEFAULT_ARMOR_TEXT_WIDTH = DEFAULT_BAR_TEXT_WIDTH;
+    public static final int DEFAULT_ARMOR_TEXT_HEIGHT = DEFAULT_BAR_TEXT_HEIGHT;
     public static final TextBehavior DEFAULT_SHOW_ARMOR_TEXT = TextBehavior.NEVER;
     public static final HorizontalAlignment DEFAULT_ARMOR_TEXT_ALIGN = HorizontalAlignment.CENTER;
     public static final int DEFAULT_ARMOR_BACKGROUND_X_OFFSET = 0;
@@ -279,16 +299,23 @@ public class ClientConfig {
     public int armorTotalXOffset;
     public int armorTotalYOffset;
     public boolean enableArmorIcon;
-    public int armorIconSize;
+    public int armorIconWidth;
+    public int armorIconHeight;
     public int protOverlayAnimationCycles;
     public int protOverlayFrameHeight;
     public int armorIconXOffset;
     public int armorIconYOffset;
+    public boolean enableArmorForeground;
+    public int armorOverlayWidth;
+    public int armorOverlayHeight;
+    public int armorOverlayXOffset;
+    public int armorOverlayYOffset;
     public int armorTextXOffset;
     public int armorTextYOffset;
     public int armorTextColor;
     public int armorTextOpacity;
-    public float armorTextSize;
+    public int armorTextWidth;
+    public int armorTextHeight;
     public TextBehavior showArmorText;
     public HorizontalAlignment armorTextAlign;
     public int armorBackgroundXOffset;
@@ -308,14 +335,21 @@ public class ClientConfig {
     public static final int DEFAULT_AIR_TOTAL_X_OFFSET = -80;
     public static final int DEFAULT_AIR_TOTAL_Y_OFFSET = 0;
     public static final boolean DEFAULT_ENABLE_AIR_ICON = true;
-    public static final int DEFAULT_AIR_ICON_SIZE = 16;
+    public static final int DEFAULT_AIR_ICON_WIDTH = 16;
+    public static final int DEFAULT_AIR_ICON_HEIGHT = 16;
     public static final int DEFAULT_AIR_ICON_X_OFFSET = 66;
     public static final int DEFAULT_AIR_ICON_Y_OFFSET = -4;
-    public static final int DEFAULT_AIR_TEXT_X_OFFSET = 3;
+    public static final boolean DEFAULT_ENABLE_AIR_FOREGROUND = false;
+    public static final int DEFAULT_AIR_OVERLAY_WIDTH = 80;
+    public static final int DEFAULT_AIR_OVERLAY_HEIGHT = 10;
+    public static final int DEFAULT_AIR_OVERLAY_X_OFFSET = 0;
+    public static final int DEFAULT_AIR_OVERLAY_Y_OFFSET = -3;
+    public static final int DEFAULT_AIR_TEXT_X_OFFSET = 20;
     public static final int DEFAULT_AIR_TEXT_Y_OFFSET = 3;
     public static final int DEFAULT_AIR_TEXT_COLOR = DEFAULT_TEXT_COLOR;
     public static final int DEFAULT_AIR_TEXT_OPACITY = DEFAULT_TEXT_OPACITY;
-    public static final float DEFAULT_AIR_TEXT_SIZE = DEFAULT_TEXT_SIZE;
+    public static final int DEFAULT_AIR_TEXT_WIDTH = DEFAULT_BAR_TEXT_WIDTH;
+    public static final int DEFAULT_AIR_TEXT_HEIGHT = DEFAULT_BAR_TEXT_HEIGHT;
     public static final TextBehavior DEFAULT_SHOW_AIR_TEXT = TextBehavior.NEVER;
     public static final HorizontalAlignment DEFAULT_AIR_TEXT_ALIGN = HorizontalAlignment.CENTER;
     public static final int DEFAULT_AIR_BACKGROUND_X_OFFSET = 0;
@@ -335,14 +369,21 @@ public class ClientConfig {
     public int airTotalXOffset;
     public int airTotalYOffset;
     public boolean enableAirIcon;
-    public int airIconSize;
+    public int airIconWidth;
+    public int airIconHeight;
     public int airIconXOffset;
     public int airIconYOffset;
+    public boolean enableAirForeground;
+    public int airOverlayWidth;
+    public int airOverlayHeight;
+    public int airOverlayXOffset;
+    public int airOverlayYOffset;
     public int airTextXOffset;
     public int airTextYOffset;
     public int airTextColor;
     public int airTextOpacity;
-    public float airTextSize;
+    public int airTextWidth;
+    public int airTextHeight;
     public TextBehavior showAirText;
     public HorizontalAlignment airTextAlign;
     public int airBackgroundXOffset;
@@ -382,11 +423,10 @@ public class ClientConfig {
     // Private constructor to enforce singleton via getInstance and initialize defaults
     private ClientConfig() {
         this.combatAttributesSeen = false;
-        this.textScalingFactor = DEFAULT_TEXT_SCALING_FACTOR;
         this.fadeHoldDuration = DEFAULT_FADE_HOLD_DURATION;
         this.globalTextColor = DEFAULT_TEXT_COLOR;
         this.globalTextOpacity = DEFAULT_TEXT_OPACITY;
-        this.globalTextSize = DEFAULT_TEXT_SIZE;
+        this.globalTextSize = DEFAULT_GLOBAL_TEXT_SIZE;
 
         this.healthBarBehavior = DEFAULT_HEALTH_BAR_BEHAVIOR;
         this.healthBarAnchor = DEFAULT_HEALTH_BAR_ANCHOR;
@@ -414,9 +454,14 @@ public class ClientConfig {
         this.healthTextYOffset = DEFAULT_HEALTH_TEXT_Y_OFFSET;
         this.healthTextColor = DEFAULT_HEALTH_TEXT_COLOR;
         this.healthTextOpacity = DEFAULT_HEALTH_TEXT_OPACITY;
-        this.healthTextSize = DEFAULT_HEALTH_TEXT_SIZE;
+        this.healthTextWidth = DEFAULT_HEALTH_TEXT_WIDTH;
+        this.healthTextHeight = DEFAULT_HEALTH_TEXT_HEIGHT;
         this.healthAbsorptionTextXOffset = DEFAULT_HEALTH_ABSORPTION_TEXT_X_OFFSET;
         this.healthAbsorptionTextYOffset = DEFAULT_HEALTH_ABSORPTION_TEXT_Y_OFFSET;
+        this.healthAbsorptionTextWidth = DEFAULT_HEALTH_ABSORPTION_TEXT_WIDTH;
+        this.healthAbsorptionTextHeight = DEFAULT_HEALTH_ABSORPTION_TEXT_HEIGHT;
+        this.enableHealthAbsorptionText = DEFAULT_ENABLE_HEALTH_ABSORPTION_TEXT;
+        this.healthAbsorptionTextAlign = DEFAULT_HEALTH_ABSORPTION_TEXT_ALIGN;
 
         this.staminaBarBehavior = DEFAULT_STAMINA_BAR_BEHAVIOR;
         this.mergeMountHealth = DEFAULT_MERGE_MOUNT_HEALTH;
@@ -446,7 +491,8 @@ public class ClientConfig {
         this.staminaTextYOffset = DEFAULT_STAMINA_TEXT_Y_OFFSET;
         this.staminaTextColor = DEFAULT_STAMINA_TEXT_COLOR;
         this.staminaTextOpacity = DEFAULT_STAMINA_TEXT_OPACITY;
-        this.staminaTextSize = DEFAULT_STAMINA_TEXT_SIZE;
+        this.staminaTextWidth = DEFAULT_STAMINA_TEXT_WIDTH;
+        this.staminaTextHeight = DEFAULT_STAMINA_TEXT_HEIGHT;
 
         this.manaBarBehavior = DEFAULT_MANA_BAR_BEHAVIOR;
         this.manaBarAnchor = DEFAULT_MANA_BAR_ANCHOR;
@@ -474,7 +520,8 @@ public class ClientConfig {
         this.manaTextYOffset = DEFAULT_MANA_TEXT_Y_OFFSET;
         this.manaTextColor = DEFAULT_TEXT_COLOR;
         this.manaTextOpacity = DEFAULT_TEXT_OPACITY;
-        this.manaTextSize = DEFAULT_TEXT_SIZE;
+        this.manaTextWidth = DEFAULT_MANA_TEXT_WIDTH;
+        this.manaTextHeight = DEFAULT_MANA_TEXT_HEIGHT;
 
         this.armorBarBehavior = DEFAULT_ARMOR_BAR_BEHAVIOR;
         this.armorBarAnchor = DEFAULT_ARMOR_BAR_ANCHOR;
@@ -492,16 +539,23 @@ public class ClientConfig {
         this.armorTotalXOffset = DEFAULT_ARMOR_TOTAL_X_OFFSET;
         this.armorTotalYOffset = DEFAULT_ARMOR_TOTAL_Y_OFFSET;
         this.enableArmorIcon = DEFAULT_ENABLE_ARMOR_ICON;
-        this.armorIconSize = DEFAULT_ARMOR_ICON_SIZE;
+        this.armorIconWidth = DEFAULT_ARMOR_ICON_WIDTH;
+        this.armorIconHeight = DEFAULT_ARMOR_ICON_HEIGHT;
         this.protOverlayAnimationCycles = DEFAULT_PROT_OVERLAY_ANIMATION_CYCLES;
         this.protOverlayFrameHeight = DEFAULT_PROT_OVERLAY_FRAME_HEIGHT;
         this.armorIconXOffset = DEFAULT_ARMOR_ICON_X_OFFSET;
         this.armorIconYOffset = DEFAULT_ARMOR_ICON_Y_OFFSET;
+        this.enableArmorForeground = DEFAULT_ENABLE_ARMOR_FOREGROUND;
+        this.armorOverlayWidth = DEFAULT_ARMOR_OVERLAY_WIDTH;
+        this.armorOverlayHeight = DEFAULT_ARMOR_OVERLAY_HEIGHT;
+        this.armorOverlayXOffset = DEFAULT_ARMOR_OVERLAY_X_OFFSET;
+        this.armorOverlayYOffset = DEFAULT_ARMOR_OVERLAY_Y_OFFSET;
         this.armorTextXOffset = DEFAULT_ARMOR_TEXT_X_OFFSET;
         this.armorTextYOffset = DEFAULT_ARMOR_TEXT_Y_OFFSET;
         this.armorTextColor = DEFAULT_ARMOR_TEXT_COLOR;
         this.armorTextOpacity = DEFAULT_ARMOR_TEXT_OPACITY;
-        this.armorTextSize = DEFAULT_ARMOR_TEXT_SIZE;
+        this.armorTextWidth = DEFAULT_ARMOR_TEXT_WIDTH;
+        this.armorTextHeight = DEFAULT_ARMOR_TEXT_HEIGHT;
         this.showArmorText = DEFAULT_SHOW_ARMOR_TEXT;
         this.armorTextAlign = DEFAULT_ARMOR_TEXT_ALIGN;
         this.armorBackgroundXOffset = DEFAULT_ARMOR_BACKGROUND_X_OFFSET;
@@ -520,14 +574,21 @@ public class ClientConfig {
         this.airTotalXOffset = DEFAULT_AIR_TOTAL_X_OFFSET;
         this.airTotalYOffset = DEFAULT_AIR_TOTAL_Y_OFFSET;
         this.enableAirIcon = DEFAULT_ENABLE_AIR_ICON;
-        this.airIconSize = DEFAULT_AIR_ICON_SIZE;
+        this.airIconWidth = DEFAULT_AIR_ICON_WIDTH;
+        this.airIconHeight = DEFAULT_AIR_ICON_HEIGHT;
         this.airIconXOffset = DEFAULT_AIR_ICON_X_OFFSET;
         this.airIconYOffset = DEFAULT_AIR_ICON_Y_OFFSET;
+        this.enableAirForeground = DEFAULT_ENABLE_AIR_FOREGROUND;
+        this.airOverlayWidth = DEFAULT_AIR_OVERLAY_WIDTH;
+        this.airOverlayHeight = DEFAULT_AIR_OVERLAY_HEIGHT;
+        this.airOverlayXOffset = DEFAULT_AIR_OVERLAY_X_OFFSET;
+        this.airOverlayYOffset = DEFAULT_AIR_OVERLAY_Y_OFFSET;
         this.airTextXOffset = DEFAULT_AIR_TEXT_X_OFFSET;
         this.airTextYOffset = DEFAULT_AIR_TEXT_Y_OFFSET;
         this.airTextColor = DEFAULT_AIR_TEXT_COLOR;
         this.airTextOpacity = DEFAULT_AIR_TEXT_OPACITY;
-        this.airTextSize = DEFAULT_AIR_TEXT_SIZE;
+        this.airTextWidth = DEFAULT_AIR_TEXT_WIDTH;
+        this.airTextHeight = DEFAULT_AIR_TEXT_HEIGHT;
         this.showAirText = DEFAULT_SHOW_AIR_TEXT;
         this.airTextAlign = DEFAULT_AIR_TEXT_ALIGN;
         this.airBackgroundXOffset = DEFAULT_AIR_BACKGROUND_X_OFFSET;
@@ -609,6 +670,11 @@ public class ClientConfig {
         if (cfg.showHealthText == null) { cfg.showHealthText = DEFAULT_SHOW_HEALTH_TEXT; modified = true; }
         if (cfg.healthTextAlign == null) { cfg.healthTextAlign = DEFAULT_HEALTH_TEXT_ALIGN; modified = true; }
         if (cfg.healthFillDirection == null) { cfg.healthFillDirection = DEFAULT_HEALTH_FILL_DIRECTION; modified = true; }
+        if (cfg.healthTextWidth < 1) { cfg.healthTextWidth = DEFAULT_HEALTH_TEXT_WIDTH; modified = true; }
+        if (cfg.healthTextHeight < 1) { cfg.healthTextHeight = DEFAULT_HEALTH_TEXT_HEIGHT; modified = true; }
+        if (cfg.healthAbsorptionTextWidth < 1) { cfg.healthAbsorptionTextWidth = DEFAULT_HEALTH_ABSORPTION_TEXT_WIDTH; modified = true; }
+        if (cfg.healthAbsorptionTextHeight < 1) { cfg.healthAbsorptionTextHeight = DEFAULT_HEALTH_ABSORPTION_TEXT_HEIGHT; modified = true; }
+        if (cfg.healthAbsorptionTextAlign == null) { cfg.healthAbsorptionTextAlign = DEFAULT_HEALTH_ABSORPTION_TEXT_ALIGN; modified = true; }
 
         // Ensure health overlay dimensions are within valid ranges
         if (cfg.healthOverlayWidth > 256) { cfg.healthOverlayWidth = 256; modified = true; }
@@ -622,6 +688,8 @@ public class ClientConfig {
         if (cfg.showStaminaText == null) { cfg.showStaminaText = DEFAULT_SHOW_STAMINA_TEXT; modified = true; }
         if (cfg.staminaTextAlign == null) { cfg.staminaTextAlign = DEFAULT_STAMINA_TEXT_ALIGN; modified = true; }
         if (cfg.staminaFillDirection == null) { cfg.staminaFillDirection = DEFAULT_STAMINA_FILL_DIRECTION; modified = true; }
+        if (cfg.staminaTextWidth < 1) { cfg.staminaTextWidth = DEFAULT_STAMINA_TEXT_WIDTH; modified = true; }
+        if (cfg.staminaTextHeight < 1) { cfg.staminaTextHeight = DEFAULT_STAMINA_TEXT_HEIGHT; modified = true; }
 
         // Ensure stamina overlay dimensions are within valid ranges
         if (cfg.staminaOverlayWidth > 256) { cfg.staminaOverlayWidth = 256; modified = true; }
@@ -635,12 +703,46 @@ public class ClientConfig {
         if (cfg.manaTextAlign == null) { cfg.manaTextAlign = DEFAULT_MANA_TEXT_ALIGN; modified = true; }
         if (cfg.manaFillDirection == null) { cfg.manaFillDirection = DEFAULT_MANA_FILL_DIRECTION; modified = true; }
         if (cfg.manaBarBehavior == null) { cfg.manaBarBehavior = DEFAULT_MANA_BAR_BEHAVIOR; modified = true; }
+        if (cfg.manaTextWidth < 1) { cfg.manaTextWidth = DEFAULT_MANA_TEXT_WIDTH; modified = true; }
+        if (cfg.manaTextHeight < 1) { cfg.manaTextHeight = DEFAULT_MANA_TEXT_HEIGHT; modified = true; }
 
         // Ensure mana overlay dimensions are within valid ranges
         if (cfg.manaOverlayWidth > 256) { cfg.manaOverlayWidth = 256; modified = true; }
         if (cfg.manaOverlayHeight > 256) { cfg.manaOverlayHeight = 256; modified = true; }
         if (cfg.manaOverlayWidth < 1) { cfg.manaOverlayWidth = DEFAULT_MANA_OVERLAY_WIDTH; modified = true; }
         if (cfg.manaOverlayHeight < 1) { cfg.manaOverlayHeight = DEFAULT_MANA_OVERLAY_HEIGHT; modified = true; }
+
+        // Armor
+        if (cfg.armorBarBehavior == null) { cfg.armorBarBehavior = DEFAULT_ARMOR_BAR_BEHAVIOR; modified = true; }
+        if (cfg.armorBarAnchor == null) { cfg.armorBarAnchor = DEFAULT_ARMOR_BAR_ANCHOR; modified = true; }
+        if (cfg.armorBarVisibility == null) { cfg.armorBarVisibility = DEFAULT_ARMOR_BAR_VISIBILITY; modified = true; }
+        if (cfg.showArmorText == null) { cfg.showArmorText = DEFAULT_SHOW_ARMOR_TEXT; modified = true; }
+        if (cfg.armorTextAlign == null) { cfg.armorTextAlign = DEFAULT_ARMOR_TEXT_ALIGN; modified = true; }
+        if (cfg.armorFillDirection == null) { cfg.armorFillDirection = DEFAULT_ARMOR_FILL_DIRECTION; modified = true; }
+        if (cfg.armorOverlayWidth > 256) { cfg.armorOverlayWidth = 256; modified = true; }
+        if (cfg.armorOverlayHeight > 256) { cfg.armorOverlayHeight = 256; modified = true; }
+        if (cfg.armorOverlayWidth < 1) { cfg.armorOverlayWidth = DEFAULT_ARMOR_OVERLAY_WIDTH; modified = true; }
+        if (cfg.armorOverlayHeight < 1) { cfg.armorOverlayHeight = DEFAULT_ARMOR_OVERLAY_HEIGHT; modified = true; }
+        if (cfg.armorIconWidth < 1) { cfg.armorIconWidth = DEFAULT_ARMOR_ICON_WIDTH; modified = true; }
+        if (cfg.armorIconHeight < 1) { cfg.armorIconHeight = DEFAULT_ARMOR_ICON_HEIGHT; modified = true; }
+        if (cfg.armorTextWidth < 1) { cfg.armorTextWidth = DEFAULT_ARMOR_TEXT_WIDTH; modified = true; }
+        if (cfg.armorTextHeight < 1) { cfg.armorTextHeight = DEFAULT_ARMOR_TEXT_HEIGHT; modified = true; }
+
+        // Air
+        if (cfg.airBarBehavior == null) { cfg.airBarBehavior = DEFAULT_AIR_BAR_BEHAVIOR; modified = true; }
+        if (cfg.airBarAnchor == null) { cfg.airBarAnchor = DEFAULT_AIR_BAR_ANCHOR; modified = true; }
+        if (cfg.airBarVisibility == null) { cfg.airBarVisibility = DEFAULT_AIR_BAR_VISIBILITY; modified = true; }
+        if (cfg.showAirText == null) { cfg.showAirText = DEFAULT_SHOW_AIR_TEXT; modified = true; }
+        if (cfg.airTextAlign == null) { cfg.airTextAlign = DEFAULT_AIR_TEXT_ALIGN; modified = true; }
+        if (cfg.airFillDirection == null) { cfg.airFillDirection = DEFAULT_AIR_FILL_DIRECTION; modified = true; }
+        if (cfg.airOverlayWidth > 256) { cfg.airOverlayWidth = 256; modified = true; }
+        if (cfg.airOverlayHeight > 256) { cfg.airOverlayHeight = 256; modified = true; }
+        if (cfg.airOverlayWidth < 1) { cfg.airOverlayWidth = DEFAULT_AIR_OVERLAY_WIDTH; modified = true; }
+        if (cfg.airOverlayHeight < 1) { cfg.airOverlayHeight = DEFAULT_AIR_OVERLAY_HEIGHT; modified = true; }
+        if (cfg.airIconWidth < 1) { cfg.airIconWidth = DEFAULT_AIR_ICON_WIDTH; modified = true; }
+        if (cfg.airIconHeight < 1) { cfg.airIconHeight = DEFAULT_AIR_ICON_HEIGHT; modified = true; }
+        if (cfg.airTextWidth < 1) { cfg.airTextWidth = DEFAULT_AIR_TEXT_WIDTH; modified = true; }
+        if (cfg.airTextHeight < 1) { cfg.airTextHeight = DEFAULT_AIR_TEXT_HEIGHT; modified = true; }
 
         // Primitive types like int, boolean, double will have their Java defaults (0, false, 0.0)
         // if not present in JSON and not initialized by GSON to the POJO's initialized values.

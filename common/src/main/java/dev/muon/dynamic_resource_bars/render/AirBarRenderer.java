@@ -63,22 +63,22 @@ public class AirBarRenderer extends AbstractBarRenderer {
                 c.airBackgroundWidth, c.airBackgroundHeight,
                 c.airBackgroundXOffset, c.airBackgroundYOffset,
                 c.airBarWidth, c.airBarHeight, c.airBarXOffset, c.airBarYOffset,
-                // Foreground unused; mirror bar dims so the editor's outline doesn't show 0×0.
-                c.airBarWidth, c.airBarHeight, 0, 0,
-                c.airTextXOffset, c.airTextYOffset, c.airTextColor, c.airTextOpacity, c.airTextAlign,
+                c.airOverlayWidth, c.airOverlayHeight, c.airOverlayXOffset, c.airOverlayYOffset,
+                c.airTextXOffset, c.airTextYOffset, c.airTextWidth, c.airTextHeight,
+                c.airTextColor, c.airTextOpacity, c.airTextAlign,
                 c.airTotalXOffset, c.airTotalYOffset,
                 c.airBarAnchor,
-                c.enableAirBackground, false /* no foreground */, c.airBarVisibility,
+                c.enableAirBackground, c.enableAirForeground, c.airBarVisibility,
                 c.airFillDirection, c.showAirText
         );
     }
 
     @Override protected Identifier backgroundTexture() { return Constants.loc("textures/gui/air_background.png"); }
-    @Override protected Identifier foregroundTexture() { return Constants.loc("textures/gui/air_background.png"); }
+    @Override protected Identifier foregroundTexture() { return Constants.loc("textures/gui/air_foreground.png"); }
     @Override protected Identifier barTexture(Player p, float c, float m) { return Constants.loc("textures/gui/air_bar.png"); }
     @Override protected AnimationMetadata.AnimationData barAnimation() { return AnimationMetadataCache.getAirBarAnimation(); }
     @Override protected AnimationMetadata.ScalingInfo backgroundScaling() { return AnimationMetadataCache.getAirBackgroundScaling(); }
-    @Override protected AnimationMetadata.ScalingInfo foregroundScaling() { return AnimationMetadataCache.getAirBackgroundScaling(); }
+    @Override protected AnimationMetadata.ScalingInfo foregroundScaling() { return AnimationMetadataCache.getAirForegroundScaling(); }
 
     @Override protected float currentValue(Player player) { return player.getAirSupply(); }
     @Override protected float maxValue(Player player) { return player.getMaxAirSupply(); }
@@ -120,7 +120,7 @@ public class AirBarRenderer extends AbstractBarRenderer {
             return new ScreenRect(
                     complexRect.x() + c.airIconXOffset,
                     complexRect.y() + c.airIconYOffset,
-                    c.airIconSize, c.airIconSize);
+                    c.airIconWidth, c.airIconHeight);
         }
         return super.getCustomSubElementRect(type, player, complexRect);
     }
