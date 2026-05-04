@@ -5,10 +5,13 @@ import dev.muon.dynamic_resource_bars.Constants;
 import dev.muon.dynamic_resource_bars.config.ClientConfig;
 import dev.muon.dynamic_resource_bars.config.ModConfigManager;
 import dev.muon.dynamic_resource_bars.platform.Services;
+import dev.muon.dynamic_resource_bars.util.AbsorptionDisplayMode;
 import dev.muon.dynamic_resource_bars.util.AnimationMetadata;
 import dev.muon.dynamic_resource_bars.util.AnimationMetadataCache;
 import dev.muon.dynamic_resource_bars.util.DraggableElement;
 import dev.muon.dynamic_resource_bars.util.EditModeManager;
+import dev.muon.dynamic_resource_bars.util.FillDirection;
+import dev.muon.dynamic_resource_bars.util.HUDPositioning;
 import dev.muon.dynamic_resource_bars.util.HorizontalAlignment;
 import dev.muon.dynamic_resource_bars.util.NineSliceRenderer;
 import dev.muon.dynamic_resource_bars.util.RenderUtil;
@@ -57,6 +60,7 @@ public class HealthBarRenderer extends AbstractBarRenderer {
     private static final Identifier HEAT_OVERLAY = Constants.loc("textures/gui/heat_overlay.png");
     private static final Identifier COLD_OVERLAY = Constants.loc("textures/gui/cold_overlay.png");
     private static final Identifier ABSORPTION_OVERLAY = Constants.loc("textures/gui/absorption_overlay.png");
+    private static final Identifier ABSORPTION_BAR = Constants.loc("textures/gui/absorption_bar.png");
     private static final Identifier REGENERATION_OVERLAY = Constants.loc("textures/gui/regeneration_overlay.png");
     private static final Identifier HARDCORE_OVERLAY = Constants.loc("textures/gui/hardcore_overlay.png");
     private static final Identifier WETNESS_OVERLAY = Constants.loc("textures/gui/wetness_overlay.png");
@@ -100,6 +104,21 @@ public class HealthBarRenderer extends AbstractBarRenderer {
         return current >= max && player.getAbsorptionAmount() == 0f;
     }
 
+    /**
+     * In SQUEEZE mode the absorption pool joins the denominator, so the health fill width becomes
+     * {@code current / (max + abs)} and the freed-up space gets filled by {@link #ABSORPTION_BAR}.
+     * OVERLAY mode (default) leaves {@code max} alone — absorption surfaces only as the pulsing
+     * overlay layered on top.
+     */
+    @Override
+    protected float effectiveBarMax(Player player, float current, float max) {
+        if (ModConfigManager.getClient().healthAbsorptionDisplayMode == AbsorptionDisplayMode.SQUEEZE) {
+            float abs = player.getAbsorptionAmount();
+            if (abs > 0) return max + abs;
+        }
+        return max;
+    }
+
     @Override
     protected void renderBarOverlays(GuiGraphicsExtractor graphics, Player player,
                                      float current, float max, ScreenRect barRect, float alpha) {
@@ -118,8 +137,11 @@ public class HealthBarRenderer extends AbstractBarRenderer {
                     dims.width, dims.height, tint);
         }
 
+        // Pulse overlay is OVERLAY-mode only — in SQUEEZE the bar's absorption slice carries
+        // the visual signal, so doubling it with the pulse adds noise.
         float absorption = player.getAbsorptionAmount();
-        if (absorption > 0) {
+        if (absorption > 0
+                && ModConfigManager.getClient().healthAbsorptionDisplayMode == AbsorptionDisplayMode.OVERLAY) {
             float pulseAlpha = 0.5f + (TickHandler.getOverlayFlashAlpha() * 0.5f);
             AnimationMetadata.TextureDimensions dims = AnimationMetadataCache.getTextureDimensions(ABSORPTION_OVERLAY);
             NineSliceRenderer.renderWithScaling(graphics, ABSORPTION_OVERLAY,
@@ -140,16 +162,87 @@ public class HealthBarRenderer extends AbstractBarRenderer {
         }
     }
 
-    /** AppleSkin held-food preview: a flashing chunk of the bar fill shown in the would-restore region. */
+    /**
+     * Drawn after the live health fill but before any overlays/foreground:
+     * <ol>
+     *   <li>The SQUEEZE-mode absorption slice (so it sits behind the foreground frame and any
+     *       regen/temperature overlays, just like the health fill).</li>
+     *   <li>The AppleSkin held-food preview chunk shown in the would-restore region.</li>
+     * </ol>
+     */
     @Override
     protected void renderBetweenBarAndForeground(GuiGraphicsExtractor graphics, Player player,
                                                  float current, float max, ScreenRect barRect,
                                                  int animOffset, AnimationMetadata.AnimationData animData) {
-        if (!Services.PLATFORM.isModLoaded(AppleSkinCompat.MOD_ID)) return;
-        ItemStack held = AppleSkinCompat.pickHeldFood(player);
-        if (held.isEmpty()) return;
-        float est = AppleSkinCompat.getEstimatedHealthRestoration(player, held);
-        renderRestorePreviewChunk(graphics, player, current, max, est, barRect, animOffset, animData);
+        // Resolve the food preview width up-front so SQUEEZE absorption can slide right by exactly
+        // that much, leaving a clean gap for the preview chunk between the live health fill and
+        // where absorption would sit post-consumption.
+        int previewShift = 0;
+        ItemStack heldFood = ItemStack.EMPTY;
+        float restoreAmount = 0f;
+        if (Services.PLATFORM.isModLoaded(AppleSkinCompat.MOD_ID)) {
+            heldFood = AppleSkinCompat.pickHeldFood(player);
+            if (!heldFood.isEmpty()) {
+                restoreAmount = AppleSkinCompat.getEstimatedHealthRestoration(player, heldFood);
+                previewShift = restorePreviewWidth(player, current, max, restoreAmount, barRect);
+            }
+        }
+
+        renderSqueezeAbsorption(graphics, player, current, max, barRect, previewShift);
+
+        if (!heldFood.isEmpty()) {
+            renderRestorePreviewChunk(graphics, player, current, max, restoreAmount, barRect, animOffset, animData);
+        }
+    }
+
+    /**
+     * Paints {@link #ABSORPTION_BAR} immediately adjacent to the live health fill — to the right
+     * of it on left-anchored bars, to the left on right-anchored bars, above it on vertical fills.
+     * Width is proportional to {@code abs / (max + abs)} of the bar zone, mirroring the health
+     * portion's {@code current / (max + abs)}. Uses its own animation strip (independent .mcmeta).
+     *
+     * <p>{@code previewShift} pushes the absorption slice further away from the health fill so a
+     * food-restore preview can occupy the freed-up gap (horizontal bars only — vertical fills
+     * always pass 0).
+     */
+    private void renderSqueezeAbsorption(GuiGraphicsExtractor graphics, Player player,
+                                         float current, float max, ScreenRect barRect, int previewShift) {
+        if (ModConfigManager.getClient().healthAbsorptionDisplayMode != AbsorptionDisplayMode.SQUEEZE) return;
+        float absorption = player.getAbsorptionAmount();
+        if (absorption <= 0f) return;
+        float denom = max + absorption;
+        if (denom <= 0f) return;
+
+        BarConfig cfg = config();
+        AnimationMetadata.AnimationData animData = AnimationMetadataCache.getAbsorptionBarAnimation();
+        int absAnimOffset = AnimationMetadata.calculateAnimationOffset(animData, currentTicks());
+        int tint = RenderUtil.whiteWithAlpha(currentAlpha());
+
+        if (cfg.fillDirection() == FillDirection.VERTICAL) {
+            int healthFilled = (int) (barRect.height() * (current / denom));
+            // Derive absFilled from the combined boundary so health + abs always sum to the same
+            // pixel count — independent (int)-truncation would leave a 1px transparent seam.
+            int combinedFilled = (int) (barRect.height() * ((current + absorption) / denom));
+            int absFilled = combinedFilled - healthFilled;
+            if (absFilled <= 0) return;
+            int y = barRect.y() + (barRect.height() - combinedFilled);
+            RenderUtil.blitWithBinding(graphics, ABSORPTION_BAR,
+                    barRect.x(), y, 0, absAnimOffset, barRect.width(), absFilled,
+                    animData.textureWidth, animData.textureHeight, tint);
+            return;
+        }
+
+        int healthFilled = (int) (barRect.width() * (current / denom));
+        int combinedFilled = (int) (barRect.width() * ((current + absorption) / denom));
+        int absFilled = combinedFilled - healthFilled;
+        if (absFilled <= 0) return;
+        boolean rightAnchored = cfg.anchor().getSide() == HUDPositioning.AnchorSide.RIGHT;
+        int x = rightAnchored
+                ? barRect.x() + barRect.width() - healthFilled - previewShift - absFilled
+                : barRect.x() + healthFilled + previewShift;
+        RenderUtil.blitWithBinding(graphics, ABSORPTION_BAR,
+                x, barRect.y(), 0, absAnimOffset, absFilled, barRect.height(),
+                animData.textureWidth, animData.textureHeight, tint);
     }
 
     @Override

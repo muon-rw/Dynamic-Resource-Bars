@@ -1,6 +1,7 @@
 package dev.muon.dynamic_resource_bars.config.gui;
 
 import dev.muon.dynamic_resource_bars.config.ClientConfig;
+import dev.muon.dynamic_resource_bars.util.AbsorptionDisplayMode;
 import dev.muon.dynamic_resource_bars.util.BarVisibility;
 import dev.muon.dynamic_resource_bars.util.DraggableElement;
 import dev.muon.dynamic_resource_bars.util.FillDirection;
@@ -232,6 +233,7 @@ public abstract class BarFieldAccess {
             case ABSORPTION_TEXT -> {
                 setEnableAbsorptionText(live, enableAbsorptionText(defaults));
                 setAbsorptionTextAlign(live, absorptionTextAlign(defaults));
+                setAbsorptionDisplayMode(live, absorptionDisplayMode(defaults));
             }
             case BAR_MAIN -> {} // no behavior fields specific to BAR_MAIN
         }
@@ -268,6 +270,8 @@ public abstract class BarFieldAccess {
     public void setEnableAbsorptionText(ClientConfig c, boolean v) {}
     public HorizontalAlignment absorptionTextAlign(ClientConfig c) { return HorizontalAlignment.CENTER; }
     public void setAbsorptionTextAlign(ClientConfig c, HorizontalAlignment v) {}
+    public AbsorptionDisplayMode absorptionDisplayMode(ClientConfig c) { return AbsorptionDisplayMode.OVERLAY; }
+    public void setAbsorptionDisplayMode(ClientConfig c, AbsorptionDisplayMode v) {}
 
     public static final BarFieldAccess HEALTH = new BarFieldAccess() {
         public boolean hasAbsorptionText() { return true; }
@@ -319,6 +323,8 @@ public abstract class BarFieldAccess {
         public void setEnableAbsorptionText(ClientConfig c, boolean v) { c.enableHealthAbsorptionText = v; }
         public HorizontalAlignment absorptionTextAlign(ClientConfig c) { return c.healthAbsorptionTextAlign; }
         public void setAbsorptionTextAlign(ClientConfig c, HorizontalAlignment v) { c.healthAbsorptionTextAlign = v; }
+        public AbsorptionDisplayMode absorptionDisplayMode(ClientConfig c) { return c.healthAbsorptionDisplayMode; }
+        public void setAbsorptionDisplayMode(ClientConfig c, AbsorptionDisplayMode v) { c.healthAbsorptionDisplayMode = v; }
         public BarVisibility visibility(ClientConfig c) { return c.healthBarVisibility; }
         public void setVisibility(ClientConfig c, BarVisibility v) { c.healthBarVisibility = v; }
         public TextBehavior textBehavior(ClientConfig c) { return c.showHealthText; }
@@ -343,6 +349,7 @@ public abstract class BarFieldAccess {
             live.enableHealthBackground = defaults.enableHealthBackground;
             live.enableHealthForeground = defaults.enableHealthForeground;
             live.enableHealthAbsorptionText = defaults.enableHealthAbsorptionText;
+            live.healthAbsorptionDisplayMode = defaults.healthAbsorptionDisplayMode;
         }
     };
 

@@ -4,6 +4,7 @@ import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import dev.muon.dynamic_resource_bars.Constants; // For logging
 import dev.muon.dynamic_resource_bars.platform.Services;
+import dev.muon.dynamic_resource_bars.util.AbsorptionDisplayMode;
 import dev.muon.dynamic_resource_bars.util.HUDPositioning;
 import dev.muon.dynamic_resource_bars.util.HorizontalAlignment;
 import dev.muon.dynamic_resource_bars.util.TextBehavior;
@@ -87,6 +88,7 @@ public class ClientConfig {
     public static final int DEFAULT_HEALTH_ABSORPTION_TEXT_HEIGHT = 4;
     public static final boolean DEFAULT_ENABLE_HEALTH_ABSORPTION_TEXT = true;
     public static final HorizontalAlignment DEFAULT_HEALTH_ABSORPTION_TEXT_ALIGN = HorizontalAlignment.RIGHT;
+    public static final AbsorptionDisplayMode DEFAULT_HEALTH_ABSORPTION_DISPLAY_MODE = AbsorptionDisplayMode.OVERLAY;
 
     public BarRenderBehavior healthBarBehavior;
     public HUDPositioning.BarPlacement healthBarAnchor;
@@ -122,6 +124,7 @@ public class ClientConfig {
     public int healthAbsorptionTextHeight;
     public boolean enableHealthAbsorptionText;
     public HorizontalAlignment healthAbsorptionTextAlign;
+    public AbsorptionDisplayMode healthAbsorptionDisplayMode;
 
     // Stamina Defaults & Fields
     public static final boolean DEFAULT_ENABLE_STAMINA_BAR = true;
@@ -462,6 +465,7 @@ public class ClientConfig {
         this.healthAbsorptionTextHeight = DEFAULT_HEALTH_ABSORPTION_TEXT_HEIGHT;
         this.enableHealthAbsorptionText = DEFAULT_ENABLE_HEALTH_ABSORPTION_TEXT;
         this.healthAbsorptionTextAlign = DEFAULT_HEALTH_ABSORPTION_TEXT_ALIGN;
+        this.healthAbsorptionDisplayMode = DEFAULT_HEALTH_ABSORPTION_DISPLAY_MODE;
 
         this.staminaBarBehavior = DEFAULT_STAMINA_BAR_BEHAVIOR;
         this.mergeMountHealth = DEFAULT_MERGE_MOUNT_HEALTH;
@@ -675,6 +679,7 @@ public class ClientConfig {
         if (cfg.healthAbsorptionTextWidth < 1) { cfg.healthAbsorptionTextWidth = DEFAULT_HEALTH_ABSORPTION_TEXT_WIDTH; modified = true; }
         if (cfg.healthAbsorptionTextHeight < 1) { cfg.healthAbsorptionTextHeight = DEFAULT_HEALTH_ABSORPTION_TEXT_HEIGHT; modified = true; }
         if (cfg.healthAbsorptionTextAlign == null) { cfg.healthAbsorptionTextAlign = DEFAULT_HEALTH_ABSORPTION_TEXT_ALIGN; modified = true; }
+        if (cfg.healthAbsorptionDisplayMode == null) { cfg.healthAbsorptionDisplayMode = DEFAULT_HEALTH_ABSORPTION_DISPLAY_MODE; modified = true; }
 
         // Ensure health overlay dimensions are within valid ranges
         if (cfg.healthOverlayWidth > 256) { cfg.healthOverlayWidth = 256; modified = true; }

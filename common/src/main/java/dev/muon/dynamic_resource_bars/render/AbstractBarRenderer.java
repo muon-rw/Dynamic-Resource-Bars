@@ -59,6 +59,9 @@ public abstract class AbstractBarRenderer {
     private long barDisabledStartTime = 0L;
     private float lastValue = -1f;
     private long fullValueStartTime = 0L;
+    /** Captured at the top of {@link #render} so subclass hooks can produce smooth (partial-tick)
+     *  animation offsets without us having to thread {@code DeltaTracker} through every hook. */
+    private float currentTicks = 0f;
 
     private final List<FadingChunk> fadingChunks = new ArrayList<>();
     private float previousValue = -1f;
@@ -69,14 +72,20 @@ public abstract class AbstractBarRenderer {
         final float startValue;
         final float endValue;
         final float maxValue;
+        /** {@link #effectiveBarMax} as observed at chunk creation time. Frozen here so a chunk
+         *  doesn't visually jump when the live denominator changes (e.g. absorption depleting in
+         *  SQUEEZE mode shifts the live denom from {@code max+abs} back to {@code max}). */
+        final float denominatorAtCreation;
         final long creationTime;
         final Identifier texture;
         final int animOffset;
 
-        FadingChunk(float startValue, float endValue, float maxValue, Identifier texture, int animOffset) {
+        FadingChunk(float startValue, float endValue, float maxValue, float denominatorAtCreation,
+                    Identifier texture, int animOffset) {
             this.startValue = startValue;
             this.endValue = endValue;
             this.maxValue = maxValue;
+            this.denominatorAtCreation = denominatorAtCreation;
             this.creationTime = System.currentTimeMillis();
             this.texture = texture;
             this.animOffset = animOffset;
@@ -152,6 +161,20 @@ public abstract class AbstractBarRenderer {
         return current >= max;
     }
 
+    /**
+     * Denominator used when computing the bar fill ratio. Defaults to {@code max} so a normal
+     * fill is {@code current/max} of the bar zone. Subclasses override to incorporate a secondary
+     * pool — e.g. health adds the active absorption amount in {@code SQUEEZE} mode so the live
+     * health portion shrinks to make room for the absorption slice.
+     *
+     * <p>Used by {@link #renderBaseBar}, {@link #renderFadingChunks}, and
+     * {@link #renderRestorePreviewChunk} so chunks and food previews stay aligned with the
+     * (possibly squeezed) live fill.
+     */
+    protected float effectiveBarMax(Player player, float current, float max) {
+        return max;
+    }
+
     /** Drawn after the bar fill but before foreground/text. Pulses, attribute glows, etc. */
     protected void renderBarOverlays(GuiGraphicsExtractor graphics, Player player,
                                      float current, float max, ScreenRect barRect, float alpha) {}
@@ -169,6 +192,33 @@ public abstract class AbstractBarRenderer {
                                                  int animOffset, AnimationMetadata.AnimationData animData) {}
 
     /**
+     * Pixel width of the food-restore preview segment for the current frame, or 0 if no preview
+     * applies (vertical fill, zero restore, etc.). Exposed so subclasses can shift other content
+     * out of the preview's footprint — e.g. health's SQUEEZE absorption slice slides right by
+     * this much so the preview doesn't paint on top of it.
+     */
+    protected final int restorePreviewWidth(Player player, float current, float max,
+                                            float restoreAmount, ScreenRect barRect) {
+        if (restoreAmount <= 0f || max <= 0f) return 0;
+        if (config().fillDirection() != FillDirection.HORIZONTAL) return 0;
+        float denom = effectiveBarMax(player, current, max);
+        if (denom <= 0f) return 0;
+        // Clamp against the empty *primary* zone (max - current), not the entire empty bar — when
+        // SQUEEZE inflates the denominator, the trailing absorption slice is empty in this sense
+        // but the preview must not paint over it.
+        float clampedRestore = Math.max(0f, Math.min(restoreAmount, max - current));
+        if (clampedRestore <= 0f) return 0;
+        float fillRatio = Math.max(0f, Math.min(1f, current / denom));
+        float restoreRatio = clampedRestore / denom;
+        // Derive the preview width from the combined boundary instead of truncating restoreRatio
+        // independently — independent truncation can short the preview by 1px at the right edge
+        // (e.g. fillRatio=0.75 + restoreRatio=0.25 on a 74px bar yields 55 + 18 = 73 instead of 74).
+        int filled = (int) (barRect.width() * fillRatio);
+        int combined = (int) (barRect.width() * (fillRatio + restoreRatio));
+        return combined - filled;
+    }
+
+    /**
      * Draws a flashing chunk of the bar fill texture in the segment that would refill if the
      * player consumed {@code restoreAmount} more units. Used by the AppleSkin held-food previews
      * on health and stamina; the chunk continues seamlessly from the live fill (matching U/V
@@ -178,17 +228,11 @@ public abstract class AbstractBarRenderer {
                                                    float current, float max, float restoreAmount,
                                                    ScreenRect barRect, int animOffset,
                                                    AnimationMetadata.AnimationData animData) {
-        if (restoreAmount <= 0f || max <= 0f) return;
-        BarConfig cfg = config();
-        if (cfg.fillDirection() != FillDirection.HORIZONTAL) return;
-
-        float fillRatio = Math.max(0f, Math.min(1f, current / max));
-        float restoreRatio = Math.max(0f, Math.min(1f - fillRatio, restoreAmount / max));
-        if (restoreRatio <= 0f) return;
-
-        int filled = (int) (barRect.width() * fillRatio);
-        int restoreWidth = (int) (barRect.width() * restoreRatio);
+        int restoreWidth = restorePreviewWidth(player, current, max, restoreAmount, barRect);
         if (restoreWidth <= 0) return;
+        BarConfig cfg = config();
+        float denom = effectiveBarMax(player, current, max);
+        int filled = (int) (barRect.width() * Math.max(0f, Math.min(1f, current / denom)));
 
         boolean rightAnchored = cfg.anchor().getSide() == HUDPositioning.AnchorSide.RIGHT;
         int x, u;
@@ -272,13 +316,14 @@ public abstract class AbstractBarRenderer {
 
         AnimationMetadata.AnimationData animData = barAnimation();
         float ticks = player.tickCount + deltaTracker.getGameTimeDeltaTicks();
+        this.currentTicks = ticks;
         int animOffset = AnimationMetadata.calculateAnimationOffset(animData, ticks);
 
         ScreenRect barRect = getSubElementRect(SubElementType.BAR_MAIN, player, cfg);
         boolean rightAnchored = cfg.anchor().getSide() == HUDPositioning.AnchorSide.RIGHT;
 
         renderBaseBar(graphics, player, current, max, barRect, animOffset, rightAnchored, animData, cfg, tint);
-        renderFadingChunks(graphics, barRect, current, max, rightAnchored, alpha, animData, cfg);
+        renderFadingChunks(graphics, player, barRect, current, max, rightAnchored, alpha, animData, cfg);
         renderBetweenBarAndForeground(graphics, player, current, max, barRect, animOffset, animData);
         renderBarOverlays(graphics, player, current, max, barRect, alpha);
 
@@ -357,7 +402,8 @@ public abstract class AbstractBarRenderer {
                                ScreenRect barRect, int animOffset, boolean rightAnchored,
                                AnimationMetadata.AnimationData animData, BarConfig cfg, int tint) {
         Identifier tex = barTexture(player, current, max);
-        float ratio = (max <= 0f) ? 0f : Math.max(0f, Math.min(1f, current / max));
+        float denom = effectiveBarMax(player, current, max);
+        float ratio = (denom <= 0f) ? 0f : Math.max(0f, Math.min(1f, current / denom));
 
         if (cfg.fillDirection() == FillDirection.VERTICAL) {
             int filled = (int) (barRect.height() * ratio);
@@ -397,23 +443,28 @@ public abstract class AbstractBarRenderer {
             int animOffset = AnimationMetadata.calculateAnimationOffset(barAnimation(),
                     player.tickCount + partialTicks);
             float chunkStart = Math.max(0f, current);
-            fadingChunks.add(new FadingChunk(chunkStart, previousValue, max,
+            float denomAtCreation = effectiveBarMax(player, current, max);
+            fadingChunks.add(new FadingChunk(chunkStart, previousValue, max, denomAtCreation,
                     barTexture(player, current, max), animOffset));
         }
         previousValue = current;
         previousMax = max;
     }
 
-    private void renderFadingChunks(GuiGraphicsExtractor graphics, ScreenRect barRect,
+    private void renderFadingChunks(GuiGraphicsExtractor graphics, Player player, ScreenRect barRect,
                                     float current, float max, boolean rightAnchored, float parentAlpha,
                                     AnimationMetadata.AnimationData animData, BarConfig cfg) {
         if (fadingChunks.isEmpty()) return;
         for (FadingChunk chunk : fadingChunks) {
             float a = chunk.getAlpha() * parentAlpha;
             if (a <= 0) continue;
+            // Each chunk renders against the denominator that was live when the damage happened,
+            // so a chunk can't suddenly jump if the secondary pool (absorption) shifts mid-fade.
+            float denom = chunk.denominatorAtCreation;
+            if (denom <= 0f) continue;
             int chunkTint = RenderUtil.whiteWithAlpha(a);
-            float startRatio = Math.max(0f, Math.min(1f, chunk.startValue / chunk.maxValue));
-            float endRatio = Math.max(0f, Math.min(1f, chunk.endValue / chunk.maxValue));
+            float startRatio = Math.max(0f, Math.min(1f, chunk.startValue / denom));
+            float endRatio = Math.max(0f, Math.min(1f, chunk.endValue / denom));
             if (cfg.fillDirection() == FillDirection.VERTICAL) {
                 int startH = (int) (barRect.height() * startRatio);
                 int endH = (int) (barRect.height() * endRatio);
@@ -510,6 +561,13 @@ public abstract class AbstractBarRenderer {
 
     private boolean isVisible() {
         return barSetVisible;
+    }
+
+    /** Most recent {@code tickCount + partialTicks} captured at the top of {@link #render}.
+     *  Subclass hooks read this when they need a smooth animation offset for textures other than
+     *  the main bar fill (e.g. health's SQUEEZE absorption strip). Returns 0 outside of a render. */
+    protected final float currentTicks() {
+        return currentTicks;
     }
 
     /** Externally accessible alpha for hooks that need it (e.g. health's temperature overlay). */

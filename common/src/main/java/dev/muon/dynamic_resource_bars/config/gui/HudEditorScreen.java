@@ -10,6 +10,7 @@ import dev.muon.dynamic_resource_bars.render.AbstractBarRenderer;
 import dev.muon.dynamic_resource_bars.render.HealthBarRenderer;
 import dev.muon.dynamic_resource_bars.render.ManaBarRenderer;
 import dev.muon.dynamic_resource_bars.render.StaminaBarRenderer;
+import dev.muon.dynamic_resource_bars.util.AbsorptionDisplayMode;
 import dev.muon.dynamic_resource_bars.util.BarRenderBehavior;
 import dev.muon.dynamic_resource_bars.util.BarVisibility;
 import dev.muon.dynamic_resource_bars.util.DraggableElement;
@@ -651,6 +652,9 @@ public class HudEditorScreen extends Screen {
         items.add(textVisibilityItem(bar));
         items.add(anchorPointItem(bar));
         items.add(fillDirectionItem(bar));
+        if (bar.element == DraggableElement.HEALTH_BAR) {
+            items.add(absorptionDisplayModeItem(bar));
+        }
         items.add(new ContextMenuItem(
                 Component.translatable("gui.dynamic_resource_bars.context.toggle_layers"),
                 it -> {
@@ -740,6 +744,16 @@ public class HudEditorScreen extends Screen {
                 BarVisibility.values(),
                 BarVisibility::getTranslationKey,
                 bar.access::visibility, bar.access::setVisibility);
+    }
+
+    /** "Absorption: %s" — health-only enum-select for OVERLAY vs SQUEEZE absorption rendering. */
+    private ContextMenuItem absorptionDisplayModeItem(BarHandle bar) {
+        return enumItem(bar,
+                "gui.dynamic_resource_bars.context.absorption_display_mode",
+                "gui.dynamic_resource_bars.enum_select.absorption_display_mode",
+                AbsorptionDisplayMode.values(),
+                AbsorptionDisplayMode::getTranslationKey,
+                bar.access::absorptionDisplayMode, bar.access::setAbsorptionDisplayMode);
     }
 
     /** "Text Visibility: %s" — opens an enum-select for {@link TextBehavior}. */
@@ -895,6 +909,7 @@ public class HudEditorScreen extends Screen {
         }
         if (sub == SubElementType.ABSORPTION_TEXT) {
             items.add(absorptionTextAlignItem(bar));
+            items.add(absorptionDisplayModeItem(bar));
         }
         items.add(new ContextMenuItem(
                 Component.translatable("gui.dynamic_resource_bars.context.reset_sub_element"),

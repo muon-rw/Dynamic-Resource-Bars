@@ -1,3 +1,7 @@
+## 0.9.4
+- New absorption mode SQUEEZE 
+- Fix an issue with health restored bar fill estimate
+
 ## 0.9.3
 - More editor improvements
 

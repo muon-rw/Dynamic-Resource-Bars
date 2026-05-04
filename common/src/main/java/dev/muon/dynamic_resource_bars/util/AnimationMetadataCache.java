@@ -44,6 +44,12 @@ public class AnimationMetadataCache {
         Identifier location = Constants.loc("textures/gui/health_bar.png");
         return getOrLoad(location);
     }
+
+    /** Animation data for the SQUEEZE-mode absorption fill texture. */
+    public static AnimationMetadata.AnimationData getAbsorptionBarAnimation() {
+        Identifier location = Constants.loc("textures/gui/absorption_bar.png");
+        return getOrLoad(location);
+    }
     
     /**
      * Get animation data for stamina bar.
