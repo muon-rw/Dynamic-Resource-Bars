@@ -56,6 +56,18 @@ public final class NeoForgeHudWiring {
         if (dev.muon.dynamic_resource_bars.platform.Services.PLATFORM.isModLoaded("combat_attributes")) {
             CombatAttributesSuppressionNeoForge.install(event);
         }
+
+        // Paragliders source: free-standing trigger above PLAYER_HEALTH (mirrors mana). Paragliders'
+        // own stamina wheel is suppressed via DynamicResourceBarsParagliderPlugin (StaminaPlugin
+        // API), not via wrapLayer — wrapping their layer hit ordering issues that left the bar
+        // invisible AND the wheel still showing.
+        if (dev.muon.dynamic_resource_bars.platform.Services.PLATFORM.isModLoaded(
+                dev.muon.dynamic_resource_bars.compat.StaminaProviderManager.PARAGLIDERS_MOD_ID)) {
+            event.registerAbove(VanillaGuiLayers.PLAYER_HEALTH,
+                    net.minecraft.resources.Identifier.fromNamespaceAndPath(
+                            dev.muon.dynamic_resource_bars.Constants.MOD_ID, "stamina_paragliders"),
+                    HudBarOrchestrator::renderStaminaForParagliders);
+        }
     }
 
     private static GuiLayer orchestratorOrFallback(GuiLayer vanilla, OrchestratorCall call,

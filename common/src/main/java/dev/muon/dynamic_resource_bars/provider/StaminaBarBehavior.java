@@ -3,6 +3,7 @@ package dev.muon.dynamic_resource_bars.provider;
 public enum StaminaBarBehavior {
     FOOD("food", "gui.dynamic_resource_bars.stamina_bar_behavior.food"),
     COMBAT_ATTRIBUTES("combat_attributes", "gui.dynamic_resource_bars.stamina_bar_behavior.combat_attributes"),
+    PARAGLIDERS("paragliders", "gui.dynamic_resource_bars.stamina_bar_behavior.paragliders"),
     OFF("off", "gui.dynamic_resource_bars.stamina_bar_behavior.off");
 
     private final String key;

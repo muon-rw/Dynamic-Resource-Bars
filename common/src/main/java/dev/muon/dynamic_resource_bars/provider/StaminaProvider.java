@@ -12,7 +12,19 @@ public interface StaminaProvider {
      * @return Maximum stamina value
      */
     float getMaxStamina(Player player);
-    
+
+    /**
+     * Bonus stamina that sits above the base pool (e.g. Paragliders' BotW-style overshield).
+     * The bar renderer uses this to squeeze the live fill into {@code current / (max + extra)}
+     * and paint the freed-up space with the absorption-bar texture, matching the health bar's
+     * SQUEEZE absorption mode.
+     *
+     * @return extra (overshield) stamina, or {@code 0} if the source has no concept of it
+     */
+    default float getExtraStamina(Player player) {
+        return 0f;
+    }
+
     /**
      * @return The game time
      */

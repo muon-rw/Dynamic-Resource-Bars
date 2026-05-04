@@ -5,6 +5,8 @@ import dev.muon.dynamic_resource_bars.client.NeoForgeAnimationCacheReloadListene
 import dev.muon.dynamic_resource_bars.client.NeoForgeHudWiring;
 import dev.muon.dynamic_resource_bars.compat.AppleSkinCompat;
 import dev.muon.dynamic_resource_bars.compat.AppleSkinCompatNeoForge;
+import dev.muon.dynamic_resource_bars.compat.ParaglidersStaminaProvider;
+import dev.muon.dynamic_resource_bars.compat.StaminaProviderManager;
 import dev.muon.dynamic_resource_bars.config.gui.ModConfigScreen;
 import dev.muon.dynamic_resource_bars.platform.Services;
 import dev.muon.dynamic_resource_bars.util.TickHandler;
@@ -33,6 +35,12 @@ public class DynamicResourceBars {
         if (Services.PLATFORM.isModLoaded(AppleSkinCompat.MOD_ID)) {
             AppleSkinCompat.setProvider(new AppleSkinCompatNeoForge());
             AppleSkinCancellationNeoForge.install();
+        }
+
+        // Paragliders is NeoForge-only — install the provider here so common's StaminaProviderManager
+        // can route StaminaBarBehavior.PARAGLIDERS through it without referencing Paragliders classes.
+        if (Services.PLATFORM.isModLoaded(StaminaProviderManager.PARAGLIDERS_MOD_ID)) {
+            StaminaProviderManager.setParaglidersProvider(new ParaglidersStaminaProvider());
         }
     }
 

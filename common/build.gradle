@@ -28,13 +28,16 @@ dependencies {
     implementation("me.fzzyhmstrs:fzzy_config:${fzzy_config}")
     compileOnly "com.github.TheDeathlyCow:thermoo:v${project.thermoo_version}"
 
-    implementation "dev.muon.combat_attributes:combat_attributes-common:${combat_attributes_version}+${minecraft_version}"
+    compileOnly "dev.muon.combat_attributes:combat_attributes-common:${combat_attributes_version}+${minecraft_version}"
 
     // FD Refabricated's class shape is stable across the loaders we support — common compat
     // can compile against the Fabric jar and runtime references are gated by isModLoaded.
     // AppleSkin's per-loader internals diverge (different field names / method arities), so its
     // compat lives in each loader module against the matching jar; common only delegates.
     compileOnly "curse.maven:farmers-delight-refabricated-993166:8016410"
+
+
+    compileOnly "curse.maven:paragliders-289240:7956659"
 }
 
 configurations {

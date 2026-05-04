@@ -1,3 +1,6 @@
+## 0.9.5
+- Paragliders Compat
+
 ## 0.9.4
 - New absorption mode SQUEEZE 
 - Fix an issue with health restored bar fill estimate

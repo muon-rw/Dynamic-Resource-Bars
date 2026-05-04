@@ -52,7 +52,7 @@ public abstract class AbstractBarRenderer {
 
     private static final long CHUNK_FADEOUT_DURATION = RenderUtil.BAR_FADEOUT_DURATION / 3;
     /** Cap on simultaneously fading "ghost" chunks per bar — prevents unbounded growth under sustained DoT damage. */
-    private static final int MAX_FADING_CHUNKS = 16;
+    protected static final int MAX_FADING_CHUNKS = 16;
 
     // ===== Per-instance render state =====
     private boolean barSetVisible = true;
@@ -175,6 +175,29 @@ public abstract class AbstractBarRenderer {
         return max;
     }
 
+    /**
+     * Pixel offset from the leading edge of the bar zone where the live fill starts. Used when
+     * the bar has a "reserve" pool that should render <i>before</i> the live fill — e.g.
+     * Paragliders' extra stamina, drained only after the base pool runs out. Default is 0
+     * (live fill starts flush against the leading edge).
+     *
+     * <p>The leading edge is the left for left-anchored horizontal bars, the right for
+     * right-anchored, and the bottom for vertical bottom-up fills. The reserve itself is painted
+     * by the subclass (typically in {@link #renderBetweenBarAndForeground}) at the leading-edge
+     * region <i>before</i> the offset; this hook only tells the live fill, fading chunks, and
+     * food previews to shift past that region so they don't overlap it.
+     *
+     * <p>Contrast with {@link #effectiveBarMax}: that hook grows the denominator (used by both
+     * health absorption SQUEEZE and stamina extra), while this hook chooses where on the bar
+     * the live portion sits. Health's SQUEEZE absorption returns 0 here so absorption ends up at
+     * the trailing edge (acts as a shield, drained first); stamina's extra returns the extra
+     * width so the live base ends up shifted right and extra sits at the leading edge (acts as
+     * a reserve, drained last).
+     */
+    protected int leadingFillOffset(Player player, float current, float max, ScreenRect barRect) {
+        return 0;
+    }
+
     /** Drawn after the bar fill but before foreground/text. Pulses, attribute glows, etc. */
     protected void renderBarOverlays(GuiGraphicsExtractor graphics, Player player,
                                      float current, float max, ScreenRect barRect, float alpha) {}
@@ -233,15 +256,16 @@ public abstract class AbstractBarRenderer {
         BarConfig cfg = config();
         float denom = effectiveBarMax(player, current, max);
         int filled = (int) (barRect.width() * Math.max(0f, Math.min(1f, current / denom)));
+        int leadingOffset = leadingFillOffset(player, current, max, barRect);
 
         boolean rightAnchored = cfg.anchor().getSide() == HUDPositioning.AnchorSide.RIGHT;
         int x, u;
         if (rightAnchored) {
-            x = barRect.x() + barRect.width() - filled - restoreWidth;
-            u = barRect.width() - filled - restoreWidth;
+            x = barRect.x() + barRect.width() - filled - restoreWidth - leadingOffset;
+            u = barRect.width() - filled - restoreWidth - leadingOffset;
         } else {
-            x = barRect.x() + filled;
-            u = filled;
+            x = barRect.x() + leadingOffset + filled;
+            u = leadingOffset + filled;
         }
 
         float pulse = 0.5f + (TickHandler.getOverlayFlashAlpha() * 0.5f);
@@ -404,13 +428,14 @@ public abstract class AbstractBarRenderer {
         Identifier tex = barTexture(player, current, max);
         float denom = effectiveBarMax(player, current, max);
         float ratio = (denom <= 0f) ? 0f : Math.max(0f, Math.min(1f, current / denom));
+        int leadingOffset = leadingFillOffset(player, current, max, barRect);
 
         if (cfg.fillDirection() == FillDirection.VERTICAL) {
             int filled = (int) (barRect.height() * ratio);
             if (filled <= 0 && current > 0) filled = 1;
             if (filled <= 0) return;
-            int y = barRect.y() + (barRect.height() - filled);
-            int v = animOffset + (barRect.height() - filled);
+            int y = barRect.y() + (barRect.height() - filled - leadingOffset);
+            int v = animOffset + (barRect.height() - filled - leadingOffset);
             RenderUtil.blitWithBinding(graphics, tex,
                     barRect.x(), y, 0, v, barRect.width(), filled,
                     animData.textureWidth, animData.textureHeight, tint);
@@ -418,11 +443,13 @@ public abstract class AbstractBarRenderer {
             int filled = (int) (barRect.width() * ratio);
             if (filled <= 0 && current > 0) filled = 1;
             if (filled <= 0) return;
-            int x = barRect.x();
-            int u = 0;
+            int x, u;
             if (rightAnchored) {
-                x = barRect.x() + barRect.width() - filled;
-                u = barRect.width() - filled;
+                x = barRect.x() + barRect.width() - filled - leadingOffset;
+                u = barRect.width() - filled - leadingOffset;
+            } else {
+                x = barRect.x() + leadingOffset;
+                u = leadingOffset;
             }
             RenderUtil.blitWithBinding(graphics, tex,
                     x, barRect.y(), u, animOffset, filled, barRect.height(),
@@ -454,12 +481,31 @@ public abstract class AbstractBarRenderer {
     private void renderFadingChunks(GuiGraphicsExtractor graphics, Player player, ScreenRect barRect,
                                     float current, float max, boolean rightAnchored, float parentAlpha,
                                     AnimationMetadata.AnimationData animData, BarConfig cfg) {
-        if (fadingChunks.isEmpty()) return;
-        for (FadingChunk chunk : fadingChunks) {
+        // Base-pool chunks share the live fill's leading offset so they appear in the same zone
+        // (post-reserve) where the base used to be, not in the reserve region.
+        paintFadingChunks(graphics, fadingChunks, barRect, rightAnchored,
+                leadingFillOffset(player, current, max, barRect),
+                parentAlpha, animData, cfg);
+    }
+
+    /**
+     * Paints any list of {@link FadingChunk} entries at their snapshot value ranges, with an
+     * optional {@code zoneOffset} pushing the strip past a reserve region. Each chunk uses the
+     * denominator captured when it was created, so chunks don't visually drift if the live pool's
+     * denominator shifts mid-fade.
+     *
+     * <p>Subclasses with a secondary fading pool (e.g. stamina's extra-stamina reserve) call this
+     * with {@code zoneOffset = 0} to render in the reserve zone, while the built-in base-pool
+     * pass uses {@link #leadingFillOffset} so chunks end up in the live region.
+     */
+    protected final void paintFadingChunks(GuiGraphicsExtractor graphics, List<FadingChunk> chunks,
+                                           ScreenRect barRect, boolean rightAnchored, int zoneOffset,
+                                           float parentAlpha, AnimationMetadata.AnimationData animData,
+                                           BarConfig cfg) {
+        if (chunks.isEmpty()) return;
+        for (FadingChunk chunk : chunks) {
             float a = chunk.getAlpha() * parentAlpha;
             if (a <= 0) continue;
-            // Each chunk renders against the denominator that was live when the damage happened,
-            // so a chunk can't suddenly jump if the secondary pool (absorption) shifts mid-fade.
             float denom = chunk.denominatorAtCreation;
             if (denom <= 0f) continue;
             int chunkTint = RenderUtil.whiteWithAlpha(a);
@@ -470,8 +516,8 @@ public abstract class AbstractBarRenderer {
                 int endH = (int) (barRect.height() * endRatio);
                 int chunkH = endH - startH;
                 if (chunkH <= 0) continue;
-                int y = barRect.y() + (barRect.height() - endH);
-                int v = chunk.animOffset + (barRect.height() - endH);
+                int y = barRect.y() + (barRect.height() - endH - zoneOffset);
+                int v = chunk.animOffset + (barRect.height() - endH - zoneOffset);
                 RenderUtil.blitWithBinding(graphics, chunk.texture,
                         barRect.x(), y, 0, v, barRect.width(), chunkH,
                         animData.textureWidth, animData.textureHeight, chunkTint);
@@ -482,11 +528,11 @@ public abstract class AbstractBarRenderer {
                 if (chunkW <= 0) continue;
                 int x, u;
                 if (rightAnchored) {
-                    x = barRect.x() + barRect.width() - endW;
-                    u = barRect.width() - endW;
+                    x = barRect.x() + barRect.width() - endW - zoneOffset;
+                    u = barRect.width() - endW - zoneOffset;
                 } else {
-                    x = barRect.x() + startW;
-                    u = startW;
+                    x = barRect.x() + zoneOffset + startW;
+                    u = zoneOffset + startW;
                 }
                 RenderUtil.blitWithBinding(graphics, chunk.texture,
                         x, barRect.y(), u, chunk.animOffset, chunkW, barRect.height(),

@@ -50,6 +50,12 @@ public class AnimationMetadataCache {
         Identifier location = Constants.loc("textures/gui/absorption_bar.png");
         return getOrLoad(location);
     }
+
+    /** Animation data for the extra-stamina (overshield) fill texture used by the stamina squeeze. */
+    public static AnimationMetadata.AnimationData getExtraStaminaBarAnimation() {
+        Identifier location = Constants.loc("textures/gui/extra_stamina_bar.png");
+        return getOrLoad(location);
+    }
     
     /**
      * Get animation data for stamina bar.

@@ -114,4 +114,22 @@ public final class HudBarOrchestrator {
         StaminaBarRenderer.INSTANCE.render(graphics, player, deltaTracker);
         return true;
     }
+
+    /**
+     * Free-standing trigger for the Paragliders-sourced stamina bar (NeoForge-only). Registered
+     * via {@code event.registerAbove(PLAYER_HEALTH, ...)} like {@link #renderMana}, since wrapping
+     * Paragliders' own {@code paraglider:stamina_wheel} layer fails on event-listener ordering
+     * (Paragliders registers that layer in a default-priority listener that runs after ours).
+     * The wheel itself is suppressed via the {@code @ParagliderPlugin} on the loader side.
+     *
+     * <p>Gates on {@link StaminaBarBehavior#PARAGLIDERS} so the renderer doesn't double-fire when
+     * the user has FOOD or CA selected — those modes already trigger via the food-bar wrap and the
+     * CA-bar wrap respectively.
+     */
+    public static void renderStaminaForParagliders(GuiGraphicsExtractor graphics, DeltaTracker deltaTracker) {
+        if (ModConfigManager.getClient().staminaBarBehavior != StaminaBarBehavior.PARAGLIDERS) return;
+        Player player = clientPlayer();
+        if (player == null) return;
+        StaminaBarRenderer.INSTANCE.render(graphics, player, deltaTracker);
+    }
 }

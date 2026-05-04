@@ -32,6 +32,9 @@ dependencies {
     // jar lets common's FarmersDelightCompat references resolve. Runtime is gated by isModLoaded
     // so the absent classes never get touched on NeoForge users.
     compileOnly "curse.maven:farmers-delight-refabricated-993166:8016410"
+
+    compileOnly "curse.maven:paragliders-289240:7956659"
+    localRuntime "curse.maven:paragliders-289240:7956659"
 }
 
 neoForge {

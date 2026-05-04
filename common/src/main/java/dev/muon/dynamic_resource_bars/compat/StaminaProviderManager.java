@@ -11,13 +11,20 @@ import net.minecraft.client.Minecraft;
  * Stamina provider registry. The food provider is always available; the Combat Attributes
  * provider is wired in only when {@code combat_attributes} is on the runtime classpath, so
  * the dependency stays optional (the JVM never resolves the CA classes when the mod is absent).
+ *
+ * <p>Loader-specific providers (e.g. Paragliders, NeoForge-only) install themselves via
+ * {@link #setParaglidersProvider(StaminaProvider)} from the loader's mod entry. This keeps
+ * the Paragliders classes off the common-module classpath while still letting common code
+ * route the {@link StaminaBarBehavior#PARAGLIDERS} behavior through the registered impl.
  */
 public class StaminaProviderManager {
 
     public static final String COMBAT_ATTRIBUTES_MOD_ID = "combat_attributes";
+    public static final String PARAGLIDERS_MOD_ID = "paraglider";
 
     private static FoodStaminaProvider foodProvider;
     private static StaminaProvider combatAttributesProvider;
+    private static StaminaProvider paraglidersProvider;
 
     private static final StaminaProvider EMPTY_PROVIDER = new StaminaProvider() {
         @Override public float getCurrentStamina(net.minecraft.world.entity.player.Player p) { return 0; }
@@ -34,6 +41,9 @@ public class StaminaProviderManager {
         if (combatAttributesProvider != null) {
             StaminaProviderRegistry.registerProvider(() -> combatAttributesProvider);
         }
+        if (paraglidersProvider != null) {
+            StaminaProviderRegistry.registerProvider(() -> paraglidersProvider);
+        }
         StaminaProviderRegistry.registerProvider(() -> EMPTY_PROVIDER);
     }
 
@@ -41,6 +51,7 @@ public class StaminaProviderManager {
         return switch (behavior) {
             case FOOD -> foodProvider != null ? foodProvider : EMPTY_PROVIDER;
             case COMBAT_ATTRIBUTES -> combatAttributesProvider != null ? combatAttributesProvider : EMPTY_PROVIDER;
+            case PARAGLIDERS -> paraglidersProvider != null ? paraglidersProvider : EMPTY_PROVIDER;
             case OFF -> EMPTY_PROVIDER;
         };
     }
@@ -58,12 +69,22 @@ public class StaminaProviderManager {
         return switch (behavior) {
             case FOOD -> true;
             case COMBAT_ATTRIBUTES -> combatAttributesProvider != null;
+            case PARAGLIDERS -> paraglidersProvider != null;
             case OFF -> true;
         };
     }
 
     public static boolean hasAnyStaminaMods() {
-        return combatAttributesProvider != null;
+        return combatAttributesProvider != null || paraglidersProvider != null;
+    }
+
+    /**
+     * Installs the Paragliders provider from a loader-specific entry point. Paragliders is
+     * NeoForge-only on this MC version, so its {@link StaminaProvider} impl can't live in
+     * common — the loader's mod entry calls this before {@link #initialize()} runs.
+     */
+    public static void setParaglidersProvider(StaminaProvider provider) {
+        paraglidersProvider = provider;
     }
 
     public static void initialize() {
