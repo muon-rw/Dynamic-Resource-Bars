@@ -1,5 +1,5 @@
 ## 0.9.5
-- Paragliders Compat
+- Added Paragliders Stamina Compat! 
 
 ## 0.9.4
 - New absorption mode SQUEEZE 
