@@ -16,9 +16,8 @@ import dev.muon.dynamic_resource_bars.util.HUDPositioning;
 import dev.muon.dynamic_resource_bars.util.NineSliceRenderer;
 import dev.muon.dynamic_resource_bars.util.RenderUtil;
 import dev.muon.dynamic_resource_bars.util.ScreenRect;
-import dev.muon.dynamic_resource_bars.util.SubElementType;
-import dev.muon.dynamic_resource_bars.util.TickHandler;
 import net.minecraft.client.gui.GuiGraphicsExtractor;
+import net.minecraft.client.renderer.RenderPipelines;
 import net.minecraft.resources.Identifier;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.player.Player;
@@ -295,9 +294,8 @@ public class StaminaBarRenderer extends AbstractBarRenderer {
 
         if (cfg.fillDirection() == FillDirection.VERTICAL) {
             int y = barRect.y() + barRect.height() - extraSize;
-            RenderUtil.blitWithBinding(graphics, EXTRA_STAMINA_BAR,
-                    barRect.x(), y, 0, extraAnimOffset, barRect.width(), extraSize,
-                    animData.textureWidth, animData.textureHeight, tint);
+            graphics.blit(RenderPipelines.GUI_TEXTURED, EXTRA_STAMINA_BAR, barRect.x(), y, 0, extraAnimOffset,
+                    barRect.width(), extraSize, animData.textureWidth, animData.textureHeight, tint);
             return;
         }
 
@@ -305,8 +303,7 @@ public class StaminaBarRenderer extends AbstractBarRenderer {
         int x = rightAnchored
                 ? barRect.x() + barRect.width() - extraSize
                 : barRect.x();
-        RenderUtil.blitWithBinding(graphics, EXTRA_STAMINA_BAR,
-                x, barRect.y(), 0, extraAnimOffset, extraSize, barRect.height(),
-                animData.textureWidth, animData.textureHeight, tint);
+        graphics.blit(RenderPipelines.GUI_TEXTURED, EXTRA_STAMINA_BAR, x, barRect.y(), 0, extraAnimOffset,
+                extraSize, barRect.height(), animData.textureWidth, animData.textureHeight, tint);
     }
 }

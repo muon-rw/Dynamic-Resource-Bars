@@ -3,10 +3,7 @@ package dev.muon.dynamic_resource_bars.util;
 import dev.muon.dynamic_resource_bars.config.ModConfigManager;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphicsExtractor;
-import net.minecraft.client.renderer.RenderPipelines;
-import net.minecraft.client.renderer.texture.TextureManager;
 import net.minecraft.network.chat.Component;
-import net.minecraft.resources.Identifier;
 import org.joml.Matrix3x2fStack;
 
 public class RenderUtil {
@@ -97,24 +94,7 @@ public class RenderUtil {
         return Math.max(10, Math.min(alpha, BASE_TEXT_ALPHA));
     }
 
-    // TODO(26.1.2): bindForSetup was removed; if GeckoLib/AzureLib breaks textures again,
-    //               re-introduce a binding hook against the new TextureManager API.
-    public static void blitWithBinding(GuiGraphicsExtractor graphics, Identifier texture,
-                                       int x, int y, int uOffset, int vOffset,
-                                       int width, int height, int textureWidth, int textureHeight) {
-        blitWithBinding(graphics, texture, x, y, uOffset, vOffset, width, height, textureWidth, textureHeight, 0xFFFFFFFF);
-    }
-
-    /** Tinted blit. {@code color} is ARGB; pass {@code 0xFFFFFFFF} for untinted white. */
-    public static void blitWithBinding(GuiGraphicsExtractor graphics, Identifier texture,
-                                       int x, int y, int uOffset, int vOffset,
-                                       int width, int height, int textureWidth, int textureHeight,
-                                       int color) {
-        graphics.blit(RenderPipelines.GUI_TEXTURED, texture, x, y, uOffset, vOffset,
-                width, height, textureWidth, textureHeight, color);
-    }
-
-    /** Packs a 0..1 alpha into an ARGB int that tints white — for fade-in/out animations. */
+    /** Packs a 0..1 alpha into an ARGB int that tints white; used for fade-in/out animations. */
     public static int whiteWithAlpha(float alpha) {
         int a = Math.max(0, Math.min(255, (int) (alpha * 255f)));
         return (a << 24) | 0xFFFFFF;

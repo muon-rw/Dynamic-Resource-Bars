@@ -1,6 +1,5 @@
 package dev.muon.dynamic_resource_bars.render;
 
-import com.mojang.blaze3d.systems.RenderSystem;
 import dev.muon.dynamic_resource_bars.Constants;
 import dev.muon.dynamic_resource_bars.config.ClientConfig;
 import dev.muon.dynamic_resource_bars.config.ModConfigManager;
@@ -19,6 +18,7 @@ import dev.muon.dynamic_resource_bars.util.ScreenRect;
 import dev.muon.dynamic_resource_bars.util.SubElementType;
 import dev.muon.dynamic_resource_bars.util.TickHandler;
 import net.minecraft.client.gui.GuiGraphicsExtractor;
+import net.minecraft.client.renderer.RenderPipelines;
 import net.minecraft.resources.Identifier;
 import net.minecraft.world.effect.MobEffects;
 import net.minecraft.world.entity.player.Player;
@@ -235,9 +235,8 @@ public class HealthBarRenderer extends AbstractBarRenderer {
             int absFilled = combinedFilled - healthFilled;
             if (absFilled <= 0) return;
             int y = barRect.y() + (barRect.height() - combinedFilled);
-            RenderUtil.blitWithBinding(graphics, ABSORPTION_BAR,
-                    barRect.x(), y, 0, absAnimOffset, barRect.width(), absFilled,
-                    animData.textureWidth, animData.textureHeight, tint);
+            graphics.blit(RenderPipelines.GUI_TEXTURED, ABSORPTION_BAR, barRect.x(), y, 0, absAnimOffset,
+                    barRect.width(), absFilled, animData.textureWidth, animData.textureHeight, tint);
             return;
         }
 
@@ -249,9 +248,8 @@ public class HealthBarRenderer extends AbstractBarRenderer {
         int x = rightAnchored
                 ? barRect.x() + barRect.width() - healthFilled - previewShift - absFilled
                 : barRect.x() + healthFilled + previewShift;
-        RenderUtil.blitWithBinding(graphics, ABSORPTION_BAR,
-                x, barRect.y(), 0, absAnimOffset, absFilled, barRect.height(),
-                animData.textureWidth, animData.textureHeight, tint);
+        graphics.blit(RenderPipelines.GUI_TEXTURED, ABSORPTION_BAR, x, barRect.y(), 0, absAnimOffset,
+                absFilled, barRect.height(), animData.textureWidth, animData.textureHeight, tint);
     }
 
     @Override

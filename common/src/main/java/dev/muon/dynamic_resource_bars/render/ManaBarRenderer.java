@@ -1,6 +1,5 @@
 package dev.muon.dynamic_resource_bars.render;
 
-import com.mojang.blaze3d.systems.RenderSystem;
 import dev.muon.dynamic_resource_bars.Constants;
 import dev.muon.dynamic_resource_bars.compat.ManaProviderManager;
 import dev.muon.dynamic_resource_bars.config.ClientConfig;
@@ -9,10 +8,9 @@ import dev.muon.dynamic_resource_bars.provider.ManaProvider;
 import dev.muon.dynamic_resource_bars.util.AnimationMetadata;
 import dev.muon.dynamic_resource_bars.util.AnimationMetadataCache;
 import dev.muon.dynamic_resource_bars.util.DraggableElement;
-import dev.muon.dynamic_resource_bars.util.RenderUtil;
 import dev.muon.dynamic_resource_bars.util.ScreenRect;
-import dev.muon.dynamic_resource_bars.util.SubElementType;
 import net.minecraft.client.gui.GuiGraphicsExtractor;
+import net.minecraft.client.renderer.RenderPipelines;
 import net.minecraft.resources.Identifier;
 import net.minecraft.world.entity.player.Player;
 
@@ -97,9 +95,9 @@ public class ManaBarRenderer extends AbstractBarRenderer {
         int x = barRect.x() + barRect.width() - reservedWidth;
         // Tint the mana texture with the reserved-mana grey at full alpha.
         int tint = 0xFF000000 | RESERVED_MANA_COLOR;
-        RenderUtil.blitWithBinding(graphics, Constants.loc("textures/gui/mana_bar.png"),
-                x, barRect.y(), 0, animOffset, reservedWidth, barRect.height(),
-                animData.textureWidth, animData.textureHeight, tint);
+        Identifier texture = Constants.loc("textures/gui/mana_bar.png");
+        graphics.blit(RenderPipelines.GUI_TEXTURED, texture, x, barRect.y(), 0, animOffset,
+                reservedWidth, barRect.height(), animData.textureWidth, animData.textureHeight, tint);
     }
 
 }

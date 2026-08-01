@@ -1,6 +1,5 @@
 package dev.muon.dynamic_resource_bars.render;
 
-import com.mojang.blaze3d.systems.RenderSystem;
 import dev.muon.dynamic_resource_bars.config.ModConfigManager;
 import dev.muon.dynamic_resource_bars.util.AnimationMetadata;
 import dev.muon.dynamic_resource_bars.util.AnimationMetadataCache;
@@ -20,6 +19,7 @@ import dev.muon.dynamic_resource_bars.util.TickHandler;
 import net.minecraft.client.DeltaTracker;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphicsExtractor;
+import net.minecraft.client.renderer.RenderPipelines;
 import net.minecraft.resources.Identifier;
 import net.minecraft.world.entity.player.Player;
 
@@ -270,9 +270,9 @@ public abstract class AbstractBarRenderer {
 
         float pulse = 0.5f + (TickHandler.getOverlayFlashAlpha() * 0.5f);
         int tint = RenderUtil.whiteWithAlpha(pulse * currentAlpha());
-        RenderUtil.blitWithBinding(graphics, barTexture(player, current, max),
-                x, barRect.y(), u, animOffset, restoreWidth, barRect.height(),
-                animData.textureWidth, animData.textureHeight, tint);
+        Identifier texture = barTexture(player, current, max);
+        graphics.blit(RenderPipelines.GUI_TEXTURED, texture, x, barRect.y(), u, animOffset,
+                restoreWidth, barRect.height(), animData.textureWidth, animData.textureHeight, tint);
     }
 
     /** Returns true if the main current-of-max text should render this frame. */
@@ -436,9 +436,8 @@ public abstract class AbstractBarRenderer {
             if (filled <= 0) return;
             int y = barRect.y() + (barRect.height() - filled - leadingOffset);
             int v = animOffset + (barRect.height() - filled - leadingOffset);
-            RenderUtil.blitWithBinding(graphics, tex,
-                    barRect.x(), y, 0, v, barRect.width(), filled,
-                    animData.textureWidth, animData.textureHeight, tint);
+            graphics.blit(RenderPipelines.GUI_TEXTURED, tex, barRect.x(), y, 0, v,
+                    barRect.width(), filled, animData.textureWidth, animData.textureHeight, tint);
         } else {
             int filled = (int) (barRect.width() * ratio);
             if (filled <= 0 && current > 0) filled = 1;
@@ -451,9 +450,8 @@ public abstract class AbstractBarRenderer {
                 x = barRect.x() + leadingOffset;
                 u = leadingOffset;
             }
-            RenderUtil.blitWithBinding(graphics, tex,
-                    x, barRect.y(), u, animOffset, filled, barRect.height(),
-                    animData.textureWidth, animData.textureHeight, tint);
+            graphics.blit(RenderPipelines.GUI_TEXTURED, tex, x, barRect.y(), u, animOffset,
+                    filled, barRect.height(), animData.textureWidth, animData.textureHeight, tint);
         }
     }
 
@@ -518,9 +516,8 @@ public abstract class AbstractBarRenderer {
                 if (chunkH <= 0) continue;
                 int y = barRect.y() + (barRect.height() - endH - zoneOffset);
                 int v = chunk.animOffset + (barRect.height() - endH - zoneOffset);
-                RenderUtil.blitWithBinding(graphics, chunk.texture,
-                        barRect.x(), y, 0, v, barRect.width(), chunkH,
-                        animData.textureWidth, animData.textureHeight, chunkTint);
+                graphics.blit(RenderPipelines.GUI_TEXTURED, chunk.texture, barRect.x(), y, 0, v,
+                        barRect.width(), chunkH, animData.textureWidth, animData.textureHeight, chunkTint);
             } else {
                 int startW = (int) (barRect.width() * startRatio);
                 int endW = (int) (barRect.width() * endRatio);
@@ -534,9 +531,8 @@ public abstract class AbstractBarRenderer {
                     x = barRect.x() + zoneOffset + startW;
                     u = zoneOffset + startW;
                 }
-                RenderUtil.blitWithBinding(graphics, chunk.texture,
-                        x, barRect.y(), u, chunk.animOffset, chunkW, barRect.height(),
-                        animData.textureWidth, animData.textureHeight, chunkTint);
+                graphics.blit(RenderPipelines.GUI_TEXTURED, chunk.texture, x, barRect.y(), u, chunk.animOffset,
+                        chunkW, barRect.height(), animData.textureWidth, animData.textureHeight, chunkTint);
             }
         }
     }

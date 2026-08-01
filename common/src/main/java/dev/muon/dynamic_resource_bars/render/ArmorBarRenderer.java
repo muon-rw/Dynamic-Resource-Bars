@@ -14,6 +14,7 @@ import dev.muon.dynamic_resource_bars.util.ScreenRect;
 import dev.muon.dynamic_resource_bars.util.SubElementType;
 import dev.muon.dynamic_resource_bars.util.TickHandler;
 import net.minecraft.client.gui.GuiGraphicsExtractor;
+import net.minecraft.client.renderer.RenderPipelines;
 import net.minecraft.resources.Identifier;
 import net.minecraft.world.entity.player.Player;
 
@@ -126,10 +127,10 @@ public class ArmorBarRenderer extends AbstractBarRenderer {
             ArmorIcon icon = ArmorIcon.forArmor((int) current, c.maxExpectedArmor);
             ScreenRect rect = getSubElementRect(SubElementType.ICON, player);
             if (rect.width() > 0 && rect.height() > 0) {
-                RenderUtil.blitWithBinding(graphics, icon.loc(),
-                        rect.x(), rect.y(), 0, 0, rect.width(), rect.height(),
-                        rect.width(), rect.height(),
-                        RenderUtil.whiteWithAlpha(alpha));
+                Identifier texture = icon.loc();
+                int color = RenderUtil.whiteWithAlpha(alpha);
+                graphics.blit(RenderPipelines.GUI_TEXTURED, texture, rect.x(), rect.y(), 0, 0,
+                        rect.width(), rect.height(), rect.width(), rect.height(), color);
             }
         }
     }
