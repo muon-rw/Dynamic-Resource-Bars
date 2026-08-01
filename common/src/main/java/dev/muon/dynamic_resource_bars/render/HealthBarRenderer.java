@@ -160,6 +160,15 @@ public class HealthBarRenderer extends AbstractBarRenderer {
                     dims.width, dims.height,
                     RenderUtil.whiteWithAlpha(pulse * alpha));
         }
+
+        // Farmer's Delight comfort effect: soft glow sized to the animated bar portion.
+        if (Services.PLATFORM.isModLoaded(FarmersDelightCompat.MOD_ID) && FarmersDelightCompat.hasComfort(player)) {
+            AnimationMetadata.TextureDimensions dims = AnimationMetadataCache.getTextureDimensions(COMFORT_OVERLAY);
+            NineSliceRenderer.renderWithScaling(graphics, COMFORT_OVERLAY,
+                    AnimationMetadataCache.getComfortOverlayScaling(),
+                    barRect.x(), barRect.y(), barRect.width(), barRect.height(),
+                    dims.width, dims.height, tint);
+        }
     }
 
     /**
@@ -264,14 +273,6 @@ public class HealthBarRenderer extends AbstractBarRenderer {
                     complexRect.x(), complexRect.y(), complexRect.width(), complexRect.height(),
                     dims.width, dims.height,
                     RenderUtil.whiteWithAlpha(wet * alpha));
-        }
-        // Farmer's Delight comfort effect — soft glow on the entire bar background.
-        if (Services.PLATFORM.isModLoaded(FarmersDelightCompat.MOD_ID) && FarmersDelightCompat.hasComfort(player)) {
-            AnimationMetadata.TextureDimensions dims = AnimationMetadataCache.getTextureDimensions(COMFORT_OVERLAY);
-            NineSliceRenderer.renderWithScaling(graphics, COMFORT_OVERLAY,
-                    AnimationMetadataCache.getComfortOverlayScaling(),
-                    complexRect.x(), complexRect.y(), complexRect.width(), complexRect.height(),
-                    dims.width, dims.height, tint);
         }
     }
 
