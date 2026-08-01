@@ -1,6 +1,7 @@
 package dev.muon.dynamic_resource_bars.client;
 
 import dev.muon.dynamic_resource_bars.Constants;
+import dev.muon.dynamic_resource_bars.util.AnimatedTextureRegistrar;
 import dev.muon.dynamic_resource_bars.util.AnimationMetadataCache;
 import net.fabricmc.fabric.api.resource.SimpleSynchronousResourceReloadListener;
 import net.minecraft.resources.Identifier;
@@ -18,6 +19,7 @@ public class FabricAnimationCacheReloadListener implements SimpleSynchronousReso
     @Override
     public void onResourceManagerReload(ResourceManager resourceManager) {
         AnimationMetadataCache.clear();
+        AnimatedTextureRegistrar.registerAnimatedBarTextures(resourceManager);
         Constants.LOG.info("Animation metadata cache refreshed due to resource reload");
     }
 }

@@ -3,6 +3,7 @@
 - - Default backgrounds are now vanilla styled instead of Stoneborn styled
 - - Bars have a more dynamic glow-like animation
 - Fixed Farmer's Delight's comfort effect overlaying the wrong portion of the health bar.
+- Fix an incompatibility with GeckoLib which caused broken bar textures
 
 ## 0.9.5
 - Added Paragliders Stamina Compat! 

@@ -1,6 +1,7 @@
 package dev.muon.dynamic_resource_bars.client;
 
 import dev.muon.dynamic_resource_bars.Constants;
+import dev.muon.dynamic_resource_bars.util.AnimatedTextureRegistrar;
 import dev.muon.dynamic_resource_bars.util.AnimationMetadataCache;
 import net.minecraft.server.packs.resources.ResourceManager;
 import net.minecraft.server.packs.resources.SimplePreparableReloadListener;
@@ -16,6 +17,7 @@ public class NeoForgeAnimationCacheReloadListener extends SimplePreparableReload
     @Override
     protected void apply(Void preparations, ResourceManager manager, ProfilerFiller profiler) {
         AnimationMetadataCache.clear();
+        AnimatedTextureRegistrar.registerAnimatedBarTextures(manager);
         Constants.LOG.info("Animation metadata cache refreshed due to resource reload");
     }
 }
