@@ -14,18 +14,15 @@ Animated, adjustable resource bars for Minecraft.
 > For all features and an in-game editor, use the latest version.
 >
 >
-> **1.20.1 and 1.21.1 are officially no longer supported**
+> **1.20.1 and 1.21.1 are no longer supported**
 >
-> 0.8.1 has been archived for these versions, due to various issues.
+> 0.8.1 has also been archived for these versions, due to various issues.
 
 
 --- 
 
-# Resource Pack Guide
-
-This guide covers everything you need to make a resource pack: file layout, animation, scaling, and the in-game HUD editor.
-
-## Quick start: recolor the bars
+# Quick start: 
+## How do I recolor a bar?
 
 1. Create a pack at `resourcepacks/my_bars/` with a `pack.mcmeta`.
 2. Drop a recolored `health_bar.png` into `assets/dynamic_resource_bars/textures/gui/`.
