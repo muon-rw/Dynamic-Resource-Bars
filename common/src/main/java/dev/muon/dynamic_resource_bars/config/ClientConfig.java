@@ -49,6 +49,7 @@ public class ClientConfig {
     public static final int DEFAULT_TEXT_COLOR = 0xFFFFFF; // White
     public static final int DEFAULT_TEXT_OPACITY = 200; // Out of 255
     public static final float DEFAULT_GLOBAL_TEXT_SIZE = 1.0f;
+    public static final float DEFAULT_TEXT_SCALE = 0.5f;
     public static final int DEFAULT_BAR_TEXT_WIDTH = 40;
     public static final int DEFAULT_BAR_TEXT_HEIGHT = 4;
 
@@ -86,12 +87,12 @@ public class ClientConfig {
     public static final int DEFAULT_HEALTH_TEXT_OPACITY = DEFAULT_TEXT_OPACITY;
     public static final int DEFAULT_HEALTH_TEXT_WIDTH = 46;
     public static final int DEFAULT_HEALTH_TEXT_HEIGHT = 46;
-    public static final float DEFAULT_HEALTH_TEXT_SCALE = 1.0f;
+    public static final float DEFAULT_HEALTH_TEXT_SCALE = DEFAULT_TEXT_SCALE;
     public static final int DEFAULT_HEALTH_ABSORPTION_TEXT_X_OFFSET = 14;
     public static final int DEFAULT_HEALTH_ABSORPTION_TEXT_Y_OFFSET = 36;
     public static final int DEFAULT_HEALTH_ABSORPTION_TEXT_WIDTH = 46;
     public static final int DEFAULT_HEALTH_ABSORPTION_TEXT_HEIGHT = 12;
-    public static final float DEFAULT_HEALTH_ABSORPTION_TEXT_SCALE = 0.75f;
+    public static final float DEFAULT_HEALTH_ABSORPTION_TEXT_SCALE = DEFAULT_TEXT_SCALE;
     public static final boolean DEFAULT_ENABLE_HEALTH_ABSORPTION_TEXT = true;
     public static final HorizontalAlignment DEFAULT_HEALTH_ABSORPTION_TEXT_ALIGN = HorizontalAlignment.CENTER;
     public static final AbsorptionDisplayMode DEFAULT_HEALTH_ABSORPTION_DISPLAY_MODE = AbsorptionDisplayMode.OVERLAY;
@@ -166,7 +167,7 @@ public class ClientConfig {
     public static final int DEFAULT_STAMINA_TEXT_OPACITY = DEFAULT_TEXT_OPACITY;
     public static final int DEFAULT_STAMINA_TEXT_WIDTH = 46;
     public static final int DEFAULT_STAMINA_TEXT_HEIGHT = 46;
-    public static final float DEFAULT_STAMINA_TEXT_SCALE = 1.0f;
+    public static final float DEFAULT_STAMINA_TEXT_SCALE = DEFAULT_TEXT_SCALE;
 
     public StaminaBarBehavior staminaBarBehavior;
     public boolean mergeMountHealth;
@@ -227,7 +228,7 @@ public class ClientConfig {
     public static final int DEFAULT_MANA_TEXT_Y_OFFSET = 14;
     public static final int DEFAULT_MANA_TEXT_WIDTH = 23;
     public static final int DEFAULT_MANA_TEXT_HEIGHT = 30;
-    public static final float DEFAULT_MANA_TEXT_SCALE = 0.5f;
+    public static final float DEFAULT_MANA_TEXT_SCALE = DEFAULT_TEXT_SCALE;
 
     public ManaBarBehavior manaBarBehavior = DEFAULT_MANA_BAR_BEHAVIOR;
     public HUDPositioning.BarPlacement manaBarAnchor = DEFAULT_MANA_BAR_ANCHOR;
@@ -293,7 +294,7 @@ public class ClientConfig {
     public static final int DEFAULT_ARMOR_TEXT_OPACITY = DEFAULT_TEXT_OPACITY;
     public static final int DEFAULT_ARMOR_TEXT_WIDTH = DEFAULT_BAR_TEXT_WIDTH;
     public static final int DEFAULT_ARMOR_TEXT_HEIGHT = DEFAULT_BAR_TEXT_HEIGHT;
-    public static final float DEFAULT_ARMOR_TEXT_SCALE = 0.5f;
+    public static final float DEFAULT_ARMOR_TEXT_SCALE = DEFAULT_TEXT_SCALE;
     public static final TextBehavior DEFAULT_SHOW_ARMOR_TEXT = TextBehavior.NEVER;
     public static final HorizontalAlignment DEFAULT_ARMOR_TEXT_ALIGN = HorizontalAlignment.CENTER;
     public static final int DEFAULT_ARMOR_BACKGROUND_X_OFFSET = 0;
@@ -367,7 +368,7 @@ public class ClientConfig {
     public static final int DEFAULT_AIR_TEXT_OPACITY = DEFAULT_TEXT_OPACITY;
     public static final int DEFAULT_AIR_TEXT_WIDTH = 23;
     public static final int DEFAULT_AIR_TEXT_HEIGHT = 30;
-    public static final float DEFAULT_AIR_TEXT_SCALE = 0.5f;
+    public static final float DEFAULT_AIR_TEXT_SCALE = DEFAULT_TEXT_SCALE;
     public static final TextBehavior DEFAULT_SHOW_AIR_TEXT = TextBehavior.NEVER;
     public static final HorizontalAlignment DEFAULT_AIR_TEXT_ALIGN = HorizontalAlignment.CENTER;
     public static final int DEFAULT_AIR_BACKGROUND_X_OFFSET = 0;

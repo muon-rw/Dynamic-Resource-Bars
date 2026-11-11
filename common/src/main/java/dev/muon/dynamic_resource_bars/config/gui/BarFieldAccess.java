@@ -58,6 +58,8 @@ public abstract class BarFieldAccess {
     public abstract void setTextWidth(ClientConfig c, int v);
     public abstract int textHeight(ClientConfig c);
     public abstract void setTextHeight(ClientConfig c, int v);
+    public abstract float textScale(ClientConfig c);
+    public abstract void setTextScale(ClientConfig c, float v);
 
     // ----- Whole-element -----
     public abstract int totalX(ClientConfig c);
@@ -188,6 +190,27 @@ public abstract class BarFieldAccess {
         }
     }
 
+    public boolean hasTextScale(SubElementType sub) {
+        return sub == SubElementType.TEXT || (sub == SubElementType.ABSORPTION_TEXT && hasAbsorptionText());
+    }
+
+    public float subElementTextScale(ClientConfig c, SubElementType sub) {
+        return switch (sub) {
+            case TEXT -> textScale(c);
+            case ABSORPTION_TEXT -> absorptionTextScale(c);
+            default -> ClientConfig.DEFAULT_TEXT_SCALE;
+        };
+    }
+
+    public void setSubElementTextScale(ClientConfig c, SubElementType sub, float v) {
+        float clamped = Math.max(0.1f, Math.min(5.0f, Math.round(v * 20f) / 20f));
+        switch (sub) {
+            case TEXT -> setTextScale(c, clamped);
+            case ABSORPTION_TEXT -> setAbsorptionTextScale(c, clamped);
+            default -> {}
+        }
+    }
+
     /**
      * Reads the visibility flag for a sub-element. Sub-elements that aren't toggleable
      * (BAR_MAIN, TEXT) always report {@code true} — they manage their own rendering via
@@ -229,11 +252,15 @@ public abstract class BarFieldAccess {
             case BACKGROUND -> setEnableBackground(live, enableBackground(defaults));
             case FOREGROUND -> setEnableForeground(live, enableForeground(defaults));
             case ICON -> setEnableIcon(live, enableIcon(defaults));
-            case TEXT -> setTextAlign(live, textAlign(defaults));
+            case TEXT -> {
+                setTextAlign(live, textAlign(defaults));
+                setTextScale(live, textScale(defaults));
+            }
             case ABSORPTION_TEXT -> {
                 setEnableAbsorptionText(live, enableAbsorptionText(defaults));
                 setAbsorptionTextAlign(live, absorptionTextAlign(defaults));
                 setAbsorptionDisplayMode(live, absorptionDisplayMode(defaults));
+                setAbsorptionTextScale(live, absorptionTextScale(defaults));
             }
             case BAR_MAIN -> {} // no behavior fields specific to BAR_MAIN
         }
@@ -266,6 +293,8 @@ public abstract class BarFieldAccess {
     public void setAbsorptionTextWidth(ClientConfig c, int v) {}
     public int absorptionTextHeight(ClientConfig c) { return 0; }
     public void setAbsorptionTextHeight(ClientConfig c, int v) {}
+    public float absorptionTextScale(ClientConfig c) { return ClientConfig.DEFAULT_TEXT_SCALE; }
+    public void setAbsorptionTextScale(ClientConfig c, float v) {}
     public boolean enableAbsorptionText(ClientConfig c) { return true; }
     public void setEnableAbsorptionText(ClientConfig c, boolean v) {}
     public HorizontalAlignment absorptionTextAlign(ClientConfig c) { return HorizontalAlignment.CENTER; }
@@ -307,6 +336,8 @@ public abstract class BarFieldAccess {
         public void setTextWidth(ClientConfig c, int v) { c.healthTextWidth = v; }
         public int textHeight(ClientConfig c) { return c.healthTextHeight; }
         public void setTextHeight(ClientConfig c, int v) { c.healthTextHeight = v; }
+        public float textScale(ClientConfig c) { return c.healthTextScale; }
+        public void setTextScale(ClientConfig c, float v) { c.healthTextScale = v; }
         public int totalX(ClientConfig c) { return c.healthTotalXOffset; }
         public void setTotalX(ClientConfig c, int v) { c.healthTotalXOffset = v; }
         public int totalY(ClientConfig c) { return c.healthTotalYOffset; }
@@ -319,6 +350,8 @@ public abstract class BarFieldAccess {
         public void setAbsorptionTextWidth(ClientConfig c, int v) { c.healthAbsorptionTextWidth = v; }
         public int absorptionTextHeight(ClientConfig c) { return c.healthAbsorptionTextHeight; }
         public void setAbsorptionTextHeight(ClientConfig c, int v) { c.healthAbsorptionTextHeight = v; }
+        public float absorptionTextScale(ClientConfig c) { return c.healthAbsorptionTextScale; }
+        public void setAbsorptionTextScale(ClientConfig c, float v) { c.healthAbsorptionTextScale = v; }
         public boolean enableAbsorptionText(ClientConfig c) { return c.enableHealthAbsorptionText; }
         public void setEnableAbsorptionText(ClientConfig c, boolean v) { c.enableHealthAbsorptionText = v; }
         public HorizontalAlignment absorptionTextAlign(ClientConfig c) { return c.healthAbsorptionTextAlign; }
@@ -345,10 +378,13 @@ public abstract class BarFieldAccess {
             live.healthBarVisibility = defaults.healthBarVisibility;
             live.showHealthText = defaults.showHealthText;
             live.healthTextAlign = defaults.healthTextAlign;
+            live.healthTextScale = defaults.healthTextScale;
             live.healthFillDirection = defaults.healthFillDirection;
             live.enableHealthBackground = defaults.enableHealthBackground;
             live.enableHealthForeground = defaults.enableHealthForeground;
             live.enableHealthAbsorptionText = defaults.enableHealthAbsorptionText;
+            live.healthAbsorptionTextAlign = defaults.healthAbsorptionTextAlign;
+            live.healthAbsorptionTextScale = defaults.healthAbsorptionTextScale;
             live.healthAbsorptionDisplayMode = defaults.healthAbsorptionDisplayMode;
         }
     };
@@ -386,6 +422,8 @@ public abstract class BarFieldAccess {
         public void setTextWidth(ClientConfig c, int v) { c.manaTextWidth = v; }
         public int textHeight(ClientConfig c) { return c.manaTextHeight; }
         public void setTextHeight(ClientConfig c, int v) { c.manaTextHeight = v; }
+        public float textScale(ClientConfig c) { return c.manaTextScale; }
+        public void setTextScale(ClientConfig c, float v) { c.manaTextScale = v; }
         public int totalX(ClientConfig c) { return c.manaTotalXOffset; }
         public void setTotalX(ClientConfig c, int v) { c.manaTotalXOffset = v; }
         public int totalY(ClientConfig c) { return c.manaTotalYOffset; }
@@ -410,6 +448,7 @@ public abstract class BarFieldAccess {
             live.manaBarVisibility = defaults.manaBarVisibility;
             live.showManaText = defaults.showManaText;
             live.manaTextAlign = defaults.manaTextAlign;
+            live.manaTextScale = defaults.manaTextScale;
             live.manaFillDirection = defaults.manaFillDirection;
             live.enableManaBackground = defaults.enableManaBackground;
             live.enableManaForeground = defaults.enableManaForeground;
@@ -449,6 +488,8 @@ public abstract class BarFieldAccess {
         public void setTextWidth(ClientConfig c, int v) { c.staminaTextWidth = v; }
         public int textHeight(ClientConfig c) { return c.staminaTextHeight; }
         public void setTextHeight(ClientConfig c, int v) { c.staminaTextHeight = v; }
+        public float textScale(ClientConfig c) { return c.staminaTextScale; }
+        public void setTextScale(ClientConfig c, float v) { c.staminaTextScale = v; }
         public int totalX(ClientConfig c) { return c.staminaTotalXOffset; }
         public void setTotalX(ClientConfig c, int v) { c.staminaTotalXOffset = v; }
         public int totalY(ClientConfig c) { return c.staminaTotalYOffset; }
@@ -473,6 +514,7 @@ public abstract class BarFieldAccess {
             live.staminaBarVisibility = defaults.staminaBarVisibility;
             live.showStaminaText = defaults.showStaminaText;
             live.staminaTextAlign = defaults.staminaTextAlign;
+            live.staminaTextScale = defaults.staminaTextScale;
             live.staminaFillDirection = defaults.staminaFillDirection;
             live.enableStaminaBackground = defaults.enableStaminaBackground;
             live.enableStaminaForeground = defaults.enableStaminaForeground;
@@ -513,6 +555,8 @@ public abstract class BarFieldAccess {
         public void setTextWidth(ClientConfig c, int v) { c.armorTextWidth = v; }
         public int textHeight(ClientConfig c) { return c.armorTextHeight; }
         public void setTextHeight(ClientConfig c, int v) { c.armorTextHeight = v; }
+        public float textScale(ClientConfig c) { return c.armorTextScale; }
+        public void setTextScale(ClientConfig c, float v) { c.armorTextScale = v; }
         public int totalX(ClientConfig c) { return c.armorTotalXOffset; }
         public void setTotalX(ClientConfig c, int v) { c.armorTotalXOffset = v; }
         public int totalY(ClientConfig c) { return c.armorTotalYOffset; }
@@ -547,6 +591,7 @@ public abstract class BarFieldAccess {
             live.armorBarVisibility = defaults.armorBarVisibility;
             live.showArmorText = defaults.showArmorText;
             live.armorTextAlign = defaults.armorTextAlign;
+            live.armorTextScale = defaults.armorTextScale;
             live.armorFillDirection = defaults.armorFillDirection;
             live.enableArmorBackground = defaults.enableArmorBackground;
             live.enableArmorForeground = defaults.enableArmorForeground;
@@ -588,6 +633,8 @@ public abstract class BarFieldAccess {
         public void setTextWidth(ClientConfig c, int v) { c.airTextWidth = v; }
         public int textHeight(ClientConfig c) { return c.airTextHeight; }
         public void setTextHeight(ClientConfig c, int v) { c.airTextHeight = v; }
+        public float textScale(ClientConfig c) { return c.airTextScale; }
+        public void setTextScale(ClientConfig c, float v) { c.airTextScale = v; }
         public int totalX(ClientConfig c) { return c.airTotalXOffset; }
         public void setTotalX(ClientConfig c, int v) { c.airTotalXOffset = v; }
         public int totalY(ClientConfig c) { return c.airTotalYOffset; }
@@ -622,6 +669,7 @@ public abstract class BarFieldAccess {
             live.airBarVisibility = defaults.airBarVisibility;
             live.showAirText = defaults.showAirText;
             live.airTextAlign = defaults.airTextAlign;
+            live.airTextScale = defaults.airTextScale;
             live.airFillDirection = defaults.airFillDirection;
             live.enableAirBackground = defaults.enableAirBackground;
             live.enableAirForeground = defaults.enableAirForeground;

@@ -33,84 +33,66 @@ import net.minecraft.world.entity.player.Player;
 import org.jetbrains.annotations.NotNull;
 import org.lwjgl.glfw.GLFW;
 
+import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Deque;
 import java.util.List;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Supplier;
 
-/**
- * Drag-and-drop HUD editor.
- *
- * <p>Modes</p>
- * <ul>
- *   <li><b>Bar mode</b> (default): click a bar to select it; drag to move the whole bar; arrow
- *       keys nudge it.</li>
- *   <li><b>Focus mode</b> (entered by clicking the already-selected bar a second time, or by
- *       picking the "Edit Sub-Elements" context-menu item): each sub-element (background,
- *       bar fill, foreground, text) is individually clickable. Click and drag a sub-element
- *       to move it within its parent bar. Right/bottom edge handles resize the background,
- *       bar fill, and foreground. Esc returns to bar mode.</li>
- * </ul>
- *
- * <p>Bars are rendered on top of the editor's dim overlay so the player can see what they
- * are editing — the editor's {@link #extractBackground(GuiGraphicsExtractor, int, int, float)} draws a flat dim instead of the
- * default blur, then bars are painted afterwards in {@link #extractRenderState}.
- */
 public class HudEditorScreen extends Screen {
 
-    private static final int OVERLAY_DIM_COLOR = 0x80000000;
-    private static final int HELP_TEXT_COLOR = 0xFFFFFFFF;
-    private static final int FOCUS_OUTLINE_COLOR = 0xFFFFFF00;
-    private static final int FOCUS_HOVER_COLOR = 0x80FFFF00;
+    private static final int OVERLAY_DIM_COLOR = 0x70000000;
+    private static final int PANEL_BG_COLOR = 0xE8101318;
+    private static final int PANEL_BORDER_COLOR = 0xFF3E4856;
+    private static final int CHIP_BG_COLOR = 0xFF1E242E;
+    private static final int CHIP_HOVER_COLOR = 0xFF2C3848;
+    private static final int CHIP_ACTIVE_BG_COLOR = 0xFF284B7A;
+    private static final int CHIP_ACTIVE_BORDER_COLOR = 0xFF6CA8FF;
+    private static final int CHIP_BORDER_COLOR = 0xFF3A4250;
+    private static final int FOCUS_OUTLINE_COLOR = 0xFFFFD84D;
+    private static final int FOCUS_INACTIVE_OUTLINE_COLOR = 0x70FFFFFF;
+    private static final int FOCUS_HOVER_COLOR = 0x38FFD84D;
     private static final int RESIZE_HANDLE_COLOR = 0xFFFFAA00;
     private static final int RESIZE_HANDLE_HOT_COLOR = 0xFFFFFFFF;
-    /** Handles are square; rendered exactly as drawn with no expanded hitbox. */
-    private static final int HANDLE_SIZE = 2;
+    private static final int SCALE_HANDLE_COLOR = 0xFF55DDFF;
+    private static final int HANDLE_DRAW_SIZE = 4;
+    private static final int HANDLE_HIT_RADIUS = 4;
     private static final int NUDGE_PIXELS = 1;
     private static final int NUDGE_PIXELS_FAST = 5;
+    private static final float SCALE_STEP = 0.05f;
+    private static final int MAX_UNDO_STEPS = 40;
 
-
-    /**
-     * Sub-elements that participate in focus-mode drag/resize, in Tab cycle order.
-     * ICON / ABSORPTION_TEXT are only applicable to bars that expose them via
-     * {@code getCustomSubElementRect} (icons: air/armor, absorption text: health) —
-     * sub-elements with an empty rect are skipped during hit-testing and Tab.
-     */
     private static final SubElementType[] FOCUS_SUB_ELEMENTS = {
             SubElementType.BACKGROUND, SubElementType.BAR_MAIN,
             SubElementType.FOREGROUND, SubElementType.TEXT,
             SubElementType.ICON, SubElementType.ABSORPTION_TEXT
     };
 
-    private static final List<Component> MAIN_HELP_TEXT = List.of(
-            Component.translatable("gui.dynamic_resource_bars.hud_editor.help.main.line1"),
-            Component.translatable("gui.dynamic_resource_bars.hud_editor.help.main.line2"),
-            Component.translatable("gui.dynamic_resource_bars.hud_editor.help.main.line3"),
-            Component.translatable("gui.dynamic_resource_bars.hud_editor.help.main.line4"));
-    private static final List<Component> FOCUS_HELP_LINES = List.of(
-            Component.translatable("gui.dynamic_resource_bars.hud_editor.help.focus.line1"),
-            Component.translatable("gui.dynamic_resource_bars.hud_editor.help.focus.line2"),
-            Component.translatable("gui.dynamic_resource_bars.hud_editor.help.focus.line3"));
-
     private final Screen previousScreen;
     private final List<BarHandle> bars = new ArrayList<>();
+    private final List<ChipButton> chipButtons = new ArrayList<>();
+    private final Deque<Runnable> undoStack = new ArrayDeque<>();
 
-    // ===== Editor state =====
     private SubElementType activeSub;
     private DragKind dragKind = DragKind.NONE;
     private int dragStartMouseX, dragStartMouseY;
-    private int dragStartValueA, dragStartValueB; // X+Y for move; W+H for resize
+    private int dragStartValueA, dragStartValueB;
+    private float dragStartScale;
 
     private ContextMenu activeContextMenu;
 
-    private DraggableElement undoElement;
-    private int undoTotalX, undoTotalY;
-    private boolean undoAvailable;
+    private enum DragKind { NONE, MOVE_BAR, MOVE_SUB, RESIZE_W, RESIZE_H, RESIZE_CORNER, RESIZE_TEXT_SCALE }
 
-    private enum DragKind { NONE, MOVE_BAR, MOVE_SUB, RESIZE_W, RESIZE_H }
+    private record ChipButton(int x, int y, int width, int height, Component label,
+                              boolean selected, boolean accent, Runnable action, Component tooltip) {
+        boolean contains(int mx, int my) {
+            return mx >= x && mx < x + width && my >= y && my < y + height;
+        }
+    }
 
     public HudEditorScreen(Screen previous) {
         super(Component.translatable("gui.dynamic_resource_bars.hud_editor.title_main"));
@@ -129,11 +111,13 @@ public class HudEditorScreen extends Screen {
         bars.add(new BarHandle(DraggableElement.AIR_BAR,
                 dev.muon.dynamic_resource_bars.render.AirBarRenderer.INSTANCE, BarFieldAccess.AIR));
         if (!EditModeManager.isEditModeEnabled()) EditModeManager.toggleEditMode();
+        if (EditModeManager.getFocusedElement() == null && !bars.isEmpty()) {
+            EditModeManager.setFocusedElement(DraggableElement.HEALTH_BAR);
+        }
     }
 
     @Override
     public void extractBackground(@NotNull GuiGraphicsExtractor graphics, int mouseX, int mouseY, float partialTicks) {
-        // Flat dim instead of the default blur so bars are still readable on top.
         graphics.fill(0, 0, this.width, this.height, OVERLAY_DIM_COLOR);
     }
 
@@ -141,7 +125,6 @@ public class HudEditorScreen extends Screen {
     public void extractRenderState(@NotNull GuiGraphicsExtractor graphics, int mouseX, int mouseY, float partialTicks) {
         super.extractRenderState(graphics, mouseX, mouseY, partialTicks);
 
-        // Paint the bars *after* the screen background so they sit on top of the dim.
         Player player = player();
         if (player != null) {
             DeltaTracker dt = Minecraft.getInstance().getDeltaTracker();
@@ -157,35 +140,236 @@ public class HudEditorScreen extends Screen {
             for (BarHandle bar : bars) bar.renderer.render(graphics, player, dt);
         }
 
+        rebuildAndRenderToolbar(graphics, mouseX, mouseY);
         renderFocusModeOverlay(graphics, mouseX, mouseY);
-
-        int y = 8;
-        for (Component line : helpText()) {
-            graphics.centeredText(this.font, line, this.width / 2, y, HELP_TEXT_COLOR);
-            y += 10;
-        }
 
         if (activeContextMenu != null && activeContextMenu.isVisible()) {
             activeContextMenu.extractRenderState(graphics, mouseX, mouseY, partialTicks);
         }
     }
 
-    private List<Component> helpText() {
-        if (!EditModeManager.isFocusMode()) return MAIN_HELP_TEXT;
-        // Focus title carries the focused-bar name, which changes on Tab — has to be rebuilt.
-        List<Component> result = new ArrayList<>(1 + FOCUS_HELP_LINES.size());
-        result.add(Component.translatable("gui.dynamic_resource_bars.hud_editor.title_focused",
-                elementName(EditModeManager.getFocusedElement())));
-        result.addAll(FOCUS_HELP_LINES);
-        return result;
+    private void rebuildAndRenderToolbar(GuiGraphicsExtractor graphics, int mouseX, int mouseY) {
+        chipButtons.clear();
+        BarHandle focused = focusedBar();
+        ClientConfig c = ModConfigManager.getClient();
+        boolean inFocus = EditModeManager.isFocusMode() && focused != null;
+
+        int panelW = Math.min(this.width - 12, 412);
+        int panelX = (this.width - panelW) / 2;
+        int panelY = 4;
+        int panelH = 54;
+
+        graphics.fill(panelX, panelY, panelX + panelW, panelY + panelH, PANEL_BG_COLOR);
+        graphics.outline(panelX, panelY, panelW, panelH, PANEL_BORDER_COLOR);
+
+        // Row 1: Mode / Selector chips (y = panelY + 4, height = 14)
+        int row1Y = panelY + 4;
+        int chipH = 14;
+        if (!inFocus) {
+            int x = panelX + 6;
+            for (BarHandle bar : bars) {
+                Component label = shortBarLabel(bar.element);
+                int w = this.font.width(label) + 10;
+                boolean sel = focused != null && focused.element == bar.element;
+                DraggableElement target = bar.element;
+                chipButtons.add(new ChipButton(x, row1Y, w, chipH, label, sel, false, () -> {
+                    closeActiveContextMenu();
+                    EditModeManager.setFocusedElement(target);
+                }, elementName(bar.element)));
+                x += w + 3;
+            }
+        } else {
+            int x = panelX + 6;
+            Component backLabel = Component.translatable("gui.dynamic_resource_bars.hud_editor.chip.back_bars");
+            int backW = this.font.width(backLabel) + 8;
+            chipButtons.add(new ChipButton(x, row1Y, backW, chipH, backLabel, false, true, () -> {
+                closeActiveContextMenu();
+                exitFocus();
+            }, Component.translatable("gui.dynamic_resource_bars.context.exit_sub_elements")));
+            x += backW + 5;
+
+            Player p = player();
+            for (SubElementType sub : FOCUS_SUB_ELEMENTS) {
+                if (!barExposesSub(focused, sub, p)) continue;
+                Component label = shortSubLabel(sub);
+                int w = this.font.width(label) + 8;
+                boolean sel = activeSub == sub;
+                SubElementType targetSub = sub;
+                chipButtons.add(new ChipButton(x, row1Y, w, chipH, label, sel, false, () -> {
+                    closeActiveContextMenu();
+                    setActiveSub(targetSub);
+                }, Component.translatable(sub.getTranslationKey())));
+                x += w + 3;
+            }
+        }
+
+        // Row 2: Live readout + Quick actions (y = panelY + 21, height = 14)
+        int row2Y = panelY + 21;
+        String readout = buildInspectorReadout(focused, c, inFocus);
+        graphics.text(this.font, Component.literal(readout), panelX + 6, row2Y + 3, 0xFFE6EDF5, true);
+
+        int rightX = panelX + panelW - 6;
+        Component doneLabel = Component.translatable("gui.done");
+        int doneW = this.font.width(doneLabel) + 10;
+        rightX -= doneW;
+        chipButtons.add(new ChipButton(rightX, row2Y, doneW, chipH, doneLabel, false, true, this::onClose, null));
+
+        if (!undoStack.isEmpty()) {
+            Component undoLabel = Component.translatable("gui.dynamic_resource_bars.hud_editor.chip.undo");
+            int undoW = this.font.width(undoLabel) + 8;
+            rightX -= undoW + 3;
+            chipButtons.add(new ChipButton(rightX, row2Y, undoW, chipH, undoLabel, false, false, this::performUndo, null));
+        }
+
+        if (focused != null) {
+            Component optionsLabel = Component.translatable("gui.dynamic_resource_bars.hud_editor.chip.options");
+            int optW = this.font.width(optionsLabel) + 8;
+            rightX -= optW + 3;
+            int menuAnchorX = rightX;
+            int menuAnchorY = row2Y + chipH + 2;
+            chipButtons.add(new ChipButton(rightX, row2Y, optW, chipH, optionsLabel, false, false, () -> {
+                if (inFocus && activeSub != null) {
+                    openSubContextMenu(focused, activeSub, menuAnchorX, menuAnchorY);
+                } else {
+                    openBarContextMenu(focused, menuAnchorX, menuAnchorY);
+                }
+            }, null));
+
+            Component valuesLabel = Component.translatable("gui.dynamic_resource_bars.hud_editor.chip.values");
+            int valW = this.font.width(valuesLabel) + 8;
+            rightX -= valW + 3;
+            chipButtons.add(new ChipButton(rightX, row2Y, valW, chipH, valuesLabel, false, false, () -> {
+                closeActiveContextMenu();
+                if (inFocus && activeSub != null) {
+                    Minecraft.getInstance().setScreen(new SubElementConfigScreen(this, focused.element, activeSub));
+                } else {
+                    Minecraft.getInstance().setScreen(new ManualSizePositionScreen(this, focused.element));
+                }
+            }, null));
+
+            if (!inFocus) {
+                Component layersLabel = Component.translatable("gui.dynamic_resource_bars.hud_editor.chip.edit_layers");
+                int layW = this.font.width(layersLabel) + 8;
+                rightX -= layW + 3;
+                chipButtons.add(new ChipButton(rightX, row2Y, layW, chipH, layersLabel, false, true, () -> {
+                    closeActiveContextMenu();
+                    enterFocus();
+                }, null));
+            } else if (activeSub != null && focused.access.hasTextScale(activeSub)) {
+                Component plusLabel = Component.literal("A+");
+                int plusW = this.font.width(plusLabel) + 6;
+                rightX -= plusW + 2;
+                chipButtons.add(new ChipButton(rightX, row2Y, plusW, chipH, plusLabel, false, false,
+                        () -> adjustActiveTextScale(focused, SCALE_STEP),
+                        Component.translatable("gui.dynamic_resource_bars.hud_editor.tooltip.scale_up")));
+
+                Component minusLabel = Component.literal("A-");
+                int minusW = this.font.width(minusLabel) + 6;
+                rightX -= minusW + 2;
+                chipButtons.add(new ChipButton(rightX, row2Y, minusW, chipH, minusLabel, false, false,
+                        () -> adjustActiveTextScale(focused, -SCALE_STEP),
+                        Component.translatable("gui.dynamic_resource_bars.hud_editor.tooltip.scale_down")));
+            }
+        }
+
+        // Render all chips
+        ChipButton hoveredChip = null;
+        for (ChipButton chip : chipButtons) {
+            boolean hot = (activeContextMenu == null || !activeContextMenu.isVisible()) && chip.contains(mouseX, mouseY);
+            if (hot) hoveredChip = chip;
+            int bg = chip.selected ? CHIP_ACTIVE_BG_COLOR : (hot ? CHIP_HOVER_COLOR : CHIP_BG_COLOR);
+            int border = chip.selected ? CHIP_ACTIVE_BORDER_COLOR : (chip.accent ? 0xFF4F74A8 : CHIP_BORDER_COLOR);
+            graphics.fill(chip.x, chip.y, chip.x + chip.width, chip.y + chip.height, bg);
+            graphics.outline(chip.x, chip.y, chip.width, chip.height, border);
+            int textX = chip.x + (chip.width - this.font.width(chip.label)) / 2;
+            int textY = chip.y + (chip.height - this.font.lineHeight) / 2 + 1;
+            int textColor = chip.selected ? 0xFFFFFFFF : (chip.accent ? 0xFFD8E8FF : 0xFFD0D6E0);
+            graphics.text(this.font, chip.label, textX, textY, textColor, false);
+        }
+
+        // Row 3: Concise accurate shortcut hint
+        int row3Y = panelY + 39;
+        Component hint = inFocus
+                ? ((activeSub != null && focused.access.hasTextScale(activeSub))
+                    ? Component.translatable("gui.dynamic_resource_bars.hud_editor.hint.focus_text")
+                    : Component.translatable("gui.dynamic_resource_bars.hud_editor.hint.focus"))
+                : Component.translatable("gui.dynamic_resource_bars.hud_editor.hint.bar");
+        int hintW = this.font.width(hint);
+        int maxHintW = panelW - 12;
+        var pose = graphics.pose();
+        pose.pushMatrix();
+        if (hintW > maxHintW) {
+            float scale = maxHintW / (float) hintW;
+            pose.translate(this.width / 2f, row3Y + 2);
+            pose.scale(scale, scale);
+            graphics.text(this.font, hint, -hintW / 2, 0, 0xFFA8B4C4, false);
+        } else {
+            graphics.centeredText(this.font, hint, this.width / 2, row3Y, 0xFFA8B4C4);
+        }
+        pose.popMatrix();
+
+        if (hoveredChip != null && hoveredChip.tooltip != null) {
+            renderTooltip(graphics, hoveredChip.tooltip, mouseX, mouseY);
+        }
     }
 
-    /**
-     * Renders focus-mode sub-element outlines, resize handles, and the hover tooltip in one
-     * pass over {@link #FOCUS_SUB_ELEMENTS}. Caches each sub's rect locally so we never call
-     * {@code getSubElementRect} more than once per sub per frame (it allocates a fresh
-     * BarConfig snapshot under the hood).
-     */
+    private String buildInspectorReadout(BarHandle focused, ClientConfig c, boolean inFocus) {
+        if (focused == null) {
+            return Component.translatable("gui.dynamic_resource_bars.hud_editor.no_selection").getString();
+        }
+        if (!inFocus) {
+            return String.format("%s  [X: %d, Y: %d]",
+                    shortBarLabel(focused.element).getString(),
+                    focused.access.totalX(c),
+                    focused.access.totalY(c));
+        }
+        SubElementType sub = activeSub != null ? activeSub : SubElementType.BAR_MAIN;
+        int x = focused.access.subElementX(c, sub);
+        int y = focused.access.subElementY(c, sub);
+        int w = focused.access.subElementWidth(c, sub);
+        int h = focused.access.subElementHeight(c, sub);
+        if (focused.access.hasTextScale(sub)) {
+            float scale = focused.access.subElementTextScale(c, sub);
+            return String.format("%s > %s  [X:%d Y:%d  %dx%d  %sx]",
+                    shortBarLabel(focused.element).getString(),
+                    shortSubLabel(sub).getString(),
+                    x, y, w, h, FieldEditorUtils.formatScale(scale));
+        }
+        return String.format("%s > %s  [X: %d, Y: %d, %dx%d]",
+                shortBarLabel(focused.element).getString(),
+                shortSubLabel(sub).getString(),
+                x, y, w, h);
+    }
+
+    private static Component shortBarLabel(DraggableElement e) {
+        return switch (e) {
+            case HEALTH_BAR -> Component.translatable("gui.dynamic_resource_bars.hud_editor.bar_short.health");
+            case MANA_BAR -> Component.translatable("gui.dynamic_resource_bars.hud_editor.bar_short.mana");
+            case STAMINA_BAR -> Component.translatable("gui.dynamic_resource_bars.hud_editor.bar_short.stamina");
+            case ARMOR_BAR -> Component.translatable("gui.dynamic_resource_bars.hud_editor.bar_short.armor");
+            case AIR_BAR -> Component.translatable("gui.dynamic_resource_bars.hud_editor.bar_short.air");
+        };
+    }
+
+    private static Component shortSubLabel(SubElementType sub) {
+        return switch (sub) {
+            case BACKGROUND -> Component.translatable("gui.dynamic_resource_bars.hud_editor.sub_short.background");
+            case BAR_MAIN -> Component.translatable("gui.dynamic_resource_bars.hud_editor.sub_short.bar_main");
+            case FOREGROUND -> Component.translatable("gui.dynamic_resource_bars.hud_editor.sub_short.foreground");
+            case TEXT -> Component.translatable("gui.dynamic_resource_bars.hud_editor.sub_short.text");
+            case ICON -> Component.translatable("gui.dynamic_resource_bars.hud_editor.sub_short.icon");
+            case ABSORPTION_TEXT -> Component.translatable("gui.dynamic_resource_bars.hud_editor.sub_short.absorption_text");
+        };
+    }
+
+    private static boolean barExposesSub(BarHandle bar, SubElementType sub, Player player) {
+        if (bar == null || player == null) return false;
+        if (sub == SubElementType.ICON && !bar.access.hasIcon()) return false;
+        if (sub == SubElementType.ABSORPTION_TEXT && !bar.access.hasAbsorptionText()) return false;
+        ScreenRect r = bar.renderer.getSubElementRect(sub, player);
+        return r.width() > 0 && r.height() > 0;
+    }
+
     private void renderFocusModeOverlay(GuiGraphicsExtractor graphics, int mouseX, int mouseY) {
         if (!EditModeManager.isFocusMode()) return;
         BarHandle bar = focusedBar();
@@ -193,97 +377,123 @@ public class HudEditorScreen extends Screen {
         Player player = player();
         if (player == null) return;
 
-        ScreenRect[] rects = new ScreenRect[FOCUS_SUB_ELEMENTS.length];
-        SubElementType handleSub = null;
-        boolean handleIsWidth = false;
         SubElementType hoveredSub = null;
-
-        for (int i = 0; i < FOCUS_SUB_ELEMENTS.length; i++) {
-            SubElementType sub = FOCUS_SUB_ELEMENTS[i];
+        for (SubElementType sub : FOCUS_SUB_ELEMENTS) {
+            if (!barExposesSub(bar, sub, player)) continue;
             ScreenRect r = bar.renderer.getSubElementRect(sub, player);
-            rects[i] = r;
-            if (r.width() <= 0 || r.height() <= 0) continue;
-
-            // Outline (every visible sub).
-            int outlineColor = sub == activeSub ? FOCUS_OUTLINE_COLOR : 0xA0FFFFFF;
-            graphics.outline(r.x() - 1, r.y() - 1, r.width() + 2, r.height() + 2, outlineColor);
-
-            // Track the topmost hovered sub for tooltip fallback. Forward iteration order
-            // matches paint order; later subs (TEXT/ABSORPTION_TEXT) override earlier hits,
-            // mirroring the reverse-priority of the old subAt().
+            if (sub != activeSub) {
+                graphics.outline(r.x() - 1, r.y() - 1, r.width() + 2, r.height() + 2, FOCUS_INACTIVE_OUTLINE_COLOR);
+            }
             if (isInside(mouseX, mouseY, r)) hoveredSub = sub;
+        }
 
-            if (!sub.isResizable()) continue;
-
-            // Hover tint on resizable subs only (matches prior behavior).
-            if (sub != activeSub && isInside(mouseX, mouseY, r)) {
+        if (activeSub != null && barExposesSub(bar, activeSub, player)) {
+            ScreenRect r = bar.renderer.getSubElementRect(activeSub, player);
+            if (isInside(mouseX, mouseY, r) && dragKind == DragKind.NONE) {
                 graphics.fill(r.x(), r.y(), r.x() + r.width(), r.y() + r.height(), FOCUS_HOVER_COLOR);
             }
+            graphics.outline(r.x() - 1, r.y() - 1, r.width() + 2, r.height() + 2, FOCUS_OUTLINE_COLOR);
 
-            int wHandleX = r.x() + r.width() - 1;
-            int wHandleY = r.y() + r.height() / 2 - HANDLE_SIZE / 2;
-            boolean wHot = hitWidthHandle(mouseX, mouseY, r);
-            graphics.fill(wHandleX, wHandleY, wHandleX + HANDLE_SIZE, wHandleY + HANDLE_SIZE,
-                    wHot ? RESIZE_HANDLE_HOT_COLOR : RESIZE_HANDLE_COLOR);
-            int hHandleX = r.x() + r.width() / 2 - HANDLE_SIZE / 2;
-            int hHandleY = r.y() + r.height() - 1;
-            boolean hHot = hitHeightHandle(mouseX, mouseY, r);
-            graphics.fill(hHandleX, hHandleY, hHandleX + HANDLE_SIZE, hHandleY + HANDLE_SIZE,
-                    hHot ? RESIZE_HANDLE_HOT_COLOR : RESIZE_HANDLE_COLOR);
-            if (handleSub == null) {
-                if (wHot) { handleSub = sub; handleIsWidth = true; }
-                else if (hHot) { handleSub = sub; handleIsWidth = false; }
+            if (activeSub.isResizable()) {
+                boolean hasScale = bar.access.hasTextScale(activeSub);
+                boolean wHot = hitWidthHandle(mouseX, mouseY, r);
+                boolean hHot = hitHeightHandle(mouseX, mouseY, r);
+                boolean cHot = hitCornerHandle(mouseX, mouseY, r);
+
+                drawHandle(graphics, widthHandleCenterX(r), widthHandleCenterY(r),
+                        wHot ? RESIZE_HANDLE_HOT_COLOR : RESIZE_HANDLE_COLOR);
+                drawHandle(graphics, heightHandleCenterX(r), heightHandleCenterY(r),
+                        hHot ? RESIZE_HANDLE_HOT_COLOR : RESIZE_HANDLE_COLOR);
+                drawHandle(graphics, cornerHandleCenterX(r), cornerHandleCenterY(r),
+                        cHot ? RESIZE_HANDLE_HOT_COLOR : (hasScale ? SCALE_HANDLE_COLOR : RESIZE_HANDLE_COLOR));
+
+                if (activeContextMenu == null || !activeContextMenu.isVisible()) {
+                    if (cHot) {
+                        String key = hasScale
+                                ? "gui.dynamic_resource_bars.handle.text_scale"
+                                : "gui.dynamic_resource_bars.handle.corner_size";
+                        renderTooltip(graphics, Component.translatable(key,
+                                Component.translatable(activeSub.getTranslationKey())), mouseX, mouseY);
+                        return;
+                    } else if (wHot) {
+                        renderTooltip(graphics, Component.translatable("gui.dynamic_resource_bars.handle.horizontal_size",
+                                Component.translatable(activeSub.getTranslationKey())), mouseX, mouseY);
+                        return;
+                    } else if (hHot) {
+                        renderTooltip(graphics, Component.translatable("gui.dynamic_resource_bars.handle.vertical_size",
+                                Component.translatable(activeSub.getTranslationKey())), mouseX, mouseY);
+                        return;
+                    }
+                }
             }
         }
 
-        // Handle tooltip wins over plain sub tooltip — handles sit on the sub rect's edge,
-        // and the user wants to know which axis they're about to drag.
-        if (handleSub != null) {
-            String key = handleIsWidth
-                    ? "gui.dynamic_resource_bars.handle.horizontal_size"
-                    : "gui.dynamic_resource_bars.handle.vertical_size";
-            renderTooltip(graphics, Component.translatable(key,
-                    Component.translatable(handleSub.getTranslationKey())), mouseX, mouseY);
-        } else if (hoveredSub != null) {
-            renderTooltip(graphics, Component.translatable(hoveredSub.getTranslationKey()), mouseX, mouseY);
+        if ((activeContextMenu == null || !activeContextMenu.isVisible()) && hoveredSub != null) {
+            SubElementType target = (activeSub != null && isInside(mouseX, mouseY, bar.renderer.getSubElementRect(activeSub, player)))
+                    ? activeSub
+                    : hoveredSub;
+            renderTooltip(graphics, Component.translatable(target.getTranslationKey()), mouseX, mouseY);
         }
     }
 
-    /** Inventory-style hover tooltip rendered near the cursor. */
+    private static void drawHandle(GuiGraphicsExtractor graphics, int cx, int cy, int fillColor) {
+        int half = HANDLE_DRAW_SIZE / 2;
+        graphics.fill(cx - half - 1, cy - half - 1, cx + half + 1, cy + half + 1, 0xFF000000);
+        graphics.fill(cx - half, cy - half, cx + half, cy + half, fillColor);
+    }
+
     private void renderTooltip(GuiGraphicsExtractor graphics, Component label, int mouseX, int mouseY) {
         int textWidth = this.font.width(label);
         int padding = 3;
         int boxWidth = textWidth + padding * 2;
         int boxHeight = this.font.lineHeight + padding * 2;
-        int x = mouseX + 10;
+        int x = mouseX + 8;
         int y = mouseY - boxHeight - 4;
-        if (x + boxWidth > this.width) x = this.width - boxWidth - 2;
-        if (y < 2) y = mouseY + 14;
-        graphics.fill(x, y, x + boxWidth, y + boxHeight, 0xE0000000);
-        graphics.fill(x, y, x + boxWidth, y + 1, 0xFF404040);
-        graphics.fill(x, y + boxHeight - 1, x + boxWidth, y + boxHeight, 0xFF404040);
-        graphics.fill(x, y, x + 1, y + boxHeight, 0xFF404040);
-        graphics.fill(x + boxWidth - 1, y, x + boxWidth, y + boxHeight, 0xFF404040);
+        if (x + boxWidth > this.width - 2) x = this.width - boxWidth - 2;
+        if (y < 60) y = mouseY + 12;
+        graphics.fill(x, y, x + boxWidth, y + boxHeight, 0xF0101216);
+        graphics.outline(x, y, boxWidth, boxHeight, 0xFF586578);
         graphics.text(this.font, label, x + padding, y + padding, 0xFFFFFFFF, false);
     }
 
-    // ===== Mouse =====
+    // ===== Mouse & Scroll =====
+
+    @Override
+    public boolean mouseScrolled(double mouseX, double mouseY, double scrollX, double scrollY) {
+        if (scrollY != 0 && EditModeManager.isFocusMode()) {
+            BarHandle bar = focusedBar();
+            if (bar != null && activeSub != null && bar.access.hasTextScale(activeSub)) {
+                float delta = scrollY > 0 ? SCALE_STEP : -SCALE_STEP;
+                adjustActiveTextScale(bar, delta);
+                return true;
+            }
+        }
+        return super.mouseScrolled(mouseX, mouseY, scrollX, scrollY);
+    }
 
     @Override
     public boolean mouseClicked(@NotNull MouseButtonEvent event, boolean doubleClick) {
-        // Capture the menu reference locally — its onClose may null `activeContextMenu`
-        // synchronously inside handleMouseClicked, which would NPE the post-call check.
         ContextMenu menu = activeContextMenu;
         if (menu != null && menu.isVisible()) {
             boolean consumed = menu.handleMouseClicked(event);
             if (!menu.isVisible()) activeContextMenu = null;
             if (consumed) return true;
         }
-        if (super.mouseClicked(event, doubleClick)) return true;
 
         int mouseX = (int) event.x();
         int mouseY = (int) event.y();
         int button = event.button();
+
+        if (button == 0) {
+            for (ChipButton chip : chipButtons) {
+                if (chip.contains(mouseX, mouseY)) {
+                    chip.action.run();
+                    return true;
+                }
+            }
+        }
+
+        if (super.mouseClicked(event, doubleClick)) return true;
 
         if (EditModeManager.isFocusMode()) {
             BarHandle bar = focusedBar();
@@ -294,39 +504,47 @@ public class HudEditorScreen extends Screen {
             if (button == 1) {
                 SubElementType sub = subAt(bar, mouseX, mouseY);
                 if (sub != null) {
+                    setActiveSub(sub);
                     openSubContextMenu(bar, sub, mouseX, mouseY);
                 } else {
-                    // Right-click on empty space (no sub-element under cursor): show the
-                    // general bar menu, mode-aware so it offers Exit Sub-Element instead of Edit.
                     openBarContextMenu(bar, mouseX, mouseY);
                 }
                 return true;
             }
 
-            for (SubElementType sub : FOCUS_SUB_ELEMENTS) {
-                if (!sub.isResizable()) continue;
-                ScreenRect r = bar.renderer.getSubElementRect(sub, player);
-                if (hitWidthHandle(mouseX, mouseY, r)) {
-                    activeSub = sub;
-                    startResize(bar, sub, mouseX, mouseY, DragKind.RESIZE_W);
+            // Priority 1: handles on the currently active sub-element
+            if (activeSub != null && activeSub.isResizable() && barExposesSub(bar, activeSub, player)) {
+                ScreenRect activeRect = bar.renderer.getSubElementRect(activeSub, player);
+                if (hitCornerHandle(mouseX, mouseY, activeRect)) {
+                    if (bar.access.hasTextScale(activeSub)) {
+                        startTextScaleDrag(bar, activeSub, mouseX, mouseY);
+                    } else {
+                        startResize(bar, activeSub, mouseX, mouseY, DragKind.RESIZE_CORNER);
+                    }
                     return true;
                 }
-                if (hitHeightHandle(mouseX, mouseY, r)) {
-                    activeSub = sub;
-                    startResize(bar, sub, mouseX, mouseY, DragKind.RESIZE_H);
+                if (hitWidthHandle(mouseX, mouseY, activeRect)) {
+                    startResize(bar, activeSub, mouseX, mouseY, DragKind.RESIZE_W);
+                    return true;
+                }
+                if (hitHeightHandle(mouseX, mouseY, activeRect)) {
+                    startResize(bar, activeSub, mouseX, mouseY, DragKind.RESIZE_H);
+                    return true;
+                }
+                if (isInside(mouseX, mouseY, activeRect)) {
+                    startSubMove(bar, activeSub, mouseX, mouseY);
                     return true;
                 }
             }
 
+            // Priority 2: clicking another sub-element selects and moves it
             SubElementType clicked = subAt(bar, mouseX, mouseY);
             if (clicked != null) {
-                activeSub = clicked;
+                setActiveSub(clicked);
                 startSubMove(bar, clicked, mouseX, mouseY);
                 return true;
             }
 
-            // Click hit no sub-element and no resize handle → exit focus mode. The complex
-            // rect outline is hidden in focus mode so it carries no UX meaning here either.
             if (button == 0) {
                 exitFocus();
                 return true;
@@ -345,9 +563,6 @@ public class HudEditorScreen extends Screen {
                 EditModeManager.clearFocusedElement();
                 return true;
             }
-            // Explicit double-click on a bar enters focus mode (uses framework's
-            // double-click detection — short window so accidental click-then-click
-            // does NOT trigger focus).
             if (doubleClick && EditModeManager.getFocusedElement() == hit.element) {
                 enterFocus();
                 return true;
@@ -385,6 +600,17 @@ public class HudEditorScreen extends Screen {
                 if (activeSub == null) break;
                 bar.access.setSubElementHeight(c, activeSub, Math.max(1, dragStartValueB + dyInt));
             }
+            case RESIZE_CORNER -> {
+                if (activeSub == null) break;
+                bar.access.setSubElementWidth(c, activeSub, Math.max(1, dragStartValueA + dxInt));
+                bar.access.setSubElementHeight(c, activeSub, Math.max(1, dragStartValueB + dyInt));
+            }
+            case RESIZE_TEXT_SCALE -> {
+                if (activeSub == null) break;
+                int deltaPx = Math.abs(dxInt) >= Math.abs(dyInt) ? dxInt : dyInt;
+                float newScale = dragStartScale + (deltaPx * 0.02f);
+                bar.access.setSubElementTextScale(c, activeSub, newScale);
+            }
             default -> {}
         }
         return true;
@@ -393,17 +619,63 @@ public class HudEditorScreen extends Screen {
     @Override
     public boolean mouseReleased(@NotNull MouseButtonEvent event) {
         if (dragKind != DragKind.NONE && event.button() == 0) {
-            if (dragKind == DragKind.MOVE_BAR) {
-                BarHandle bar = focusedBar();
-                if (bar != null) {
-                    undoElement = bar.element;
-                    undoTotalX = dragStartValueA;
-                    undoTotalY = dragStartValueB;
-                    undoAvailable = true;
+            BarHandle bar = focusedBar();
+            ClientConfig c = ModConfigManager.getClient();
+            if (bar != null) {
+                DraggableElement el = bar.element;
+                SubElementType sub = activeSub;
+                int startA = dragStartValueA;
+                int startB = dragStartValueB;
+                float startS = dragStartScale;
+                switch (dragKind) {
+                    case MOVE_BAR -> {
+                        if (bar.access.totalX(c) != startA || bar.access.totalY(c) != startB) {
+                            pushUndo(() -> {
+                                BarFieldAccess acc = BarFieldAccess.forElement(el);
+                                ClientConfig cfg = ModConfigManager.getClient();
+                                acc.setTotalX(cfg, startA);
+                                acc.setTotalY(cfg, startB);
+                                cfg.save();
+                            });
+                        }
+                    }
+                    case MOVE_SUB -> {
+                        if (sub != null && (bar.access.subElementX(c, sub) != startA || bar.access.subElementY(c, sub) != startB)) {
+                            pushUndo(() -> {
+                                BarFieldAccess acc = BarFieldAccess.forElement(el);
+                                ClientConfig cfg = ModConfigManager.getClient();
+                                acc.setSubElementX(cfg, sub, startA);
+                                acc.setSubElementY(cfg, sub, startB);
+                                cfg.save();
+                            });
+                        }
+                    }
+                    case RESIZE_W, RESIZE_H, RESIZE_CORNER -> {
+                        if (sub != null && (bar.access.subElementWidth(c, sub) != startA || bar.access.subElementHeight(c, sub) != startB)) {
+                            pushUndo(() -> {
+                                BarFieldAccess acc = BarFieldAccess.forElement(el);
+                                ClientConfig cfg = ModConfigManager.getClient();
+                                acc.setSubElementWidth(cfg, sub, startA);
+                                acc.setSubElementHeight(cfg, sub, startB);
+                                cfg.save();
+                            });
+                        }
+                    }
+                    case RESIZE_TEXT_SCALE -> {
+                        if (sub != null && Math.abs(bar.access.subElementTextScale(c, sub) - startS) > 0.001f) {
+                            pushUndo(() -> {
+                                BarFieldAccess acc = BarFieldAccess.forElement(el);
+                                ClientConfig cfg = ModConfigManager.getClient();
+                                acc.setSubElementTextScale(cfg, sub, startS);
+                                cfg.save();
+                            });
+                        }
+                    }
+                    default -> {}
                 }
             }
             dragKind = DragKind.NONE;
-            ModConfigManager.getClient().save();
+            c.save();
             return true;
         }
         return super.mouseReleased(event);
@@ -423,6 +695,7 @@ public class HudEditorScreen extends Screen {
 
         int key = event.key();
         boolean shift = (event.modifiers() & GLFW.GLFW_MOD_SHIFT) != 0;
+        boolean ctrl = (event.modifiers() & GLFW.GLFW_MOD_CONTROL) != 0;
         BarHandle bar = focusedBar();
 
         if (key == GLFW.GLFW_KEY_ESCAPE) {
@@ -430,56 +703,152 @@ public class HudEditorScreen extends Screen {
             onClose();
             return true;
         }
+
+        if (key == GLFW.GLFW_KEY_Z) {
+            performUndo();
+            return true;
+        }
+
         if (key == GLFW.GLFW_KEY_TAB) {
-            // Tab cycles to the next element AND opens its context menu — saves a right-click
-            // for the most common interaction (cycle-and-tweak). Re-tabbing closes the prior
-            // menu (via openMenuAtElement → activeContextMenu replacement) and opens the next.
+            closeActiveContextMenu();
             if (EditModeManager.isFocusMode()) {
                 cycleSub(shift ? -1 : 1);
-                openMenuAtFocusedSub();
             } else {
                 cycleBarFocus(shift ? -1 : 1);
-                openMenuAtFocusedBar();
             }
             return true;
+        }
+
+        if (key == GLFW.GLFW_KEY_ENTER || key == GLFW.GLFW_KEY_KP_ENTER) {
+            if (bar != null) {
+                if (!EditModeManager.isFocusMode()) {
+                    enterFocus();
+                } else {
+                    openMenuAtFocusedSub();
+                }
+                return true;
+            }
+        }
+
+        if (key == GLFW.GLFW_KEY_M || key == GLFW.GLFW_KEY_MENU) {
+            if (bar != null) {
+                if (EditModeManager.isFocusMode() && activeSub != null) {
+                    openMenuAtFocusedSub();
+                } else {
+                    openMenuAtFocusedBar();
+                }
+                return true;
+            }
         }
 
         if (bar != null) {
             ClientConfig c = ModConfigManager.getClient();
             if (EditModeManager.isFocusMode() && activeSub != null) {
-                // Shift+arrow resizes the active sub-element (only meaningful when it's
-                // resizable — non-resizable subs route to no-op setters).
+                if ((key == GLFW.GLFW_KEY_EQUAL || key == GLFW.GLFW_KEY_KP_ADD) && bar.access.hasTextScale(activeSub)) {
+                    adjustActiveTextScale(bar, SCALE_STEP);
+                    return true;
+                }
+                if ((key == GLFW.GLFW_KEY_MINUS || key == GLFW.GLFW_KEY_KP_SUBTRACT) && bar.access.hasTextScale(activeSub)) {
+                    adjustActiveTextScale(bar, -SCALE_STEP);
+                    return true;
+                }
                 if (shift && activeSub.isResizable()) {
-                    switch (key) {
-                        case GLFW.GLFW_KEY_LEFT  -> { bar.access.setSubElementWidth(c, activeSub, Math.max(1, bar.access.subElementWidth(c, activeSub) - 1)); c.save(); return true; }
-                        case GLFW.GLFW_KEY_RIGHT -> { bar.access.setSubElementWidth(c, activeSub, bar.access.subElementWidth(c, activeSub) + 1); c.save(); return true; }
-                        case GLFW.GLFW_KEY_UP    -> { bar.access.setSubElementHeight(c, activeSub, Math.max(1, bar.access.subElementHeight(c, activeSub) - 1)); c.save(); return true; }
-                        case GLFW.GLFW_KEY_DOWN  -> { bar.access.setSubElementHeight(c, activeSub, bar.access.subElementHeight(c, activeSub) + 1); c.save(); return true; }
+                    DraggableElement el = bar.element;
+                    SubElementType sub = activeSub;
+                    if (bar.access.hasTextScale(activeSub) && (key == GLFW.GLFW_KEY_UP || key == GLFW.GLFW_KEY_DOWN)) {
+                        adjustActiveTextScale(bar, key == GLFW.GLFW_KEY_UP ? SCALE_STEP : -SCALE_STEP);
+                        return true;
                     }
-                }
-                switch (key) {
-                    case GLFW.GLFW_KEY_LEFT  -> { bar.access.setSubElementX(c, activeSub, bar.access.subElementX(c, activeSub) - NUDGE_PIXELS); c.save(); return true; }
-                    case GLFW.GLFW_KEY_RIGHT -> { bar.access.setSubElementX(c, activeSub, bar.access.subElementX(c, activeSub) + NUDGE_PIXELS); c.save(); return true; }
-                    case GLFW.GLFW_KEY_UP    -> { bar.access.setSubElementY(c, activeSub, bar.access.subElementY(c, activeSub) - NUDGE_PIXELS); c.save(); return true; }
-                    case GLFW.GLFW_KEY_DOWN  -> { bar.access.setSubElementY(c, activeSub, bar.access.subElementY(c, activeSub) + NUDGE_PIXELS); c.save(); return true; }
-                }
-            } else {
-                int barStep = shift ? NUDGE_PIXELS_FAST : NUDGE_PIXELS;
-                switch (key) {
-                    case GLFW.GLFW_KEY_LEFT  -> { bar.access.setTotalX(c, bar.access.totalX(c) - barStep); c.save(); return true; }
-                    case GLFW.GLFW_KEY_RIGHT -> { bar.access.setTotalX(c, bar.access.totalX(c) + barStep); c.save(); return true; }
-                    case GLFW.GLFW_KEY_UP    -> { bar.access.setTotalY(c, bar.access.totalY(c) - barStep); c.save(); return true; }
-                    case GLFW.GLFW_KEY_DOWN  -> { bar.access.setTotalY(c, bar.access.totalY(c) + barStep); c.save(); return true; }
-                    case GLFW.GLFW_KEY_R -> { openResetConfirm(bar); return true; }
-                    case GLFW.GLFW_KEY_Z -> {
-                        if (undoAvailable && undoElement == bar.element) {
-                            bar.access.setTotalX(c, undoTotalX);
-                            bar.access.setTotalY(c, undoTotalY);
+                    int oldW = bar.access.subElementWidth(c, sub);
+                    int oldH = bar.access.subElementHeight(c, sub);
+                    switch (key) {
+                        case GLFW.GLFW_KEY_LEFT -> {
+                            pushUndo(() -> { bar.access.setSubElementWidth(ModConfigManager.getClient(), sub, oldW); ModConfigManager.getClient().save(); });
+                            bar.access.setSubElementWidth(c, sub, Math.max(1, oldW - 1));
                             c.save();
-                            undoAvailable = false;
+                            return true;
+                        }
+                        case GLFW.GLFW_KEY_RIGHT -> {
+                            pushUndo(() -> { bar.access.setSubElementWidth(ModConfigManager.getClient(), sub, oldW); ModConfigManager.getClient().save(); });
+                            bar.access.setSubElementWidth(c, sub, oldW + 1);
+                            c.save();
+                            return true;
+                        }
+                        case GLFW.GLFW_KEY_UP -> {
+                            pushUndo(() -> { bar.access.setSubElementHeight(ModConfigManager.getClient(), sub, oldH); ModConfigManager.getClient().save(); });
+                            bar.access.setSubElementHeight(c, sub, Math.max(1, oldH - 1));
+                            c.save();
+                            return true;
+                        }
+                        case GLFW.GLFW_KEY_DOWN -> {
+                            pushUndo(() -> { bar.access.setSubElementHeight(ModConfigManager.getClient(), sub, oldH); ModConfigManager.getClient().save(); });
+                            bar.access.setSubElementHeight(c, sub, oldH + 1);
+                            c.save();
                             return true;
                         }
                     }
+                }
+                int step = ctrl ? NUDGE_PIXELS_FAST : NUDGE_PIXELS;
+                SubElementType sub = activeSub;
+                int oldX = bar.access.subElementX(c, sub);
+                int oldY = bar.access.subElementY(c, sub);
+                switch (key) {
+                    case GLFW.GLFW_KEY_LEFT -> {
+                        pushUndo(() -> { bar.access.setSubElementX(ModConfigManager.getClient(), sub, oldX); ModConfigManager.getClient().save(); });
+                        bar.access.setSubElementX(c, sub, oldX - step);
+                        c.save();
+                        return true;
+                    }
+                    case GLFW.GLFW_KEY_RIGHT -> {
+                        pushUndo(() -> { bar.access.setSubElementX(ModConfigManager.getClient(), sub, oldX); ModConfigManager.getClient().save(); });
+                        bar.access.setSubElementX(c, sub, oldX + step);
+                        c.save();
+                        return true;
+                    }
+                    case GLFW.GLFW_KEY_UP -> {
+                        pushUndo(() -> { bar.access.setSubElementY(ModConfigManager.getClient(), sub, oldY); ModConfigManager.getClient().save(); });
+                        bar.access.setSubElementY(c, sub, oldY - step);
+                        c.save();
+                        return true;
+                    }
+                    case GLFW.GLFW_KEY_DOWN -> {
+                        pushUndo(() -> { bar.access.setSubElementY(ModConfigManager.getClient(), sub, oldY); ModConfigManager.getClient().save(); });
+                        bar.access.setSubElementY(c, sub, oldY + step);
+                        c.save();
+                        return true;
+                    }
+                    case GLFW.GLFW_KEY_R -> { resetSub(bar, sub); return true; }
+                }
+            } else {
+                int barStep = shift ? NUDGE_PIXELS_FAST : NUDGE_PIXELS;
+                int oldX = bar.access.totalX(c);
+                int oldY = bar.access.totalY(c);
+                switch (key) {
+                    case GLFW.GLFW_KEY_LEFT -> {
+                        pushUndo(() -> { bar.access.setTotalX(ModConfigManager.getClient(), oldX); ModConfigManager.getClient().save(); });
+                        bar.access.setTotalX(c, oldX - barStep);
+                        c.save();
+                        return true;
+                    }
+                    case GLFW.GLFW_KEY_RIGHT -> {
+                        pushUndo(() -> { bar.access.setTotalX(ModConfigManager.getClient(), oldX); ModConfigManager.getClient().save(); });
+                        bar.access.setTotalX(c, oldX + barStep);
+                        c.save();
+                        return true;
+                    }
+                    case GLFW.GLFW_KEY_UP -> {
+                        pushUndo(() -> { bar.access.setTotalY(ModConfigManager.getClient(), oldY); ModConfigManager.getClient().save(); });
+                        bar.access.setTotalY(c, oldY - barStep);
+                        c.save();
+                        return true;
+                    }
+                    case GLFW.GLFW_KEY_DOWN -> {
+                        pushUndo(() -> { bar.access.setTotalY(ModConfigManager.getClient(), oldY); ModConfigManager.getClient().save(); });
+                        bar.access.setTotalY(c, oldY + barStep);
+                        c.save();
+                        return true;
+                    }
+                    case GLFW.GLFW_KEY_R -> { openResetConfirm(bar); return true; }
                 }
             }
         }
@@ -488,15 +857,49 @@ public class HudEditorScreen extends Screen {
 
     // ===== Helpers =====
 
+    private void setActiveSub(SubElementType sub) {
+        activeSub = sub;
+        EditModeManager.setFocusedSubElement(sub);
+    }
+
     private void enterFocus() {
-        activeSub = SubElementType.BAR_MAIN;
+        setActiveSub(SubElementType.BAR_MAIN);
         EditModeManager.setFocusMode(true);
     }
 
     private void exitFocus() {
-        activeSub = null;
+        setActiveSub(null);
         dragKind = DragKind.NONE;
         EditModeManager.setFocusMode(false);
+    }
+
+    private void adjustActiveTextScale(BarHandle bar, float delta) {
+        if (bar == null || activeSub == null || !bar.access.hasTextScale(activeSub)) return;
+        ClientConfig c = ModConfigManager.getClient();
+        SubElementType sub = activeSub;
+        float prev = bar.access.subElementTextScale(c, sub);
+        float next = Math.max(0.1f, Math.min(5.0f, Math.round((prev + delta) * 20f) / 20f));
+        if (Math.abs(next - prev) > 0.001f) {
+            pushUndo(() -> {
+                bar.access.setSubElementTextScale(ModConfigManager.getClient(), sub, prev);
+                ModConfigManager.getClient().save();
+            });
+            bar.access.setSubElementTextScale(c, sub, next);
+            c.save();
+        }
+    }
+
+    private void pushUndo(Runnable action) {
+        if (undoStack.size() >= MAX_UNDO_STEPS) {
+            undoStack.removeLast();
+        }
+        undoStack.push(action);
+    }
+
+    private void performUndo() {
+        if (!undoStack.isEmpty()) {
+            undoStack.pop().run();
+        }
     }
 
     private void cycleSub(int direction) {
@@ -504,13 +907,11 @@ public class HudEditorScreen extends Screen {
         Player player = player();
         if (bar == null || player == null) return;
         int idx = activeSub == null ? 0 : indexOfSub(activeSub);
-        // Step through the cycle until we land on a sub the focused bar actually exposes.
         for (int attempt = 0; attempt < FOCUS_SUB_ELEMENTS.length; attempt++) {
             idx = (idx + direction + FOCUS_SUB_ELEMENTS.length) % FOCUS_SUB_ELEMENTS.length;
             SubElementType candidate = FOCUS_SUB_ELEMENTS[idx];
-            ScreenRect r = bar.renderer.getSubElementRect(candidate, player);
-            if (r.width() > 0 && r.height() > 0) {
-                activeSub = candidate;
+            if (barExposesSub(bar, candidate, player)) {
+                setActiveSub(candidate);
                 return;
             }
         }
@@ -545,12 +946,6 @@ public class HudEditorScreen extends Screen {
         return Minecraft.getInstance().player;
     }
 
-    /**
-     * Hit-tests both the complex rect AND every sub-element rect — the user can grab a bar by
-     * any of its visible parts (background, fill, foreground, text, icon), not just the
-     * potentially-disjoint complex outline. First bar that contains the cursor in any of
-     * those regions wins.
-     */
     private BarHandle hitTest(double mouseX, double mouseY) {
         Player p = player();
         if (p == null) return null;
@@ -559,6 +954,7 @@ public class HudEditorScreen extends Screen {
         for (BarHandle bar : bars) {
             if (isInside(mx, my, bar.renderer.getScreenRect(p))) return bar;
             for (SubElementType sub : SubElementType.values()) {
+                if (!barExposesSub(bar, sub, p)) continue;
                 ScreenRect r = bar.renderer.getSubElementRect(sub, p);
                 if (isInside(mx, my, r)) return bar;
             }
@@ -569,9 +965,13 @@ public class HudEditorScreen extends Screen {
     private SubElementType subAt(BarHandle bar, int mouseX, int mouseY) {
         Player p = player();
         if (p == null) return null;
-        // Iterate in reverse so visually-on-top sub-elements (text, foreground) win the hit-test.
+        if (activeSub != null && barExposesSub(bar, activeSub, p)) {
+            ScreenRect activeRect = bar.renderer.getSubElementRect(activeSub, p);
+            if (isInside(mouseX, mouseY, activeRect)) return activeSub;
+        }
         for (int i = FOCUS_SUB_ELEMENTS.length - 1; i >= 0; i--) {
             SubElementType sub = FOCUS_SUB_ELEMENTS[i];
+            if (!barExposesSub(bar, sub, p)) continue;
             ScreenRect r = bar.renderer.getSubElementRect(sub, p);
             if (isInside(mouseX, mouseY, r)) return sub;
         }
@@ -584,20 +984,29 @@ public class HudEditorScreen extends Screen {
                 && mouseY >= rect.y() && mouseY < rect.y() + rect.height();
     }
 
+    private static int widthHandleCenterX(ScreenRect r) { return r.x() + r.width(); }
+    private static int widthHandleCenterY(ScreenRect r) { return r.y() + r.height() / 2; }
+    private static int heightHandleCenterX(ScreenRect r) { return r.x() + r.width() / 2; }
+    private static int heightHandleCenterY(ScreenRect r) { return r.y() + r.height(); }
+    private static int cornerHandleCenterX(ScreenRect r) { return r.x() + r.width(); }
+    private static int cornerHandleCenterY(ScreenRect r) { return r.y() + r.height(); }
+
     private boolean hitWidthHandle(int mouseX, int mouseY, ScreenRect r) {
         if (r == null || r.width() <= 0) return false;
-        int hX = r.x() + r.width() - 1;
-        int hY = r.y() + r.height() / 2 - HANDLE_SIZE / 2;
-        return mouseX >= hX && mouseX < hX + HANDLE_SIZE
-                && mouseY >= hY && mouseY < hY + HANDLE_SIZE;
+        return Math.abs(mouseX - widthHandleCenterX(r)) <= HANDLE_HIT_RADIUS
+                && Math.abs(mouseY - widthHandleCenterY(r)) <= HANDLE_HIT_RADIUS;
     }
 
     private boolean hitHeightHandle(int mouseX, int mouseY, ScreenRect r) {
         if (r == null || r.height() <= 0) return false;
-        int hX = r.x() + r.width() / 2 - HANDLE_SIZE / 2;
-        int hY = r.y() + r.height() - 1;
-        return mouseX >= hX && mouseX < hX + HANDLE_SIZE
-                && mouseY >= hY && mouseY < hY + HANDLE_SIZE;
+        return Math.abs(mouseX - heightHandleCenterX(r)) <= HANDLE_HIT_RADIUS
+                && Math.abs(mouseY - heightHandleCenterY(r)) <= HANDLE_HIT_RADIUS;
+    }
+
+    private boolean hitCornerHandle(int mouseX, int mouseY, ScreenRect r) {
+        if (r == null || r.width() <= 0 || r.height() <= 0) return false;
+        return Math.abs(mouseX - cornerHandleCenterX(r)) <= HANDLE_HIT_RADIUS
+                && Math.abs(mouseY - cornerHandleCenterY(r)) <= HANDLE_HIT_RADIUS;
     }
 
     private void startBarMove(BarHandle bar, int mouseX, int mouseY) {
@@ -625,6 +1034,14 @@ public class HudEditorScreen extends Screen {
         dragStartMouseY = mouseY;
         dragStartValueA = bar.access.subElementWidth(c, sub);
         dragStartValueB = bar.access.subElementHeight(c, sub);
+    }
+
+    private void startTextScaleDrag(BarHandle bar, SubElementType sub, int mouseX, int mouseY) {
+        ClientConfig c = ModConfigManager.getClient();
+        dragKind = DragKind.RESIZE_TEXT_SCALE;
+        dragStartMouseX = mouseX;
+        dragStartMouseY = mouseY;
+        dragStartScale = bar.access.subElementTextScale(c, sub);
     }
 
     private static Component elementName(DraggableElement e) {
@@ -916,10 +1333,14 @@ public class HudEditorScreen extends Screen {
         if (sub == SubElementType.TEXT) {
             items.add(textVisibilityItem(bar));
             items.add(textAlignItem(bar));
+            items.add(textScaleUpItem(bar, sub));
+            items.add(textScaleDownItem(bar, sub));
         }
         if (sub == SubElementType.ABSORPTION_TEXT) {
             items.add(absorptionTextAlignItem(bar));
             items.add(absorptionDisplayModeItem(bar));
+            items.add(textScaleUpItem(bar, sub));
+            items.add(textScaleDownItem(bar, sub));
         }
         items.add(new ContextMenuItem(
                 Component.translatable("gui.dynamic_resource_bars.context.reset_sub_element"),
@@ -983,10 +1404,52 @@ public class HudEditorScreen extends Screen {
         }
     }
 
+    private ContextMenuItem textScaleUpItem(BarHandle bar, SubElementType sub) {
+        ClientConfig c = ModConfigManager.getClient();
+        String scaleStr = FieldEditorUtils.formatScale(bar.access.subElementTextScale(c, sub));
+        return new ContextMenuItem(
+                Component.translatable("gui.dynamic_resource_bars.context.text_scale_up", scaleStr),
+                it -> {
+                    setActiveSub(sub);
+                    adjustActiveTextScale(bar, SCALE_STEP);
+                });
+    }
+
+    private ContextMenuItem textScaleDownItem(BarHandle bar, SubElementType sub) {
+        return new ContextMenuItem(
+                Component.translatable("gui.dynamic_resource_bars.context.text_scale_down"),
+                it -> {
+                    setActiveSub(sub);
+                    adjustActiveTextScale(bar, -SCALE_STEP);
+                });
+    }
+
     /** Resets a single sub-element's geometry + sub-specific behavior to defaults. */
     private void resetSub(BarHandle bar, SubElementType sub) {
         ClientConfig defaults = ClientConfig.createDefaults();
         ClientConfig c = ModConfigManager.getClient();
+        int oldX = bar.access.subElementX(c, sub);
+        int oldY = bar.access.subElementY(c, sub);
+        int oldW = bar.access.subElementWidth(c, sub);
+        int oldH = bar.access.subElementHeight(c, sub);
+        float oldScale = bar.access.subElementTextScale(c, sub);
+        boolean oldEnabled = bar.access.enableSubElement(c, sub);
+        pushUndo(() -> {
+            ClientConfig cfg = ModConfigManager.getClient();
+            bar.access.setSubElementX(cfg, sub, oldX);
+            bar.access.setSubElementY(cfg, sub, oldY);
+            if (sub.isResizable()) {
+                bar.access.setSubElementWidth(cfg, sub, oldW);
+                bar.access.setSubElementHeight(cfg, sub, oldH);
+            }
+            if (bar.access.hasTextScale(sub)) {
+                bar.access.setSubElementTextScale(cfg, sub, oldScale);
+            }
+            if (sub.isToggleable()) {
+                bar.access.setEnableSubElement(cfg, sub, oldEnabled);
+            }
+            cfg.save();
+        });
         bar.access.resetSubElement(c, defaults, sub);
         c.save();
     }

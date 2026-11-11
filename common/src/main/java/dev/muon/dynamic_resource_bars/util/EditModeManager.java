@@ -13,6 +13,7 @@ public class EditModeManager {
     private static boolean editModeEnabled = false;
     private static boolean focusMode = false;
     private static DraggableElement focusedElement = null;
+    private static SubElementType focusedSubElement = null;
 
     public static boolean isEditModeEnabled() {
         return editModeEnabled;
@@ -23,6 +24,7 @@ public class EditModeManager {
         if (!editModeEnabled) {
             clearFocusedElement();
             focusMode = false;
+            focusedSubElement = null;
         }
         Constants.LOG.debug("Edit Mode toggled: {}", editModeEnabled ? "Enabled" : "Disabled");
     }
@@ -38,6 +40,15 @@ public class EditModeManager {
 
     public static void clearFocusedElement() {
         focusedElement = null;
+        focusedSubElement = null;
+    }
+
+    public static SubElementType getFocusedSubElement() {
+        return focusedSubElement;
+    }
+
+    public static void setFocusedSubElement(SubElementType sub) {
+        focusedSubElement = sub;
     }
 
     /**
@@ -51,5 +62,6 @@ public class EditModeManager {
 
     public static void setFocusMode(boolean v) {
         focusMode = v;
+        if (!v) focusedSubElement = null;
     }
 }

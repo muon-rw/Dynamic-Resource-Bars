@@ -298,7 +298,14 @@ public abstract class AbstractBarRenderer {
     /** Returns true if the main current-of-max text should render this frame. */
     protected boolean shouldRenderText(float current, float max) {
         TextBehavior behavior = config().textBehavior();
-        if (EditModeManager.isEditModeEnabled() && behavior != TextBehavior.NEVER) return true;
+        if (EditModeManager.isEditModeEnabled()) {
+            if (behavior != TextBehavior.NEVER) return true;
+            if (EditModeManager.isFocusMode()
+                    && EditModeManager.getFocusedElement() == draggable()
+                    && EditModeManager.getFocusedSubElement() == SubElementType.TEXT) {
+                return true;
+            }
+        }
         return switch (behavior) {
             case NEVER -> false;
             case ALWAYS -> true;
@@ -658,7 +665,9 @@ public abstract class AbstractBarRenderer {
     private int computeTextColor(float current, float max, float barAlpha, BarConfig cfg) {
         int baseColor = cfg.textColor() & 0xFFFFFF;
         int alpha = cfg.textOpacity();
-        if (cfg.textBehavior() == TextBehavior.WHEN_NOT_FULL && current >= max) {
+        if (!EditModeManager.isEditModeEnabled()
+                && cfg.textBehavior() == TextBehavior.WHEN_NOT_FULL
+                && current >= max) {
             long timeSinceFull = System.currentTimeMillis() - fullValueStartTime;
             alpha = (int) (alpha * (RenderUtil.calculateTextAlpha(timeSinceFull) / (float) RenderUtil.BASE_TEXT_ALPHA));
         }
@@ -672,24 +681,12 @@ public abstract class AbstractBarRenderer {
     private void renderEditModeOutlines(GuiGraphicsExtractor graphics, Player player,
                                         ScreenRect complex, BarConfig cfg) {
         if (EditModeManager.getFocusedElement() == draggable()) {
-            int focused = 0xA0FFFF00;
-            if (cfg.enableBackground()) {
-                ScreenRect bg = getSubElementRect(SubElementType.BACKGROUND, player, cfg);
-                graphics.outline(bg.x() - 1, bg.y() - 1, bg.width() + 2, bg.height() + 2, focused);
-            }
-            ScreenRect bar = getSubElementRect(SubElementType.BAR_MAIN, player, cfg);
-            graphics.outline(bar.x() - 1, bar.y() - 1, bar.width() + 2, bar.height() + 2, editModeBarOutlineColor());
-            if (cfg.enableForeground()) {
-                ScreenRect fg = getSubElementRect(SubElementType.FOREGROUND, player, cfg);
-                graphics.outline(fg.x() - 1, fg.y() - 1, fg.width() + 2, fg.height() + 2, 0xA0FF00FF);
-            }
-            // In focus mode the user can't move the complex anyway; suppress the outer wrapper
-            // outline to reduce visual clutter when the background drifts away from the complex.
             if (!EditModeManager.isFocusMode()) {
-                graphics.outline(complex.x() - 2, complex.y() - 2, complex.width() + 4, complex.height() + 4, 0x80FFFFFF);
+                graphics.outline(complex.x() - 1, complex.y() - 1, complex.width() + 2, complex.height() + 2, 0xFFFFD84D);
+                graphics.outline(complex.x() - 2, complex.y() - 2, complex.width() + 4, complex.height() + 4, 0x60FFD84D);
             }
         } else {
-            graphics.outline(complex.x() - 1, complex.y() - 1, complex.width() + 2, complex.height() + 2, 0x80FFFFFF);
+            graphics.outline(complex.x() - 1, complex.y() - 1, complex.width() + 2, complex.height() + 2, 0x60FFFFFF);
         }
     }
 
