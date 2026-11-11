@@ -5,6 +5,7 @@ import dev.muon.dynamic_resource_bars.config.ModConfigManager;
 import dev.muon.dynamic_resource_bars.provider.StaminaBarBehavior;
 import dev.muon.dynamic_resource_bars.render.AirBarRenderer;
 import dev.muon.dynamic_resource_bars.render.ArmorBarRenderer;
+import dev.muon.dynamic_resource_bars.render.CustomHudRenderer;
 import dev.muon.dynamic_resource_bars.render.HealthBarRenderer;
 import dev.muon.dynamic_resource_bars.render.ManaBarRenderer;
 import dev.muon.dynamic_resource_bars.render.StaminaBarRenderer;
@@ -131,5 +132,23 @@ public final class HudBarOrchestrator {
         Player player = clientPlayer();
         if (player == null) return;
         StaminaBarRenderer.INSTANCE.render(graphics, player, deltaTracker);
+    }
+
+    public static boolean renderHotbar(GuiGraphicsExtractor graphics, DeltaTracker deltaTracker) {
+        if (!CustomHudRenderer.shouldReplaceHotbar()) return false;
+        CustomHudRenderer.renderHotbar(graphics, deltaTracker);
+        return true;
+    }
+
+    public static boolean renderInfoBar(GuiGraphicsExtractor graphics, DeltaTracker deltaTracker) {
+        if (!CustomHudRenderer.shouldReplaceInfoBar()) return false;
+        CustomHudRenderer.renderInfoBar(graphics, deltaTracker);
+        return true;
+    }
+
+    public static boolean renderExperienceLevel(GuiGraphicsExtractor graphics, DeltaTracker deltaTracker) {
+        if (!CustomHudRenderer.shouldReplaceExperienceLevel()) return false;
+        CustomHudRenderer.renderExperienceLevel(graphics, deltaTracker);
+        return true;
     }
 }

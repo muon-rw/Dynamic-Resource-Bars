@@ -16,6 +16,9 @@ public final class FabricHudWiring {
     private FabricHudWiring() {}
 
     public static void register() {
+        HudElementRegistry.replaceElement(VanillaHudElements.HOTBAR, vanilla -> ours(vanilla, HudBarOrchestrator::renderHotbar));
+        HudElementRegistry.replaceElement(VanillaHudElements.INFO_BAR, vanilla -> ours(vanilla, HudBarOrchestrator::renderInfoBar));
+        HudElementRegistry.replaceElement(VanillaHudElements.EXPERIENCE_LEVEL, vanilla -> ours(vanilla, HudBarOrchestrator::renderExperienceLevel));
         HudElementRegistry.replaceElement(VanillaHudElements.HEALTH_BAR, vanilla -> ours(vanilla, HudBarOrchestrator::renderHealth));
         HudElementRegistry.replaceElement(VanillaHudElements.FOOD_BAR, vanilla -> ours(vanilla, HudBarOrchestrator::renderFood));
         HudElementRegistry.replaceElement(VanillaHudElements.ARMOR_BAR, vanilla -> ours(vanilla, HudBarOrchestrator::renderArmor));

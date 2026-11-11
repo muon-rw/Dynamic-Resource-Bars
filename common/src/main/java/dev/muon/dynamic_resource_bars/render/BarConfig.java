@@ -29,6 +29,7 @@ public record BarConfig(
         int textYOffset,
         int textWidth,
         int textHeight,
+        float textScale,
         int textColor,
         int textOpacity,
         HorizontalAlignment textAlign,

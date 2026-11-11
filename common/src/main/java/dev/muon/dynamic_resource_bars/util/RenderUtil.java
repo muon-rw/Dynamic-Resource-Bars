@@ -16,19 +16,16 @@ public class RenderUtil {
         return ModConfigManager.getClient().fadeHoldDuration + TEXT_FADEOUT_DURATION;
     }
 
-    /** Vanilla font line height; used to derive font scale from a per-bar text height. */
-    public static final int FONT_LINE_HEIGHT = 9;
-
     /**
-     * Renders the "current / max" text at the given base position scaled to fit {@code textHeight}
-     * pixels of vertical space. Final scale = {@code (textHeight / 9) × globalTextSize}.
+     * Renders the "current / max" text vertically centered on {@code baseY}.
+     * Final scale = {@code textScale × globalTextSize}.
      */
     public static void renderText(float current, float max, GuiGraphicsExtractor graphics,
-                                  int baseX, int baseY, int textHeight, int color, HorizontalAlignment alignment) {
+                                  int baseX, int baseY, float textScale, int color, HorizontalAlignment alignment) {
         Minecraft minecraft = Minecraft.getInstance();
         Matrix3x2fStack pose = graphics.pose();
         pose.pushMatrix();
-        float finalScale = computeScale(textHeight);
+        float finalScale = computeScale(textScale);
 
         pose.scale(finalScale, finalScale);
         int scaledX = (int) (baseX / finalScale);
@@ -51,12 +48,12 @@ public class RenderUtil {
     }
 
     public static void renderAdditionText(String text, GuiGraphicsExtractor graphics,
-                                          int baseX, int baseY, int textHeight, int color,
+                                          int baseX, int baseY, float textScale, int color,
                                           HorizontalAlignment alignment) {
         Minecraft minecraft = Minecraft.getInstance();
         Matrix3x2fStack pose = graphics.pose();
         pose.pushMatrix();
-        float finalScale = computeScale(textHeight);
+        float finalScale = computeScale(textScale);
 
         int scaledX = (int) (baseX / finalScale);
         int yPos = (int) (baseY / finalScale) - (minecraft.font.lineHeight / 2);
@@ -74,10 +71,8 @@ public class RenderUtil {
         pose.popMatrix();
     }
 
-    private static float computeScale(int textHeight) {
-        float scale = (textHeight / (float) FONT_LINE_HEIGHT) * ModConfigManager.getClient().globalTextSize;
-        // Clamp to a sane minimum so degenerate textHeight never produces invisible text.
-        return Math.max(0.05f, scale);
+    private static float computeScale(float textScale) {
+        return Math.max(0.05f, textScale * ModConfigManager.getClient().globalTextSize);
     }
 
     public static int calculateTextAlpha(long timeSinceEvent) {

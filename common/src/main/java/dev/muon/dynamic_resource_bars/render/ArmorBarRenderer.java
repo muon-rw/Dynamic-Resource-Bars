@@ -48,7 +48,7 @@ public class ArmorBarRenderer extends AbstractBarRenderer {
                 c.armorBackgroundXOffset, c.armorBackgroundYOffset,
                 c.armorBarWidth, c.armorBarHeight, c.armorBarXOffset, c.armorBarYOffset,
                 c.armorOverlayWidth, c.armorOverlayHeight, c.armorOverlayXOffset, c.armorOverlayYOffset,
-                c.armorTextXOffset, c.armorTextYOffset, c.armorTextWidth, c.armorTextHeight,
+                c.armorTextXOffset, c.armorTextYOffset, c.armorTextWidth, c.armorTextHeight, c.armorTextScale,
                 c.armorTextColor, c.armorTextOpacity, c.armorTextAlign,
                 c.armorTotalXOffset, c.armorTotalYOffset,
                 c.armorBarAnchor,

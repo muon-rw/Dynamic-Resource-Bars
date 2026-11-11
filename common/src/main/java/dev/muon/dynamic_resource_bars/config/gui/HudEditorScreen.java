@@ -7,6 +7,7 @@ import dev.muon.dynamic_resource_bars.config.ModConfigManager;
 import dev.muon.dynamic_resource_bars.provider.ManaBarBehavior;
 import dev.muon.dynamic_resource_bars.provider.StaminaBarBehavior;
 import dev.muon.dynamic_resource_bars.render.AbstractBarRenderer;
+import dev.muon.dynamic_resource_bars.render.CustomHudRenderer;
 import dev.muon.dynamic_resource_bars.render.HealthBarRenderer;
 import dev.muon.dynamic_resource_bars.render.ManaBarRenderer;
 import dev.muon.dynamic_resource_bars.render.StaminaBarRenderer;
@@ -144,6 +145,15 @@ public class HudEditorScreen extends Screen {
         Player player = player();
         if (player != null) {
             DeltaTracker dt = Minecraft.getInstance().getDeltaTracker();
+            if (CustomHudRenderer.shouldReplaceHotbar()) {
+                CustomHudRenderer.renderHotbar(graphics, dt);
+            }
+            if (CustomHudRenderer.shouldReplaceInfoBar()) {
+                CustomHudRenderer.renderInfoBar(graphics, dt);
+            }
+            if (CustomHudRenderer.shouldReplaceExperienceLevel()) {
+                CustomHudRenderer.renderExperienceLevel(graphics, dt);
+            }
             for (BarHandle bar : bars) bar.renderer.render(graphics, player, dt);
         }
 
@@ -927,8 +937,18 @@ public class HudEditorScreen extends Screen {
      */
     private void openGlobalContextMenu(int mouseX, int mouseY) {
         closeActiveContextMenu();
+        ClientConfig c = ModConfigManager.getClient();
         List<ContextMenuItem> items = new ArrayList<>();
         items.add(ContextMenuItem.title(Component.translatable("gui.dynamic_resource_bars.hud_editor.title_main")));
+        items.add(new ContextMenuItem(
+                Component.translatable(c.enableCustomHud
+                        ? "gui.dynamic_resource_bars.config.custom_hud.enabled"
+                        : "gui.dynamic_resource_bars.config.custom_hud.disabled"),
+                it -> {
+                    ClientConfig cfg = ModConfigManager.getClient();
+                    cfg.enableCustomHud = !cfg.enableCustomHud;
+                    cfg.save();
+                }));
         items.add(new ContextMenuItem(
                 Component.translatable("gui.dynamic_resource_bars.hud_editor.button.reset_all_bars"),
                 it -> openResetAllConfirm(),

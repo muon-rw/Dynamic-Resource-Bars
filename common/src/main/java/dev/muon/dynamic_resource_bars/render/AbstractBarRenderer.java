@@ -223,7 +223,6 @@ public abstract class AbstractBarRenderer {
     protected final int restorePreviewWidth(Player player, float current, float max,
                                             float restoreAmount, ScreenRect barRect) {
         if (restoreAmount <= 0f || max <= 0f) return 0;
-        if (config().fillDirection() != FillDirection.HORIZONTAL) return 0;
         float denom = effectiveBarMax(player, current, max);
         if (denom <= 0f) return 0;
         // Clamp against the empty *primary* zone (max - current), not the entire empty bar — when
@@ -233,46 +232,47 @@ public abstract class AbstractBarRenderer {
         if (clampedRestore <= 0f) return 0;
         float fillRatio = Math.max(0f, Math.min(1f, current / denom));
         float restoreRatio = clampedRestore / denom;
-        // Derive the preview width from the combined boundary instead of truncating restoreRatio
-        // independently — independent truncation can short the preview by 1px at the right edge
-        // (e.g. fillRatio=0.75 + restoreRatio=0.25 on a 74px bar yields 55 + 18 = 73 instead of 74).
-        int filled = (int) (barRect.width() * fillRatio);
-        int combined = (int) (barRect.width() * (fillRatio + restoreRatio));
+        int span = config().fillDirection() == FillDirection.VERTICAL ? barRect.height() : barRect.width();
+        int filled = (int) (span * fillRatio);
+        int combined = (int) (span * (fillRatio + restoreRatio));
         return combined - filled;
     }
 
-    /**
-     * Draws a flashing chunk of the bar fill texture in the segment that would refill if the
-     * player consumed {@code restoreAmount} more units. Used by the AppleSkin held-food previews
-     * on health and stamina; the chunk continues seamlessly from the live fill (matching U/V
-     * coords + animOffset). Horizontal-only — vertical fill direction skips the preview.
-     */
     protected final void renderRestorePreviewChunk(GuiGraphicsExtractor graphics, Player player,
                                                    float current, float max, float restoreAmount,
                                                    ScreenRect barRect, int animOffset,
                                                    AnimationMetadata.AnimationData animData) {
-        int restoreWidth = restorePreviewWidth(player, current, max, restoreAmount, barRect);
-        if (restoreWidth <= 0) return;
+        int restoreSize = restorePreviewWidth(player, current, max, restoreAmount, barRect);
+        if (restoreSize <= 0) return;
         BarConfig cfg = config();
         float denom = effectiveBarMax(player, current, max);
-        int filled = (int) (barRect.width() * Math.max(0f, Math.min(1f, current / denom)));
         int leadingOffset = leadingFillOffset(player, current, max, barRect);
+        float pulse = 0.5f + (TickHandler.getOverlayFlashAlpha() * 0.5f);
+        int tint = RenderUtil.whiteWithAlpha(pulse * currentAlpha());
+        Identifier texture = barTexture(player, current, max);
 
+        if (cfg.fillDirection() == FillDirection.VERTICAL) {
+            int filled = (int) (barRect.height() * Math.max(0f, Math.min(1f, current / denom)));
+            int yOffset = Math.max(0, barRect.height() - filled - restoreSize - leadingOffset);
+            int y = barRect.y() + yOffset;
+            int v = animOffset + yOffset;
+            graphics.blit(RenderPipelines.GUI_TEXTURED, texture, barRect.x(), y, 0, v,
+                    barRect.width(), restoreSize, animData.textureWidth, animData.textureHeight, tint);
+            return;
+        }
+
+        int filled = (int) (barRect.width() * Math.max(0f, Math.min(1f, current / denom)));
         boolean rightAnchored = cfg.anchor().getSide() == HUDPositioning.AnchorSide.RIGHT;
         int x, u;
         if (rightAnchored) {
-            x = barRect.x() + barRect.width() - filled - restoreWidth - leadingOffset;
-            u = barRect.width() - filled - restoreWidth - leadingOffset;
+            x = barRect.x() + barRect.width() - filled - restoreSize - leadingOffset;
+            u = barRect.width() - filled - restoreSize - leadingOffset;
         } else {
             x = barRect.x() + leadingOffset + filled;
             u = leadingOffset + filled;
         }
-
-        float pulse = 0.5f + (TickHandler.getOverlayFlashAlpha() * 0.5f);
-        int tint = RenderUtil.whiteWithAlpha(pulse * currentAlpha());
-        Identifier texture = barTexture(player, current, max);
         graphics.blit(RenderPipelines.GUI_TEXTURED, texture, x, barRect.y(), u, animOffset,
-                restoreWidth, barRect.height(), animData.textureWidth, animData.textureHeight, tint);
+                restoreSize, barRect.height(), animData.textureWidth, animData.textureHeight, tint);
     }
 
     /** Returns true if the main current-of-max text should render this frame. */
@@ -551,7 +551,7 @@ public abstract class AbstractBarRenderer {
             case RIGHT -> textRect.x() + textRect.width();
             case LEFT -> textRect.x();
         };
-        RenderUtil.renderText(current, max, graphics, baseX, textY, cfg.textHeight(), color, alignment);
+        RenderUtil.renderText(current, max, graphics, baseX, textY, cfg.textScale(), color, alignment);
     }
 
     private int computeTextColor(float current, float max, float barAlpha, BarConfig cfg) {

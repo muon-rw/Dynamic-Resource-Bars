@@ -76,7 +76,7 @@ public class ManualSizePositionScreen extends Screen {
         yLeft += boxHeight + groupGap;
         barWidth = intBox(leftEditX, yLeft, boxWidth, boxHeight, access.barWidth(c), 1, 256);
         yLeft += boxHeight + rowSpacing;
-        barHeight = intBox(leftEditX, yLeft, boxWidth, boxHeight, access.barHeight(c), 1, 32);
+        barHeight = intBox(leftEditX, yLeft, boxWidth, boxHeight, access.barHeight(c), 1, 256);
         yLeft += boxHeight + groupGap;
         overlayWidth = intBox(leftEditX, yLeft, boxWidth, boxHeight, access.overlayWidth(c), 1, 256);
         yLeft += boxHeight + rowSpacing;
@@ -166,7 +166,7 @@ public class ManualSizePositionScreen extends Screen {
         access.setBgX(c, parseSafely(bgX, access.bgX(c), Integer.MIN_VALUE, Integer.MAX_VALUE));
         access.setBgY(c, parseSafely(bgY, access.bgY(c), Integer.MIN_VALUE, Integer.MAX_VALUE));
         access.setBarWidth(c, parseSafely(barWidth, access.barWidth(c), 1, 256));
-        access.setBarHeight(c, parseSafely(barHeight, access.barHeight(c), 1, 32));
+        access.setBarHeight(c, parseSafely(barHeight, access.barHeight(c), 1, 256));
         access.setOverlayWidth(c, parseSafely(overlayWidth, access.overlayWidth(c), 1, 256));
         access.setOverlayHeight(c, parseSafely(overlayHeight, access.overlayHeight(c), 1, 256));
         access.setTextWidth(c, parseSafely(textWidth, access.textWidth(c), 1, 256));

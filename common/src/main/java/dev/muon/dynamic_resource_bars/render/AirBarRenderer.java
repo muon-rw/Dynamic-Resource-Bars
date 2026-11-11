@@ -65,7 +65,7 @@ public class AirBarRenderer extends AbstractBarRenderer {
                 c.airBackgroundXOffset, c.airBackgroundYOffset,
                 c.airBarWidth, c.airBarHeight, c.airBarXOffset, c.airBarYOffset,
                 c.airOverlayWidth, c.airOverlayHeight, c.airOverlayXOffset, c.airOverlayYOffset,
-                c.airTextXOffset, c.airTextYOffset, c.airTextWidth, c.airTextHeight,
+                c.airTextXOffset, c.airTextYOffset, c.airTextWidth, c.airTextHeight, c.airTextScale,
                 c.airTextColor, c.airTextOpacity, c.airTextAlign,
                 c.airTotalXOffset, c.airTotalYOffset,
                 c.airBarAnchor,

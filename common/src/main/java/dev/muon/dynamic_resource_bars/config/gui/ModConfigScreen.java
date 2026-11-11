@@ -55,6 +55,19 @@ public class ModConfigScreen extends Screen {
         }
         this.addRenderableWidget(editHud);
 
+        currentY += buttonHeight + 5;
+
+        Button customHudBtn = Button.builder(
+                        customHudLabel(config.enableCustomHud),
+                        b -> {
+                            config.enableCustomHud = !config.enableCustomHud;
+                            config.save();
+                            b.setMessage(customHudLabel(config.enableCustomHud));
+                        })
+                .bounds(centerX - buttonWidth / 2, currentY, buttonWidth, buttonHeight)
+                .build();
+        this.addRenderableWidget(customHudBtn);
+
         currentY += buttonHeight + 15;
 
         int labelWidth = 80;
@@ -154,6 +167,12 @@ public class ModConfigScreen extends Screen {
         drawLabel(graphics, "gui.dynamic_resource_bars.config.label.text_opacity", labelX, textOpacityBox);
         drawLabel(graphics, "gui.dynamic_resource_bars.config.label.text_size", labelX, textSizeBox);
         drawLabel(graphics, "gui.dynamic_resource_bars.config.label.fade_hold_duration", labelX, fadeHoldBox);
+    }
+
+    private static Component customHudLabel(boolean enabled) {
+        return Component.translatable(enabled
+                ? "gui.dynamic_resource_bars.config.custom_hud.enabled"
+                : "gui.dynamic_resource_bars.config.custom_hud.disabled");
     }
 
     private void drawLabel(GuiGraphicsExtractor graphics, String key, int x, EditBox box) {

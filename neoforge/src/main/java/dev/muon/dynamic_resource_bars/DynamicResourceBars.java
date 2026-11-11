@@ -8,6 +8,7 @@ import dev.muon.dynamic_resource_bars.compat.AppleSkinCompatNeoForge;
 import dev.muon.dynamic_resource_bars.compat.ParaglidersStaminaProvider;
 import dev.muon.dynamic_resource_bars.compat.StaminaProviderManager;
 import dev.muon.dynamic_resource_bars.config.gui.ModConfigScreen;
+import dev.muon.dynamic_resource_bars.harness.UiHarness;
 import dev.muon.dynamic_resource_bars.platform.Services;
 import dev.muon.dynamic_resource_bars.util.TickHandler;
 import net.neoforged.api.distmarker.Dist;
@@ -31,6 +32,9 @@ public class DynamicResourceBars {
                 (container, parent) -> new ModConfigScreen(parent));
 
         NeoForge.EVENT_BUS.addListener(ClientTickEvent.Post.class, event -> TickHandler.onClientTick());
+        if (UiHarness.isEnabled()) {
+            NeoForge.EVENT_BUS.addListener(ClientTickEvent.Post.class, event -> UiHarness.onClientTick());
+        }
 
         if (Services.PLATFORM.isModLoaded(AppleSkinCompat.MOD_ID)) {
             AppleSkinCompat.setProvider(new AppleSkinCompatNeoForge());

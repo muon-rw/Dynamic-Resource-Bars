@@ -140,9 +140,9 @@ public abstract class BarFieldAccess {
 
     /**
      * Resize accessors. ICON has independent width/height so the editor's width-handle and
-     * height-handle drag its two axes independently. TEXT carries its own bounding box now —
-     * vertical resize maps to font scale, horizontal resize affects alignment math but is
-     * otherwise cosmetic. ABSORPTION_TEXT works the same way for the health bar's "+8" tag.
+     * height-handle drag its two axes independently. TEXT carries its own bounding box, which
+     * only positions and aligns the text; font size comes from the bar's text scale config
+     * field. ABSORPTION_TEXT works the same way for the health bar's "+8" tag.
      */
     public int subElementWidth(ClientConfig c, SubElementType sub) {
         return switch (sub) {

@@ -149,13 +149,13 @@ publishing {
     }
     repositories {
         maven {
-            url System.getenv('MAVEN_URL')
+            name = 'muonReleases'
+            url = System.getenv('MAVEN_URL') ?: 'https://maven.muon.rip/releases/'
             credentials {
                 username = System.getenv("MAVEN_USERNAME")
                 password = System.getenv("MAVEN_PASSWORD")
             }
         }
-
     }
 }
 
