@@ -234,11 +234,9 @@ public class HealthBarRenderer extends AbstractBarRenderer {
             int combinedFilled = (int) (barRect.height() * ((current + absorption) / denom));
             int absFilled = combinedFilled - healthFilled;
             if (absFilled <= 0) return;
-            int yOffset = Math.max(0, barRect.height() - combinedFilled - previewShift);
-            int y = barRect.y() + yOffset;
-            int v = absAnimOffset + yOffset;
-            graphics.blit(RenderPipelines.GUI_TEXTURED, ABSORPTION_BAR, barRect.x(), y, 0, v,
-                    barRect.width(), absFilled, animData.textureWidth, animData.textureHeight, tint);
+            paintFillSpan(graphics, ABSORPTION_BAR, barRect, true, false, absAnimOffset,
+                    animData.textureWidth, animData.textureHeight,
+                    healthFilled + previewShift, combinedFilled + previewShift, true, true, tint);
             return;
         }
 
