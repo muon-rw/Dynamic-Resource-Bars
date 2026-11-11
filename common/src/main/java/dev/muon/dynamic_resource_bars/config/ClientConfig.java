@@ -75,7 +75,7 @@ public class ClientConfig {
     public static final int DEFAULT_HEALTH_OVERLAY_HEIGHT = 66;
     public static final int DEFAULT_HEALTH_BAR_X_OFFSET = 14;
     public static final int DEFAULT_HEALTH_BAR_Y_OFFSET = 9;
-    public static final int DEFAULT_HEALTH_TOTAL_X_OFFSET = -89;
+    public static final int DEFAULT_HEALTH_TOTAL_X_OFFSET = -62;
     public static final int DEFAULT_HEALTH_TOTAL_Y_OFFSET = -27;
     public static final int DEFAULT_HEALTH_OVERLAY_X_OFFSET = 0;
     public static final int DEFAULT_HEALTH_OVERLAY_Y_OFFSET = 0;
@@ -88,14 +88,14 @@ public class ClientConfig {
     public static final int DEFAULT_HEALTH_TEXT_WIDTH = 46;
     public static final int DEFAULT_HEALTH_TEXT_HEIGHT = 46;
     public static final float DEFAULT_HEALTH_TEXT_SCALE = DEFAULT_TEXT_SCALE;
-    public static final int DEFAULT_HEALTH_ABSORPTION_TEXT_X_OFFSET = 14;
-    public static final int DEFAULT_HEALTH_ABSORPTION_TEXT_Y_OFFSET = 36;
-    public static final int DEFAULT_HEALTH_ABSORPTION_TEXT_WIDTH = 46;
-    public static final int DEFAULT_HEALTH_ABSORPTION_TEXT_HEIGHT = 12;
+    public static final int DEFAULT_HEALTH_ABSORPTION_TEXT_X_OFFSET = 22;
+    public static final int DEFAULT_HEALTH_ABSORPTION_TEXT_Y_OFFSET = 33;
+    public static final int DEFAULT_HEALTH_ABSORPTION_TEXT_WIDTH = 14;
+    public static final int DEFAULT_HEALTH_ABSORPTION_TEXT_HEIGHT = 8;
     public static final float DEFAULT_HEALTH_ABSORPTION_TEXT_SCALE = DEFAULT_TEXT_SCALE;
     public static final boolean DEFAULT_ENABLE_HEALTH_ABSORPTION_TEXT = true;
     public static final HorizontalAlignment DEFAULT_HEALTH_ABSORPTION_TEXT_ALIGN = HorizontalAlignment.CENTER;
-    public static final AbsorptionDisplayMode DEFAULT_HEALTH_ABSORPTION_DISPLAY_MODE = AbsorptionDisplayMode.OVERLAY;
+    public static final AbsorptionDisplayMode DEFAULT_HEALTH_ABSORPTION_DISPLAY_MODE = AbsorptionDisplayMode.SQUEEZE;
 
     public BarRenderBehavior healthBarBehavior;
     public HUDPositioning.BarPlacement healthBarAnchor;
@@ -157,7 +157,7 @@ public class ClientConfig {
     public static final int DEFAULT_STAMINA_OVERLAY_Y_OFFSET = 0;
     public static final int DEFAULT_STAMINA_BAR_X_OFFSET = 4;
     public static final int DEFAULT_STAMINA_BAR_Y_OFFSET = 9;
-    public static final int DEFAULT_STAMINA_TOTAL_X_OFFSET = 25;
+    public static final int DEFAULT_STAMINA_TOTAL_X_OFFSET = -1;
     public static final int DEFAULT_STAMINA_TOTAL_Y_OFFSET = -27;
     public static final int DEFAULT_STAMINA_BACKGROUND_X_OFFSET = 0;
     public static final int DEFAULT_STAMINA_BACKGROUND_Y_OFFSET = 0;
@@ -210,8 +210,8 @@ public class ClientConfig {
     public static final TextBehavior DEFAULT_SHOW_MANA_TEXT = TextBehavior.WHEN_NOT_FULL;
     public static final HorizontalAlignment DEFAULT_MANA_TEXT_ALIGN = HorizontalAlignment.CENTER;
     public static final FillDirection DEFAULT_MANA_FILL_DIRECTION = FillDirection.VERTICAL;
-    public static final int DEFAULT_MANA_TOTAL_X_OFFSET = -36;
-    public static final int DEFAULT_MANA_TOTAL_Y_OFFSET = -32;
+    public static final int DEFAULT_MANA_TOTAL_X_OFFSET = -18;
+    public static final int DEFAULT_MANA_TOTAL_Y_OFFSET = -28;
     public static final int DEFAULT_MANA_BACKGROUND_X_OFFSET = 0;
     public static final int DEFAULT_MANA_BACKGROUND_Y_OFFSET = 0;
     public static final int DEFAULT_MANA_BACKGROUND_WIDTH = 39;
@@ -225,7 +225,7 @@ public class ClientConfig {
     public static final int DEFAULT_MANA_OVERLAY_WIDTH = 39;
     public static final int DEFAULT_MANA_OVERLAY_HEIGHT = 48;
     public static final int DEFAULT_MANA_TEXT_X_OFFSET = 8;
-    public static final int DEFAULT_MANA_TEXT_Y_OFFSET = 14;
+    public static final int DEFAULT_MANA_TEXT_Y_OFFSET = 17;
     public static final int DEFAULT_MANA_TEXT_WIDTH = 23;
     public static final int DEFAULT_MANA_TEXT_HEIGHT = 30;
     public static final float DEFAULT_MANA_TEXT_SCALE = DEFAULT_TEXT_SCALE;
@@ -274,8 +274,8 @@ public class ClientConfig {
     public static final int DEFAULT_ARMOR_BAR_HEIGHT = 4;
     public static final int DEFAULT_ARMOR_BAR_X_OFFSET = 3;
     public static final int DEFAULT_ARMOR_BAR_Y_OFFSET = 3;
-    public static final int DEFAULT_ARMOR_TOTAL_X_OFFSET = 0;
-    public static final int DEFAULT_ARMOR_TOTAL_Y_OFFSET = 0;
+    public static final int DEFAULT_ARMOR_TOTAL_X_OFFSET = 36;
+    public static final int DEFAULT_ARMOR_TOTAL_Y_OFFSET = 27;
     public static final boolean DEFAULT_ENABLE_ARMOR_ICON = true;
     public static final int DEFAULT_ARMOR_ICON_WIDTH = 16;
     public static final int DEFAULT_ARMOR_ICON_HEIGHT = 16;
@@ -348,10 +348,10 @@ public class ClientConfig {
     public static final int DEFAULT_AIR_BACKGROUND_HEIGHT = 48;
     public static final int DEFAULT_AIR_BAR_WIDTH = 23;
     public static final int DEFAULT_AIR_BAR_HEIGHT = 30;
-    public static final int DEFAULT_AIR_BAR_X_OFFSET = 8;
+    public static final int DEFAULT_AIR_BAR_X_OFFSET = 7;
     public static final int DEFAULT_AIR_BAR_Y_OFFSET = 14;
-    public static final int DEFAULT_AIR_TOTAL_X_OFFSET = -3;
-    public static final int DEFAULT_AIR_TOTAL_Y_OFFSET = -32;
+    public static final int DEFAULT_AIR_TOTAL_X_OFFSET = -20;
+    public static final int DEFAULT_AIR_TOTAL_Y_OFFSET = -28;
     public static final boolean DEFAULT_ENABLE_AIR_ICON = false;
     public static final int DEFAULT_AIR_ICON_WIDTH = 16;
     public static final int DEFAULT_AIR_ICON_HEIGHT = 16;
@@ -362,7 +362,7 @@ public class ClientConfig {
     public static final int DEFAULT_AIR_OVERLAY_HEIGHT = 48;
     public static final int DEFAULT_AIR_OVERLAY_X_OFFSET = 0;
     public static final int DEFAULT_AIR_OVERLAY_Y_OFFSET = 0;
-    public static final int DEFAULT_AIR_TEXT_X_OFFSET = 8;
+    public static final int DEFAULT_AIR_TEXT_X_OFFSET = 7;
     public static final int DEFAULT_AIR_TEXT_Y_OFFSET = 14;
     public static final int DEFAULT_AIR_TEXT_COLOR = DEFAULT_TEXT_COLOR;
     public static final int DEFAULT_AIR_TEXT_OPACITY = DEFAULT_TEXT_OPACITY;
