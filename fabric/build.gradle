@@ -56,6 +56,14 @@ loom {
             setConfigName('Fabric Server')
             runDir('runs/server')
         }
+        uiHarness {
+            client()
+            setConfigName('Fabric UI Harness')
+            runDir('runs/harness')
+            programArgs('--username', 'Dev', '--width', '854', '--height', '480')
+            environmentVariable('DRB_UI_HARNESS', 'watch')
+            environmentVariable('DRB_UI_HARNESS_DIR', rootProject.file('.ui-harness').absolutePath)
+        }
     }
 }
 

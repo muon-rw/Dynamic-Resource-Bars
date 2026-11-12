@@ -12,11 +12,10 @@ import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.network.chat.Component;
 import org.jetbrains.annotations.NotNull;
 
-/**
- * Hub config screen — opens the HUD editor (only when in a world) and exposes the global
- * text knobs that aren't tied to a specific bar.
- */
 public class ModConfigScreen extends Screen {
+
+    private static final int VALID_TEXT_COLOR = 0xFFE0E0E0;
+    private static final int INVALID_TEXT_COLOR = 0xFFFF5555;
 
     private final Screen parentScreen;
 
@@ -37,8 +36,14 @@ public class ModConfigScreen extends Screen {
 
         int buttonWidth = 200;
         int buttonHeight = 20;
+        int rowHeight = 18;
+        int rowGap = 4;
         int centerX = this.width / 2;
-        int currentY = this.height / 4;
+
+        int totalContentHeight = buttonHeight + 4 + buttonHeight + 10 + 4 * (rowHeight + rowGap);
+        int topLimit = 32;
+        int bottomLimit = this.height - 36;
+        int currentY = Math.max(topLimit, topLimit + (bottomLimit - topLimit - totalContentHeight) / 2);
 
         Minecraft mc = Minecraft.getInstance();
         boolean canEditHUD = mc.level != null;
@@ -55,83 +60,97 @@ public class ModConfigScreen extends Screen {
         }
         this.addRenderableWidget(editHud);
 
-        currentY += buttonHeight + 15;
+        currentY += buttonHeight + 4;
 
-        int labelWidth = 80;
-        int editBoxWidth = 60;
-        int blockWidth = labelWidth + editBoxWidth + 5;
-        int startX = centerX - blockWidth / 2;
-        int editX = startX + labelWidth + 5;
+        Button customHudBtn = Button.builder(
+                        customHudLabel(config.enableCustomHud),
+                        b -> {
+                            config.enableCustomHud = !config.enableCustomHud;
+                            config.save();
+                            b.setMessage(customHudLabel(config.enableCustomHud));
+                        })
+                .bounds(centerX - buttonWidth / 2, currentY, buttonWidth, buttonHeight)
+                .build();
+        this.addRenderableWidget(customHudBtn);
 
-        textColorBox = new EditBox(this.font, editX, currentY, editBoxWidth, buttonHeight, Component.empty());
-        textColorBox.setValue(String.format("%06X", config.globalTextColor & 0xFFFFFF));
+        currentY += buttonHeight + 10;
+
+        int editBoxWidth = 64;
+        int editX = centerX + 12;
+
+        textColorBox = new EditBox(this.font, editX, currentY, editBoxWidth, rowHeight, Component.empty());
         textColorBox.setMaxLength(6);
+        textColorBox.setValue(String.format("%06X", config.globalTextColor & 0xFFFFFF));
+        textColorBox.setTextColor(VALID_TEXT_COLOR);
         textColorBox.setResponder(text -> {
             try {
-                int color = Integer.parseInt(text, 16);
-                config.globalTextColor = color | 0xFF000000;
-                textColorBox.setTextColor(0xE0E0E0);
+                int color = Integer.parseInt(text.trim(), 16) & 0xFFFFFF;
+                applyGlobalTextColor(config, color);
+                textColorBox.setTextColor(VALID_TEXT_COLOR);
             } catch (NumberFormatException e) {
-                textColorBox.setTextColor(0xFF5555);
+                textColorBox.setTextColor(INVALID_TEXT_COLOR);
             }
         });
         this.addRenderableWidget(textColorBox);
-        currentY += buttonHeight + 5;
+        currentY += rowHeight + rowGap;
 
-        textOpacityBox = new EditBox(this.font, editX, currentY, editBoxWidth, buttonHeight, Component.empty());
-        textOpacityBox.setValue(String.valueOf(config.globalTextOpacity));
+        textOpacityBox = new EditBox(this.font, editX, currentY, editBoxWidth, rowHeight, Component.empty());
         textOpacityBox.setMaxLength(3);
+        textOpacityBox.setValue(String.valueOf(config.globalTextOpacity));
+        textOpacityBox.setTextColor(VALID_TEXT_COLOR);
         textOpacityBox.setResponder(text -> {
             try {
-                int opacity = Integer.parseInt(text);
+                int opacity = Integer.parseInt(text.trim());
                 if (opacity >= 0 && opacity <= 255) {
-                    config.globalTextOpacity = opacity;
-                    textOpacityBox.setTextColor(0xE0E0E0);
+                    applyGlobalTextOpacity(config, opacity);
+                    textOpacityBox.setTextColor(VALID_TEXT_COLOR);
                 } else {
-                    textOpacityBox.setTextColor(0xFF5555);
+                    textOpacityBox.setTextColor(INVALID_TEXT_COLOR);
                 }
             } catch (NumberFormatException e) {
-                textOpacityBox.setTextColor(0xFF5555);
+                textOpacityBox.setTextColor(INVALID_TEXT_COLOR);
             }
         });
         this.addRenderableWidget(textOpacityBox);
-        currentY += buttonHeight + 5;
+        currentY += rowHeight + rowGap;
 
-        textSizeBox = new EditBox(this.font, editX, currentY, editBoxWidth, buttonHeight, Component.empty());
-        textSizeBox.setValue(String.format("%.1f", config.globalTextSize));
-        textSizeBox.setMaxLength(4);
+        textSizeBox = new EditBox(this.font, editX, currentY, editBoxWidth, rowHeight, Component.empty());
+        textSizeBox.setMaxLength(5);
+        textSizeBox.setValue(FieldEditorUtils.formatScale(config.globalTextSize));
+        textSizeBox.setTextColor(VALID_TEXT_COLOR);
         textSizeBox.setResponder(text -> {
             try {
-                float size = Float.parseFloat(text);
+                float size = Float.parseFloat(text.trim());
                 if (size >= 0.1f && size <= 5.0f) {
                     config.globalTextSize = size;
-                    textSizeBox.setTextColor(0xE0E0E0);
+                    textSizeBox.setTextColor(VALID_TEXT_COLOR);
                 } else {
-                    textSizeBox.setTextColor(0xFF5555);
+                    textSizeBox.setTextColor(INVALID_TEXT_COLOR);
                 }
             } catch (NumberFormatException e) {
-                textSizeBox.setTextColor(0xFF5555);
+                textSizeBox.setTextColor(INVALID_TEXT_COLOR);
             }
         });
         this.addRenderableWidget(textSizeBox);
-        currentY += buttonHeight + 5;
+        currentY += rowHeight + rowGap;
 
-        fadeHoldBox = new EditBox(this.font, editX, currentY, editBoxWidth, buttonHeight, Component.empty());
-        fadeHoldBox.setValue(String.valueOf(config.fadeHoldDuration));
+        fadeHoldBox = new EditBox(this.font, editX, currentY, editBoxWidth, rowHeight, Component.empty());
         fadeHoldBox.setMaxLength(5);
+        fadeHoldBox.setValue(String.valueOf(config.fadeHoldDuration));
+        fadeHoldBox.setTextColor(VALID_TEXT_COLOR);
         fadeHoldBox.setTooltip(Tooltip.create(
                 Component.translatable("gui.dynamic_resource_bars.config.tooltip.fade_hold_duration")));
         fadeHoldBox.setResponder(text -> {
             try {
-                int ms = Integer.parseInt(text);
+                int ms = Integer.parseInt(text.trim());
                 if (ms >= 0 && ms <= 60000) {
                     config.fadeHoldDuration = ms;
-                    fadeHoldBox.setTextColor(0xE0E0E0);
+                    fadeHoldBox.setTextColor(VALID_TEXT_COLOR);
                 } else {
-                    fadeHoldBox.setTextColor(0xFF5555);
+                    fadeHoldBox.setTextColor(INVALID_TEXT_COLOR);
                 }
             } catch (NumberFormatException e) {
-                fadeHoldBox.setTextColor(0xFF5555);
+                fadeHoldBox.setTextColor(INVALID_TEXT_COLOR);
             }
         });
         this.addRenderableWidget(fadeHoldBox);
@@ -139,26 +158,51 @@ public class ModConfigScreen extends Screen {
         this.addRenderableWidget(Button.builder(
                         Component.translatable("gui.done"),
                         b -> onClose())
-                .bounds(centerX - buttonWidth / 2, this.height - buttonHeight - 20, buttonWidth, buttonHeight)
+                .bounds(centerX - buttonWidth / 2, this.height - buttonHeight - 10, buttonWidth, buttonHeight)
                 .build());
+    }
+
+    private static void applyGlobalTextColor(ClientConfig config, int color) {
+        config.globalTextColor = color;
+        config.healthTextColor = color;
+        config.staminaTextColor = color;
+        config.manaTextColor = color;
+        config.armorTextColor = color;
+        config.airTextColor = color;
+    }
+
+    private static void applyGlobalTextOpacity(ClientConfig config, int opacity) {
+        config.globalTextOpacity = opacity;
+        config.healthTextOpacity = opacity;
+        config.staminaTextOpacity = opacity;
+        config.manaTextOpacity = opacity;
+        config.armorTextOpacity = opacity;
+        config.airTextOpacity = opacity;
     }
 
     @Override
     public void extractRenderState(@NotNull GuiGraphicsExtractor graphics, int mouseX, int mouseY, float partialTicks) {
         super.extractRenderState(graphics, mouseX, mouseY, partialTicks);
-        graphics.centeredText(this.font, this.title, this.width / 2, 20, 0xFFFFFFFF);
+        graphics.centeredText(this.font, this.title, this.width / 2, 12, 0xFFFFFFFF);
 
         if (textColorBox == null) return;
-        int labelX = textColorBox.getX() - 95;
-        drawLabel(graphics, "gui.dynamic_resource_bars.config.label.text_color", labelX, textColorBox);
-        drawLabel(graphics, "gui.dynamic_resource_bars.config.label.text_opacity", labelX, textOpacityBox);
-        drawLabel(graphics, "gui.dynamic_resource_bars.config.label.text_size", labelX, textSizeBox);
-        drawLabel(graphics, "gui.dynamic_resource_bars.config.label.fade_hold_duration", labelX, fadeHoldBox);
+        FieldEditorUtils.drawLabel(graphics, this.font, "gui.dynamic_resource_bars.config.label.text_color", 0, textColorBox);
+        FieldEditorUtils.drawLabel(graphics, this.font, "gui.dynamic_resource_bars.config.label.text_opacity", 0, textOpacityBox);
+        FieldEditorUtils.drawLabel(graphics, this.font, "gui.dynamic_resource_bars.config.label.text_size", 0, textSizeBox);
+        FieldEditorUtils.drawLabel(graphics, this.font, "gui.dynamic_resource_bars.config.label.fade_hold_duration", 0, fadeHoldBox);
+
+        int swatchX = textColorBox.getX() + textColorBox.getWidth() + 4;
+        int swatchY = textColorBox.getY() + 2;
+        int swatchSize = textColorBox.getHeight() - 4;
+        int previewColor = (ModConfigManager.getClient().globalTextColor & 0xFFFFFF) | 0xFF000000;
+        graphics.fill(swatchX - 1, swatchY - 1, swatchX + swatchSize + 1, swatchY + swatchSize + 1, 0xFF808080);
+        graphics.fill(swatchX, swatchY, swatchX + swatchSize, swatchY + swatchSize, previewColor);
     }
 
-    private void drawLabel(GuiGraphicsExtractor graphics, String key, int x, EditBox box) {
-        int y = box.getY() + (box.getHeight() - this.font.lineHeight) / 2;
-        graphics.text(this.font, Component.translatable(key), x, y, 0xFFFFFFFF, true);
+    private static Component customHudLabel(boolean enabled) {
+        return Component.translatable(enabled
+                ? "gui.dynamic_resource_bars.config.custom_hud.enabled"
+                : "gui.dynamic_resource_bars.config.custom_hud.disabled");
     }
 
     @Override

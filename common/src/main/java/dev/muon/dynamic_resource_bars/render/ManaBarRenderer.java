@@ -8,6 +8,7 @@ import dev.muon.dynamic_resource_bars.provider.ManaProvider;
 import dev.muon.dynamic_resource_bars.util.AnimationMetadata;
 import dev.muon.dynamic_resource_bars.util.AnimationMetadataCache;
 import dev.muon.dynamic_resource_bars.util.DraggableElement;
+import dev.muon.dynamic_resource_bars.util.FillDirection;
 import dev.muon.dynamic_resource_bars.util.ScreenRect;
 import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.renderer.RenderPipelines;
@@ -31,7 +32,7 @@ public class ManaBarRenderer extends AbstractBarRenderer {
                 c.manaBackgroundXOffset, c.manaBackgroundYOffset,
                 c.manaBarWidth, c.manaBarHeight, c.manaBarXOffset, c.manaBarYOffset,
                 c.manaOverlayWidth, c.manaOverlayHeight, c.manaOverlayXOffset, c.manaOverlayYOffset,
-                c.manaTextXOffset, c.manaTextYOffset, c.manaTextWidth, c.manaTextHeight,
+                c.manaTextXOffset, c.manaTextYOffset, c.manaTextWidth, c.manaTextHeight, c.manaTextScale,
                 c.manaTextColor, c.manaTextOpacity, c.manaTextAlign,
                 c.manaTotalXOffset, c.manaTotalYOffset,
                 c.manaBarAnchor,
@@ -89,13 +90,20 @@ public class ManaBarRenderer extends AbstractBarRenderer {
         float reservedFraction = provider.getReservedMana();
         if (reservedFraction <= 0) return;
 
+        int tint = 0xFF000000 | RESERVED_MANA_COLOR;
+        Identifier texture = Constants.loc("textures/gui/mana_bar.png");
+        if (config().fillDirection() == FillDirection.VERTICAL) {
+            int reservedHeight = (int) (barRect.height() * (reservedFraction / (1f + reservedFraction)));
+            if (reservedHeight <= 0) return;
+            graphics.blit(RenderPipelines.GUI_TEXTURED, texture, barRect.x(), barRect.y(), 0, animOffset,
+                    barRect.width(), reservedHeight, animData.textureWidth, animData.textureHeight, tint);
+            return;
+        }
+
         int reservedWidth = (int) (barRect.width() * (reservedFraction / (1f + reservedFraction)));
         if (reservedWidth <= 0) return;
 
         int x = barRect.x() + barRect.width() - reservedWidth;
-        // Tint the mana texture with the reserved-mana grey at full alpha.
-        int tint = 0xFF000000 | RESERVED_MANA_COLOR;
-        Identifier texture = Constants.loc("textures/gui/mana_bar.png");
         graphics.blit(RenderPipelines.GUI_TEXTURED, texture, x, barRect.y(), 0, animOffset,
                 reservedWidth, barRect.height(), animData.textureWidth, animData.textureHeight, tint);
     }

@@ -1,6 +1,7 @@
 {
-  "dynamic_resource_bars": {
-    "scaling": "NONE"
+  "gui": {
+    "scaling": {
+      "type": "none"
+    }
   }
 }
-

@@ -50,7 +50,18 @@ import java.util.List;
  */
 public abstract class AbstractBarRenderer {
 
-    private static final long CHUNK_FADEOUT_DURATION = RenderUtil.BAR_FADEOUT_DURATION / 3;
+    private static final float CHUNK_HOLD_ALPHA = 0.5f;
+    private static final long CHUNK_DIM_DURATION = 120L;
+    private static final long CHUNK_DRAIN_DELAY = 450L;
+    private static final float CHUNK_DRAIN_ROWS_PER_MS = 30f / 1000f;
+    /** Upper bound so a chunk that never gets painted (and so never learns it drained) still goes away. */
+    private static final long CHUNK_MAX_LIFETIME = 30_000L;
+    private static final float FILL_ROWS_PER_MS = 40f / 1000f;
+    /** Frame gaps longer than this (bar hidden, game paused) snap the fill instead of replaying the rise. */
+    private static final long FILL_MAX_STEP_GAP = 250L;
+    private static final float FLOW_MAX_AMPLITUDE = 1.5f;
+    /** Bar width (the default mana and air orbs) whose wave shape every other width is stretched to match. */
+    private static final float FLOW_REFERENCE_WIDTH = 23f;
     /** Cap on simultaneously fading "ghost" chunks per bar — prevents unbounded growth under sustained DoT damage. */
     protected static final int MAX_FADING_CHUNKS = 16;
 
@@ -67,9 +78,13 @@ public abstract class AbstractBarRenderer {
     private float previousValue = -1f;
     private float previousMax = -1f;
 
-    /** Per-loss "ghost" segment that fades out behind the live bar fill. */
+    private float displayedFillPx = -1f;
+    private long lastFillUpdateTime = 0L;
+    private int liveFillEdgePx = 0;
+
+    /** Per-loss "ghost" segment that dims, holds, then drains row by row above the live bar fill. */
     protected static final class FadingChunk {
-        final float startValue;
+        float startValue;
         final float endValue;
         final float maxValue;
         /** {@link #effectiveBarMax} as observed at chunk creation time. Frozen here so a chunk
@@ -91,14 +106,22 @@ public abstract class AbstractBarRenderer {
             this.animOffset = animOffset;
         }
 
+        /** Set once a paint pass finds every row drained, since only painting knows the bar's pixel span. */
+        boolean drained;
+
         float getAlpha() {
             long elapsed = System.currentTimeMillis() - creationTime;
-            if (elapsed >= CHUNK_FADEOUT_DURATION) return 0f;
-            return 1f - (elapsed / (float) CHUNK_FADEOUT_DURATION);
+            if (elapsed >= CHUNK_DIM_DURATION) return CHUNK_HOLD_ALPHA;
+            return 1f - (1f - CHUNK_HOLD_ALPHA) * (elapsed / (float) CHUNK_DIM_DURATION);
+        }
+
+        int drainedRows() {
+            long drainElapsed = System.currentTimeMillis() - creationTime - CHUNK_DRAIN_DELAY;
+            return drainElapsed <= 0 ? 0 : (int) (drainElapsed * CHUNK_DRAIN_ROWS_PER_MS);
         }
 
         boolean isExpired() {
-            return getAlpha() <= 0f;
+            return drained || System.currentTimeMillis() - creationTime > CHUNK_MAX_LIFETIME;
         }
     }
 
@@ -223,7 +246,6 @@ public abstract class AbstractBarRenderer {
     protected final int restorePreviewWidth(Player player, float current, float max,
                                             float restoreAmount, ScreenRect barRect) {
         if (restoreAmount <= 0f || max <= 0f) return 0;
-        if (config().fillDirection() != FillDirection.HORIZONTAL) return 0;
         float denom = effectiveBarMax(player, current, max);
         if (denom <= 0f) return 0;
         // Clamp against the empty *primary* zone (max - current), not the entire empty bar — when
@@ -233,52 +255,57 @@ public abstract class AbstractBarRenderer {
         if (clampedRestore <= 0f) return 0;
         float fillRatio = Math.max(0f, Math.min(1f, current / denom));
         float restoreRatio = clampedRestore / denom;
-        // Derive the preview width from the combined boundary instead of truncating restoreRatio
-        // independently — independent truncation can short the preview by 1px at the right edge
-        // (e.g. fillRatio=0.75 + restoreRatio=0.25 on a 74px bar yields 55 + 18 = 73 instead of 74).
-        int filled = (int) (barRect.width() * fillRatio);
-        int combined = (int) (barRect.width() * (fillRatio + restoreRatio));
+        int span = config().fillDirection() == FillDirection.VERTICAL ? barRect.height() : barRect.width();
+        int filled = (int) (span * fillRatio);
+        int combined = (int) (span * (fillRatio + restoreRatio));
         return combined - filled;
     }
 
-    /**
-     * Draws a flashing chunk of the bar fill texture in the segment that would refill if the
-     * player consumed {@code restoreAmount} more units. Used by the AppleSkin held-food previews
-     * on health and stamina; the chunk continues seamlessly from the live fill (matching U/V
-     * coords + animOffset). Horizontal-only — vertical fill direction skips the preview.
-     */
     protected final void renderRestorePreviewChunk(GuiGraphicsExtractor graphics, Player player,
                                                    float current, float max, float restoreAmount,
                                                    ScreenRect barRect, int animOffset,
                                                    AnimationMetadata.AnimationData animData) {
-        int restoreWidth = restorePreviewWidth(player, current, max, restoreAmount, barRect);
-        if (restoreWidth <= 0) return;
+        int restoreSize = restorePreviewWidth(player, current, max, restoreAmount, barRect);
+        if (restoreSize <= 0) return;
         BarConfig cfg = config();
         float denom = effectiveBarMax(player, current, max);
-        int filled = (int) (barRect.width() * Math.max(0f, Math.min(1f, current / denom)));
         int leadingOffset = leadingFillOffset(player, current, max, barRect);
+        float pulse = 0.5f + (TickHandler.getOverlayFlashAlpha() * 0.5f);
+        int tint = RenderUtil.whiteWithAlpha(pulse * currentAlpha());
+        Identifier texture = barTexture(player, current, max);
 
+        if (cfg.fillDirection() == FillDirection.VERTICAL) {
+            paintFillSpan(graphics, texture, barRect, true, false, animOffset,
+                    animData.textureWidth, animData.textureHeight,
+                    liveFillEdgePx, liveFillEdgePx + restoreSize, true, true, tint);
+            return;
+        }
+
+        int filled = (int) (barRect.width() * Math.max(0f, Math.min(1f, current / denom)));
         boolean rightAnchored = cfg.anchor().getSide() == HUDPositioning.AnchorSide.RIGHT;
         int x, u;
         if (rightAnchored) {
-            x = barRect.x() + barRect.width() - filled - restoreWidth - leadingOffset;
-            u = barRect.width() - filled - restoreWidth - leadingOffset;
+            x = barRect.x() + barRect.width() - filled - restoreSize - leadingOffset;
+            u = barRect.width() - filled - restoreSize - leadingOffset;
         } else {
             x = barRect.x() + leadingOffset + filled;
             u = leadingOffset + filled;
         }
-
-        float pulse = 0.5f + (TickHandler.getOverlayFlashAlpha() * 0.5f);
-        int tint = RenderUtil.whiteWithAlpha(pulse * currentAlpha());
-        Identifier texture = barTexture(player, current, max);
         graphics.blit(RenderPipelines.GUI_TEXTURED, texture, x, barRect.y(), u, animOffset,
-                restoreWidth, barRect.height(), animData.textureWidth, animData.textureHeight, tint);
+                restoreSize, barRect.height(), animData.textureWidth, animData.textureHeight, tint);
     }
 
     /** Returns true if the main current-of-max text should render this frame. */
     protected boolean shouldRenderText(float current, float max) {
         TextBehavior behavior = config().textBehavior();
-        if (EditModeManager.isEditModeEnabled() && behavior != TextBehavior.NEVER) return true;
+        if (EditModeManager.isEditModeEnabled()) {
+            if (behavior != TextBehavior.NEVER) return true;
+            if (EditModeManager.isFocusMode()
+                    && EditModeManager.getFocusedElement() == draggable()
+                    && EditModeManager.getFocusedSubElement() == SubElementType.TEXT) {
+                return true;
+            }
+        }
         return switch (behavior) {
             case NEVER -> false;
             case ALWAYS -> true;
@@ -429,30 +456,109 @@ public abstract class AbstractBarRenderer {
         float denom = effectiveBarMax(player, current, max);
         float ratio = (denom <= 0f) ? 0f : Math.max(0f, Math.min(1f, current / denom));
         int leadingOffset = leadingFillOffset(player, current, max, barRect);
+        boolean vertical = cfg.fillDirection() == FillDirection.VERTICAL;
+        int span = vertical ? barRect.height() : barRect.width();
 
-        if (cfg.fillDirection() == FillDirection.VERTICAL) {
-            int filled = (int) (barRect.height() * ratio);
-            if (filled <= 0 && current > 0) filled = 1;
-            if (filled <= 0) return;
-            int y = barRect.y() + (barRect.height() - filled - leadingOffset);
-            int v = animOffset + (barRect.height() - filled - leadingOffset);
-            graphics.blit(RenderPipelines.GUI_TEXTURED, tex, barRect.x(), y, 0, v,
-                    barRect.width(), filled, animData.textureWidth, animData.textureHeight, tint);
+        int filled = (int) (span * ratio);
+        if (filled <= 0 && current > 0) filled = 1;
+        int targetEdge = filled <= 0 ? leadingOffset : leadingOffset + filled;
+        liveFillEdgePx = stepDisplayedFill(targetEdge);
+        if (liveFillEdgePx <= leadingOffset) return;
+
+        paintFillSpan(graphics, tex, barRect, vertical, rightAnchored, animOffset,
+                animData.textureWidth, animData.textureHeight,
+                leadingOffset, liveFillEdgePx, false, true, tint);
+    }
+
+    /** Snaps down instantly (the fading chunk covers losses) but rises toward gains one row at a time. */
+    private int stepDisplayedFill(int targetEdge) {
+        long now = System.currentTimeMillis();
+        long gap = now - lastFillUpdateTime;
+        lastFillUpdateTime = now;
+        if (displayedFillPx < 0f || targetEdge <= displayedFillPx || gap > FILL_MAX_STEP_GAP) {
+            displayedFillPx = targetEdge;
         } else {
-            int filled = (int) (barRect.width() * ratio);
-            if (filled <= 0 && current > 0) filled = 1;
-            if (filled <= 0) return;
-            int x, u;
-            if (rightAnchored) {
-                x = barRect.x() + barRect.width() - filled - leadingOffset;
-                u = barRect.width() - filled - leadingOffset;
-            } else {
-                x = barRect.x() + leadingOffset;
-                u = leadingOffset;
-            }
-            graphics.blit(RenderPipelines.GUI_TEXTURED, tex, x, barRect.y(), u, animOffset,
-                    filled, barRect.height(), animData.textureWidth, animData.textureHeight, tint);
+            displayedFillPx = Math.min(targetEdge, displayedFillPx + gap * FILL_ROWS_PER_MS);
         }
+        return (int) displayedFillPx;
+    }
+
+    /**
+     * Distance in pixels from the leading edge to the live fill's surface as drawn this frame,
+     * including any {@link #leadingFillOffset}. Lags the true value while a gain animates in, so
+     * content stacked on the fill should anchor here to stay flush with it.
+     */
+    protected final int liveFillEdgePx() {
+        return liveFillEdgePx;
+    }
+
+    /**
+     * Blits the strip of a bar texture between {@code fromPx} and {@code toPx}, measured from the
+     * bar's leading edge. On vertical bars, each flagged edge gets the animated "liquid surface"
+     * offset per column; two strips sharing an edge position get identical offsets, so they meet
+     * without seams.
+     */
+    protected final void paintFillSpan(GuiGraphicsExtractor graphics, Identifier texture, ScreenRect barRect,
+                                       boolean vertical, boolean rightAnchored, int animOffset,
+                                       int textureWidth, int textureHeight, int fromPx, int toPx,
+                                       boolean flowingFrom, boolean flowingTo, int tint) {
+        int span = vertical ? barRect.height() : barRect.width();
+        if (!vertical || (!flowingFrom && !flowingTo)) {
+            blitSpanRun(graphics, texture, barRect, vertical, rightAnchored, animOffset, textureWidth, textureHeight,
+                    0, vertical ? barRect.width() : barRect.height(),
+                    Math.max(0, fromPx), Math.min(span, toPx), tint);
+            return;
+        }
+
+        int lanes = barRect.width();
+        int runStart = 0, runLo = 0, runHi = 0;
+        for (int lane = 0; lane <= lanes; lane++) {
+            int lo = 0, hi = 0;
+            if (lane < lanes) {
+                lo = Math.max(0, fromPx + (flowingFrom ? flowOffset(lane, lanes, fromPx, span) : 0));
+                hi = Math.min(span, toPx + (flowingTo ? flowOffset(lane, lanes, toPx, span) : 0));
+            }
+            if (lane > 0 && (lane == lanes || lo != runLo || hi != runHi)) {
+                blitSpanRun(graphics, texture, barRect, true, rightAnchored, animOffset, textureWidth, textureHeight,
+                        runStart, lane - runStart, runLo, runHi, tint);
+                runStart = lane;
+            }
+            runLo = lo;
+            runHi = hi;
+        }
+    }
+
+    private static void blitSpanRun(GuiGraphicsExtractor graphics, Identifier texture, ScreenRect barRect,
+                                    boolean vertical, boolean rightAnchored, int animOffset,
+                                    int textureWidth, int textureHeight,
+                                    int laneStart, int laneCount, int lo, int hi, int tint) {
+        int length = hi - lo;
+        if (length <= 0 || laneCount <= 0) return;
+        if (vertical) {
+            int fromTop = barRect.height() - hi;
+            graphics.blit(RenderPipelines.GUI_TEXTURED, texture, barRect.x() + laneStart, barRect.y() + fromTop,
+                    laneStart, animOffset + fromTop, laneCount, length, textureWidth, textureHeight, tint);
+            return;
+        }
+        int u = rightAnchored ? barRect.width() - hi : lo;
+        graphics.blit(RenderPipelines.GUI_TEXTURED, texture, barRect.x() + u, barRect.y() + laneStart,
+                u, animOffset + laneStart, length, laneCount, textureWidth, textureHeight, tint);
+    }
+
+    /**
+     * Surface offset for one column of an edge at {@code edgePx}. Two out-of-phase sine waves keep
+     * the motion from looking like a single rolling band, and the amplitude tapers to zero at the
+     * ends of the bar so a full or empty bar has a flat edge. Wavelength scales with the bar's
+     * width so every orb shows the same number of crests, while the amplitude stays in pixels.
+     */
+    private int flowOffset(int lane, int lanes, int edgePx, int span) {
+        float amplitude = Math.min(FLOW_MAX_AMPLITUDE, Math.min(edgePx, span - edgePx));
+        if (amplitude <= 0f) return 0;
+        float x = lane * (FLOW_REFERENCE_WIDTH / (float) Math.max(1, lanes));
+        float t = currentTicks;
+        float wave = 0.6f * (float) Math.sin(x * 0.35f + t * 0.22f)
+                + 0.4f * (float) Math.sin(x * 0.83f - t * 0.31f);
+        return Math.round(amplitude * wave);
     }
 
     // ===== Loss-spillover chunks =====
@@ -464,13 +570,21 @@ public abstract class AbstractBarRenderer {
             if (chunk.isExpired() || current >= chunk.endValue) it.remove();
         }
         if (previousValue > 0 && current < previousValue && previousMax == max) {
-            if (fadingChunks.size() >= MAX_FADING_CHUNKS) fadingChunks.remove(0);
-            int animOffset = AnimationMetadata.calculateAnimationOffset(barAnimation(),
-                    player.tickCount + partialTicks);
             float chunkStart = Math.max(0f, current);
             float denomAtCreation = effectiveBarMax(player, current, max);
-            fadingChunks.add(new FadingChunk(chunkStart, previousValue, max, denomAtCreation,
-                    barTexture(player, current, max), animOffset));
+            Identifier texture = barTexture(player, current, max);
+            FadingChunk newest = fadingChunks.isEmpty() ? null : fadingChunks.get(fadingChunks.size() - 1);
+            // Extending the newest chunk keeps sustained damage as one draining column instead of a
+            // stack of chunks whose drains would open gaps between each other.
+            if (newest != null && newest.denominatorAtCreation == denomAtCreation && newest.texture.equals(texture)) {
+                newest.startValue = Math.min(newest.startValue, chunkStart);
+            } else {
+                if (fadingChunks.size() >= MAX_FADING_CHUNKS) fadingChunks.remove(0);
+                int animOffset = AnimationMetadata.calculateAnimationOffset(barAnimation(),
+                        player.tickCount + partialTicks);
+                fadingChunks.add(new FadingChunk(chunkStart, previousValue, max, denomAtCreation,
+                        texture, animOffset));
+            }
         }
         previousValue = current;
         previousMax = max;
@@ -480,9 +594,10 @@ public abstract class AbstractBarRenderer {
                                     float current, float max, boolean rightAnchored, float parentAlpha,
                                     AnimationMetadata.AnimationData animData, BarConfig cfg) {
         // Base-pool chunks share the live fill's leading offset so they appear in the same zone
-        // (post-reserve) where the base used to be, not in the reserve region.
+        // (post-reserve) where the base used to be, not in the reserve region. They also sit on the
+        // live fill's flowing surface, so a gain rising into a chunk eats it from below.
         paintFadingChunks(graphics, fadingChunks, barRect, rightAnchored,
-                leadingFillOffset(player, current, max, barRect),
+                leadingFillOffset(player, current, max, barRect), liveFillEdgePx, true,
                 parentAlpha, animData, cfg);
     }
 
@@ -500,40 +615,33 @@ public abstract class AbstractBarRenderer {
                                            ScreenRect barRect, boolean rightAnchored, int zoneOffset,
                                            float parentAlpha, AnimationMetadata.AnimationData animData,
                                            BarConfig cfg) {
+        paintFadingChunks(graphics, chunks, barRect, rightAnchored, zoneOffset, 0, false,
+                parentAlpha, animData, cfg);
+    }
+
+    private void paintFadingChunks(GuiGraphicsExtractor graphics, List<FadingChunk> chunks,
+                                   ScreenRect barRect, boolean rightAnchored, int zoneOffset,
+                                   int floorPx, boolean flowingEdges, float parentAlpha,
+                                   AnimationMetadata.AnimationData animData, BarConfig cfg) {
         if (chunks.isEmpty()) return;
+        boolean vertical = cfg.fillDirection() == FillDirection.VERTICAL;
+        int span = vertical ? barRect.height() : barRect.width();
         for (FadingChunk chunk : chunks) {
-            float a = chunk.getAlpha() * parentAlpha;
-            if (a <= 0) continue;
             float denom = chunk.denominatorAtCreation;
             if (denom <= 0f) continue;
-            int chunkTint = RenderUtil.whiteWithAlpha(a);
             float startRatio = Math.max(0f, Math.min(1f, chunk.startValue / denom));
             float endRatio = Math.max(0f, Math.min(1f, chunk.endValue / denom));
-            if (cfg.fillDirection() == FillDirection.VERTICAL) {
-                int startH = (int) (barRect.height() * startRatio);
-                int endH = (int) (barRect.height() * endRatio);
-                int chunkH = endH - startH;
-                if (chunkH <= 0) continue;
-                int y = barRect.y() + (barRect.height() - endH - zoneOffset);
-                int v = chunk.animOffset + (barRect.height() - endH - zoneOffset);
-                graphics.blit(RenderPipelines.GUI_TEXTURED, chunk.texture, barRect.x(), y, 0, v,
-                        barRect.width(), chunkH, animData.textureWidth, animData.textureHeight, chunkTint);
-            } else {
-                int startW = (int) (barRect.width() * startRatio);
-                int endW = (int) (barRect.width() * endRatio);
-                int chunkW = endW - startW;
-                if (chunkW <= 0) continue;
-                int x, u;
-                if (rightAnchored) {
-                    x = barRect.x() + barRect.width() - endW - zoneOffset;
-                    u = barRect.width() - endW - zoneOffset;
-                } else {
-                    x = barRect.x() + zoneOffset + startW;
-                    u = zoneOffset + startW;
-                }
-                graphics.blit(RenderPipelines.GUI_TEXTURED, chunk.texture, x, barRect.y(), u, chunk.animOffset,
-                        chunkW, barRect.height(), animData.textureWidth, animData.textureHeight, chunkTint);
+            int bottom = Math.max(floorPx, zoneOffset + (int) (span * startRatio));
+            int top = zoneOffset + (int) (span * endRatio) - chunk.drainedRows();
+            if (top <= bottom) {
+                chunk.drained = true;
+                continue;
             }
+            float a = chunk.getAlpha() * parentAlpha;
+            if (a <= 0) continue;
+            paintFillSpan(graphics, chunk.texture, barRect, vertical, rightAnchored, chunk.animOffset,
+                    animData.textureWidth, animData.textureHeight, bottom, top,
+                    flowingEdges, flowingEdges, RenderUtil.whiteWithAlpha(a));
         }
     }
 
@@ -551,13 +659,15 @@ public abstract class AbstractBarRenderer {
             case RIGHT -> textRect.x() + textRect.width();
             case LEFT -> textRect.x();
         };
-        RenderUtil.renderText(current, max, graphics, baseX, textY, cfg.textHeight(), color, alignment);
+        RenderUtil.renderText(current, max, graphics, baseX, textY, cfg.textScale(), color, alignment);
     }
 
     private int computeTextColor(float current, float max, float barAlpha, BarConfig cfg) {
         int baseColor = cfg.textColor() & 0xFFFFFF;
         int alpha = cfg.textOpacity();
-        if (cfg.textBehavior() == TextBehavior.WHEN_NOT_FULL && current >= max) {
+        if (!EditModeManager.isEditModeEnabled()
+                && cfg.textBehavior() == TextBehavior.WHEN_NOT_FULL
+                && current >= max) {
             long timeSinceFull = System.currentTimeMillis() - fullValueStartTime;
             alpha = (int) (alpha * (RenderUtil.calculateTextAlpha(timeSinceFull) / (float) RenderUtil.BASE_TEXT_ALPHA));
         }
@@ -571,24 +681,12 @@ public abstract class AbstractBarRenderer {
     private void renderEditModeOutlines(GuiGraphicsExtractor graphics, Player player,
                                         ScreenRect complex, BarConfig cfg) {
         if (EditModeManager.getFocusedElement() == draggable()) {
-            int focused = 0xA0FFFF00;
-            if (cfg.enableBackground()) {
-                ScreenRect bg = getSubElementRect(SubElementType.BACKGROUND, player, cfg);
-                graphics.outline(bg.x() - 1, bg.y() - 1, bg.width() + 2, bg.height() + 2, focused);
-            }
-            ScreenRect bar = getSubElementRect(SubElementType.BAR_MAIN, player, cfg);
-            graphics.outline(bar.x() - 1, bar.y() - 1, bar.width() + 2, bar.height() + 2, editModeBarOutlineColor());
-            if (cfg.enableForeground()) {
-                ScreenRect fg = getSubElementRect(SubElementType.FOREGROUND, player, cfg);
-                graphics.outline(fg.x() - 1, fg.y() - 1, fg.width() + 2, fg.height() + 2, 0xA0FF00FF);
-            }
-            // In focus mode the user can't move the complex anyway; suppress the outer wrapper
-            // outline to reduce visual clutter when the background drifts away from the complex.
             if (!EditModeManager.isFocusMode()) {
-                graphics.outline(complex.x() - 2, complex.y() - 2, complex.width() + 4, complex.height() + 4, 0x80FFFFFF);
+                graphics.outline(complex.x() - 1, complex.y() - 1, complex.width() + 2, complex.height() + 2, 0xFFFFD84D);
+                graphics.outline(complex.x() - 2, complex.y() - 2, complex.width() + 4, complex.height() + 4, 0x60FFD84D);
             }
         } else {
-            graphics.outline(complex.x() - 1, complex.y() - 1, complex.width() + 2, complex.height() + 2, 0x80FFFFFF);
+            graphics.outline(complex.x() - 1, complex.y() - 1, complex.width() + 2, complex.height() + 2, 0x60FFFFFF);
         }
     }
 

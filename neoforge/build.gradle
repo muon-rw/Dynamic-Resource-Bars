@@ -64,6 +64,15 @@ neoForge {
             programArguments.addAll('--username', 'Dev2')
         }
 
+        uiHarness {
+            client()
+            ideName = "NeoForge UI Harness (${project.path})"
+            gameDirectory = this.mkdir(this.file("runs/harness"))
+            programArguments.addAll('--width', '854', '--height', '480')
+            environment('DRB_UI_HARNESS', 'watch')
+            environment('DRB_UI_HARNESS_DIR', rootProject.file('.ui-harness').absolutePath)
+        }
+
         data {
             clientData()
             gameDirectory = this.mkdir(this.file("runs/data"))

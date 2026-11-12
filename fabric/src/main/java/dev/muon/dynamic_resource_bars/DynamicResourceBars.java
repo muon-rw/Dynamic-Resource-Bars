@@ -10,6 +10,7 @@ import dev.muon.dynamic_resource_bars.client.FabricStatusBarHeights;
 import dev.muon.dynamic_resource_bars.compat.AppleSkinCompat;
 import dev.muon.dynamic_resource_bars.compat.AppleSkinCompatFabric;
 import dev.muon.dynamic_resource_bars.config.gui.ModConfigScreen;
+import dev.muon.dynamic_resource_bars.harness.UiHarness;
 import dev.muon.dynamic_resource_bars.platform.Services;
 import dev.muon.dynamic_resource_bars.util.TickHandler;
 import net.fabricmc.api.ClientModInitializer;
@@ -25,6 +26,9 @@ public class DynamicResourceBars implements ClientModInitializer, ModMenuApi {
         CommonClass.initClient();
 
         ClientTickEvents.END_CLIENT_TICK.register(client -> TickHandler.onClientTick());
+        if (UiHarness.isEnabled()) {
+            ClientTickEvents.END_CLIENT_TICK.register(client -> UiHarness.onClientTick());
+        }
 
         ResourceManagerHelper.get(PackType.CLIENT_RESOURCES)
                 .registerReloadListener(new FabricAnimationCacheReloadListener());

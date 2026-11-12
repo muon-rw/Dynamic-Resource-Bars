@@ -13,8 +13,8 @@ public enum SubElementType {
     BACKGROUND("gui.dynamic_resource_bars.subelement.background", true, true),
     BAR_MAIN("gui.dynamic_resource_bars.subelement.bar_main", true, false),
     FOREGROUND("gui.dynamic_resource_bars.subelement.foreground", true, true),
-    // TEXT carries its own bounding box now: vertical resize → font scale, horizontal resize
-    // affects align math but is otherwise cosmetic. Visibility still uses TextBehavior, hence
+    // TEXT carries its own bounding box, which only positions and aligns the text. Font size
+    // comes from the bar's text scale config field. Visibility still uses TextBehavior, hence
     // toggleable=false here.
     TEXT("gui.dynamic_resource_bars.subelement.text", true, false),
     ICON("gui.dynamic_resource_bars.subelement.icon", true, true),

@@ -76,7 +76,7 @@ public class HealthBarRenderer extends AbstractBarRenderer {
                 c.healthBackgroundXOffset, c.healthBackgroundYOffset,
                 c.healthBarWidth, c.healthBarHeight, c.healthBarXOffset, c.healthBarYOffset,
                 c.healthOverlayWidth, c.healthOverlayHeight, c.healthOverlayXOffset, c.healthOverlayYOffset,
-                c.healthTextXOffset, c.healthTextYOffset, c.healthTextWidth, c.healthTextHeight,
+                c.healthTextXOffset, c.healthTextYOffset, c.healthTextWidth, c.healthTextHeight, c.healthTextScale,
                 c.healthTextColor, c.healthTextOpacity, c.healthTextAlign,
                 c.healthTotalXOffset, c.healthTotalYOffset,
                 c.healthBarAnchor,
@@ -234,9 +234,9 @@ public class HealthBarRenderer extends AbstractBarRenderer {
             int combinedFilled = (int) (barRect.height() * ((current + absorption) / denom));
             int absFilled = combinedFilled - healthFilled;
             if (absFilled <= 0) return;
-            int y = barRect.y() + (barRect.height() - combinedFilled);
-            graphics.blit(RenderPipelines.GUI_TEXTURED, ABSORPTION_BAR, barRect.x(), y, 0, absAnimOffset,
-                    barRect.width(), absFilled, animData.textureWidth, animData.textureHeight, tint);
+            paintFillSpan(graphics, ABSORPTION_BAR, barRect, true, false, absAnimOffset,
+                    animData.textureWidth, animData.textureHeight,
+                    healthFilled + previewShift, combinedFilled + previewShift, true, true, tint);
             return;
         }
 
@@ -293,7 +293,7 @@ public class HealthBarRenderer extends AbstractBarRenderer {
         int textAlpha = (int) (c.healthTextOpacity * alpha);
         textAlpha = Math.max(10, Math.min(255, textAlpha));
         int color = (textAlpha << 24) | baseColor;
-        RenderUtil.renderAdditionText(text, graphics, baseX, y, c.healthAbsorptionTextHeight, color, alignment);
+        RenderUtil.renderAdditionText(text, graphics, baseX, y, c.healthAbsorptionTextScale, color, alignment);
     }
 
     @Override

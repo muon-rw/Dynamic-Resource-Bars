@@ -8,24 +8,22 @@ import net.minecraft.client.gui.components.events.GuiEventListener;
 import net.minecraft.client.input.MouseButtonEvent;
 import org.jetbrains.annotations.NotNull;
 import org.joml.Matrix3x2fStack;
+import org.lwjgl.glfw.GLFW;
 
 import java.util.ArrayList;
 import java.util.List;
 
-/**
- * Lightweight popup menu rendered on top of the HUD editor. Owns its own hit-test and
- * close lifecycle; the host screen forwards mouse events via {@link #handleMouseClicked}
- * and key events via {@link #handleKeyPressed}.
- */
 public class ContextMenu implements Renderable, GuiEventListener {
 
-    private static final int BACKGROUND_COLOR = 0xE0000000;
-    private static final int HOVER_COLOR = 0x80FFFFFF;
-    private static final int BORDER_COLOR = 0xFF404040;
-    private static final float TEXT_SCALE = 0.5f;
-    private static final int PADDING = 3;
-    private static final int ITEM_HEIGHT = 9;
-    private static final int MIN_WIDTH = 100;
+    private static final int BACKGROUND_COLOR = 0xF0101216;
+    private static final int HOVER_COLOR = 0xFF2B4C7E;
+    private static final int BORDER_COLOR = 0xFF586578;
+    private static final int SEPARATOR_COLOR = 0xFF343B46;
+    private static final float TEXT_SCALE = 1.0f;
+    private static final int PADDING = 4;
+    private static final int ITEM_HEIGHT = 13;
+    private static final int SEPARATOR_HEIGHT = 5;
+    private static final int MIN_WIDTH = 130;
 
     private final List<ContextMenuItem> items;
     private final int x;
@@ -41,24 +39,30 @@ public class ContextMenu implements Renderable, GuiEventListener {
 
         Font font = Minecraft.getInstance().font;
         int maxWidth = MIN_WIDTH;
+        int totalHeight = PADDING * 2;
         for (ContextMenuItem item : items) {
             if (!item.label().getString().isEmpty()) {
-                int labelWidth = (int) ((font.width(item.label()) + PADDING * 2) * TEXT_SCALE);
+                int labelWidth = (int) Math.ceil(font.width(item.label()) * TEXT_SCALE) + PADDING * 2 + 4;
                 maxWidth = Math.max(maxWidth, labelWidth);
             }
+            totalHeight += rowHeight(item);
         }
         this.width = maxWidth;
-        this.height = items.size() * ITEM_HEIGHT + PADDING * 2;
+        this.height = totalHeight;
 
         Minecraft mc = Minecraft.getInstance();
         int screenWidth = mc.getWindow().getGuiScaledWidth();
         int screenHeight = mc.getWindow().getGuiScaledHeight();
-        if (x + width > screenWidth) x = screenWidth - width - 2;
-        if (x < 0) x = 2;
-        if (y + height > screenHeight) y = screenHeight - height - 2;
-        if (y < 0) y = 2;
+        if (x + width > screenWidth - 4) x = screenWidth - width - 4;
+        if (x < 4) x = 4;
+        if (y + height > screenHeight - 4) y = screenHeight - height - 4;
+        if (y < 4) y = 4;
         this.x = x;
         this.y = y;
+    }
+
+    private static int rowHeight(ContextMenuItem item) {
+        return item.label().getString().isEmpty() && item.isTitle() ? SEPARATOR_HEIGHT : ITEM_HEIGHT;
     }
 
     public void setOnClose(Runnable onClose) {
@@ -75,43 +79,54 @@ public class ContextMenu implements Renderable, GuiEventListener {
         graphics.fill(x, y, x + 1, y + height, BORDER_COLOR);
         graphics.fill(x + width - 1, y, x + width, y + height, BORDER_COLOR);
 
-        updateHovered(mouseX, mouseY);
+        if (mouseX >= x && mouseX < x + width && mouseY >= y && mouseY < y + height) {
+            updateHovered(mouseX, mouseY);
+        }
 
         Font font = Minecraft.getInstance().font;
         Matrix3x2fStack pose = graphics.pose();
         int itemY = y + PADDING;
         for (int i = 0; i < items.size(); i++) {
             ContextMenuItem item = items.get(i);
-            if (i == hoveredIndex && item.isClickable()) {
-                graphics.fill(x + 1, itemY, x + width - 1, itemY + ITEM_HEIGHT, HOVER_COLOR);
-            }
-            if (!item.label().getString().isEmpty()) {
+            int rHeight = rowHeight(item);
+            if (item.label().getString().isEmpty() && item.isTitle()) {
+                int lineY = itemY + rHeight / 2;
+                graphics.fill(x + 4, lineY, x + width - 4, lineY + 1, SEPARATOR_COLOR);
+            } else {
+                if (i == hoveredIndex && item.isClickable()) {
+                    graphics.fill(x + 2, itemY, x + width - 2, itemY + rHeight, HOVER_COLOR);
+                }
                 pose.pushMatrix();
-                pose.translate(x + PADDING, itemY + 2);
+                int textOffsetY = Math.max(1, (int) ((rHeight - font.lineHeight * TEXT_SCALE) / 2f));
+                pose.translate(x + PADDING + 2, itemY + textOffsetY);
                 pose.scale(TEXT_SCALE, TEXT_SCALE);
                 int color = item.isEnabled() ? item.textColor() : 0xFF808080;
-                graphics.text(font, item.label(), 0, 0, color, false);
+                graphics.text(font, item.label(), 0, 0, color, true);
                 pose.popMatrix();
+                if (item.isTitle()) {
+                    graphics.fill(x + 3, itemY + rHeight - 1, x + width - 3, itemY + rHeight, SEPARATOR_COLOR);
+                }
             }
-            itemY += ITEM_HEIGHT;
+            itemY += rHeight;
         }
     }
 
     private void updateHovered(int mouseX, int mouseY) {
         hoveredIndex = -1;
         if (mouseX >= x && mouseX < x + width && mouseY >= y && mouseY < y + height) {
-            int relativeY = mouseY - y - PADDING;
-            int idx = relativeY / ITEM_HEIGHT;
-            if (idx >= 0 && idx < items.size() && items.get(idx).isClickable()) hoveredIndex = idx;
+            int scanY = y + PADDING;
+            for (int i = 0; i < items.size(); i++) {
+                ContextMenuItem item = items.get(i);
+                int rHeight = rowHeight(item);
+                if (mouseY >= scanY && mouseY < scanY + rHeight) {
+                    if (item.isClickable()) hoveredIndex = i;
+                    break;
+                }
+                scanY += rHeight;
+            }
         }
     }
 
-    /**
-     * Forwarded from the host screen's {@code mouseClicked} hook.
-     *
-     * @return {@code true} when the click was consumed (caller should NOT also process the click).
-     *         Always returns true while the menu is visible — clicks outside merely close it.
-     */
     public boolean handleMouseClicked(MouseButtonEvent event) {
         if (!visible) return false;
         int mx = (int) event.x();
@@ -121,21 +136,54 @@ public class ContextMenu implements Renderable, GuiEventListener {
             close();
             return false;
         }
+        updateHovered(mx, my);
         if (event.button() == 0 && hoveredIndex >= 0 && hoveredIndex < items.size()) {
             ContextMenuItem item = items.get(hoveredIndex);
-            if (item.isClickable()) item.execute();
+            if (item.isClickable()) {
+                item.execute();
+                close();
+            }
         }
         return true;
     }
 
-    /** Forwarded from the host screen's {@code keyPressed}. */
     public boolean handleKeyPressed(int key) {
         if (!visible) return false;
-        if (key == 256) { // GLFW_KEY_ESCAPE
+        if (key == GLFW.GLFW_KEY_ESCAPE) {
             close();
             return true;
         }
+        if (key == GLFW.GLFW_KEY_DOWN) {
+            stepHover(1);
+            return true;
+        }
+        if (key == GLFW.GLFW_KEY_UP) {
+            stepHover(-1);
+            return true;
+        }
+        if (key == GLFW.GLFW_KEY_ENTER || key == GLFW.GLFW_KEY_KP_ENTER || key == GLFW.GLFW_KEY_SPACE) {
+            if (hoveredIndex >= 0 && hoveredIndex < items.size()) {
+                ContextMenuItem item = items.get(hoveredIndex);
+                if (item.isClickable()) {
+                    item.execute();
+                    close();
+                    return true;
+                }
+            }
+        }
         return false;
+    }
+
+    private void stepHover(int dir) {
+        if (items.isEmpty()) return;
+        int idx = hoveredIndex < 0 ? (dir > 0 ? -1 : items.size()) : hoveredIndex;
+        for (int attempt = 0; attempt < items.size(); attempt++) {
+            idx = (idx + dir + items.size()) % items.size();
+            if (items.get(idx).isClickable()) {
+                hoveredIndex = idx;
+                return;
+            }
+        }
     }
 
     @Override

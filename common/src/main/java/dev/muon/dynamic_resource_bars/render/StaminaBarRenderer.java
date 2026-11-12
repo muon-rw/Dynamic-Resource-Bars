@@ -48,7 +48,7 @@ public class StaminaBarRenderer extends AbstractBarRenderer {
                 c.staminaBackgroundXOffset, c.staminaBackgroundYOffset,
                 c.staminaBarWidth, c.staminaBarHeight, c.staminaBarXOffset, c.staminaBarYOffset,
                 c.staminaOverlayWidth, c.staminaOverlayHeight, c.staminaOverlayXOffset, c.staminaOverlayYOffset,
-                c.staminaTextXOffset, c.staminaTextYOffset, c.staminaTextWidth, c.staminaTextHeight,
+                c.staminaTextXOffset, c.staminaTextYOffset, c.staminaTextWidth, c.staminaTextHeight, c.staminaTextScale,
                 c.staminaTextColor, c.staminaTextOpacity, c.staminaTextAlign,
                 c.staminaTotalXOffset, c.staminaTotalYOffset,
                 c.staminaBarAnchor,
@@ -187,9 +187,19 @@ public class StaminaBarRenderer extends AbstractBarRenderer {
         float saturation = player.getFoodData().getSaturationLevel();
         if (saturation <= 0 || max <= 0) return;
         float satRatio = Math.max(0f, Math.min(1f, saturation / max));
+        AnimationMetadata.TextureDimensions dims = AnimationMetadataCache.getTextureDimensions(SATURATION_OVERLAY);
+        if (config().fillDirection() == FillDirection.VERTICAL) {
+            int satHeight = (int) (barRect.height() * satRatio);
+            if (satHeight <= 0) return;
+            int yOffset = barRect.height() - satHeight;
+            graphics.blit(RenderPipelines.GUI_TEXTURED, SATURATION_OVERLAY,
+                    barRect.x(), barRect.y() + yOffset, 0, yOffset,
+                    barRect.width(), satHeight, dims.width, dims.height,
+                    RenderUtil.whiteWithAlpha(alpha));
+            return;
+        }
         int satWidth = (int) (barRect.width() * satRatio);
         if (satWidth <= 0) return;
-        AnimationMetadata.TextureDimensions dims = AnimationMetadataCache.getTextureDimensions(SATURATION_OVERLAY);
         NineSliceRenderer.renderWithScaling(graphics, SATURATION_OVERLAY,
                 AnimationMetadataCache.getSaturationOverlayScaling(),
                 barRect.x(), barRect.y(), satWidth, barRect.height(),
@@ -293,8 +303,10 @@ public class StaminaBarRenderer extends AbstractBarRenderer {
         int tint = RenderUtil.whiteWithAlpha(currentAlpha());
 
         if (cfg.fillDirection() == FillDirection.VERTICAL) {
-            int y = barRect.y() + barRect.height() - extraSize;
-            graphics.blit(RenderPipelines.GUI_TEXTURED, EXTRA_STAMINA_BAR, barRect.x(), y, 0, extraAnimOffset,
+            int yOffset = barRect.height() - extraSize;
+            int y = barRect.y() + yOffset;
+            int v = extraAnimOffset + yOffset;
+            graphics.blit(RenderPipelines.GUI_TEXTURED, EXTRA_STAMINA_BAR, barRect.x(), y, 0, v,
                     barRect.width(), extraSize, animData.textureWidth, animData.textureHeight, tint);
             return;
         }

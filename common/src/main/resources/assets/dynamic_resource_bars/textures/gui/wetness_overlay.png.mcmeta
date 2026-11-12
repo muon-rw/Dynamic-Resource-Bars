@@ -1,18 +1,7 @@
 {
-  "dynamic_resource_bars": {
+  "gui": {
     "scaling": {
-      "type": "nine_slice",
-      "left": 2,
-      "right": 2,
-      "top": 5,
-      "bottom": 0,
-      "edges": "tile",
-      "center": "tile",
-      "source": {
-        "width": 80,
-        "height": 10
-      }
+      "type": "stretch"
     }
   }
 }
-

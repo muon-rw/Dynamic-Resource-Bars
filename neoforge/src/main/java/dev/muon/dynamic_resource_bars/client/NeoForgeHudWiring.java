@@ -2,6 +2,7 @@ package dev.muon.dynamic_resource_bars.client;
 
 import dev.muon.dynamic_resource_bars.config.ClientConfig;
 import dev.muon.dynamic_resource_bars.config.ModConfigManager;
+import dev.muon.dynamic_resource_bars.util.HUDPositioning;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Gui;
 import net.neoforged.neoforge.client.event.RegisterGuiLayersEvent;
@@ -33,14 +34,29 @@ public final class NeoForgeHudWiring {
     private NeoForgeHudWiring() {}
 
     public static void register(RegisterGuiLayersEvent event) {
+        event.wrapLayer(VanillaGuiLayers.HOTBAR, vanilla -> (graphics, deltaTracker) -> {
+            if (!HudBarOrchestrator.renderHotbar(graphics, deltaTracker)) {
+                vanilla.render(graphics, deltaTracker);
+            }
+        });
+        event.wrapLayer(VanillaGuiLayers.CONTEXTUAL_INFO_BAR_BACKGROUND, vanilla -> (graphics, deltaTracker) -> {
+            if (!HudBarOrchestrator.renderInfoBar(graphics, deltaTracker)) {
+                vanilla.render(graphics, deltaTracker);
+            }
+        });
+        event.wrapLayer(VanillaGuiLayers.EXPERIENCE_LEVEL, vanilla -> (graphics, deltaTracker) -> {
+            if (!HudBarOrchestrator.renderExperienceLevel(graphics, deltaTracker)) {
+                vanilla.render(graphics, deltaTracker);
+            }
+        });
         event.wrapLayer(VanillaGuiLayers.PLAYER_HEALTH, vanilla -> orchestratorOrFallback(
-                vanilla, HudBarOrchestrator::renderHealth, () -> ModConfigManager.getClient().healthBackgroundHeight, BUMP_LEFT));
+                vanilla, HudBarOrchestrator::renderHealth, NeoForgeHudWiring::healthBumpHeight, BUMP_LEFT));
         event.wrapLayer(VanillaGuiLayers.FOOD_LEVEL, vanilla -> orchestratorOrFallback(
-                vanilla, HudBarOrchestrator::renderFood, () -> ModConfigManager.getClient().staminaBackgroundHeight, BUMP_RIGHT));
+                vanilla, HudBarOrchestrator::renderFood, NeoForgeHudWiring::staminaBumpHeight, BUMP_RIGHT));
         event.wrapLayer(VanillaGuiLayers.ARMOR_LEVEL, vanilla -> orchestratorOrFallback(
                 vanilla, HudBarOrchestrator::renderArmor, () -> ModConfigManager.getClient().armorBackgroundHeight, BUMP_LEFT));
         event.wrapLayer(VanillaGuiLayers.AIR_LEVEL, vanilla -> orchestratorOrFallback(
-                vanilla, HudBarOrchestrator::renderAir, () -> ModConfigManager.getClient().airBackgroundHeight, BUMP_RIGHT));
+                vanilla, HudBarOrchestrator::renderAir, NeoForgeHudWiring::airBumpHeight, BUMP_RIGHT));
         event.wrapLayer(VanillaGuiLayers.VEHICLE_HEALTH, vanilla -> (graphics, deltaTracker) -> {
             // When stamina is sourcing mount health, suppress vanilla's mount-health row.
             if (HudBarOrchestrator.suppressVehicleHealth()) return;
@@ -85,6 +101,30 @@ public final class NeoForgeHudWiring {
     private static final ObjIntConsumer<Gui> BUMP_LEFT = (gui, n) -> gui.leftHeight += n;
     /** Adds to the right-side height counter (food, air, vehicle health). */
     private static final ObjIntConsumer<Gui> BUMP_RIGHT = (gui, n) -> gui.rightHeight += n;
+
+    private static int healthBumpHeight() {
+        ClientConfig c = ModConfigManager.getClient();
+        if (c.healthBarAnchor == HUDPositioning.BarPlacement.HEALTH && c.healthTotalXOffset + c.healthBackgroundWidth <= 0) {
+            return 0;
+        }
+        return c.healthBackgroundHeight;
+    }
+
+    private static int staminaBumpHeight() {
+        ClientConfig c = ModConfigManager.getClient();
+        if (c.staminaBarAnchor == HUDPositioning.BarPlacement.HUNGER && c.staminaTotalXOffset >= 0) {
+            return 0;
+        }
+        return c.staminaBackgroundHeight;
+    }
+
+    private static int airBumpHeight() {
+        ClientConfig c = ModConfigManager.getClient();
+        if (c.airBarAnchor == HUDPositioning.BarPlacement.HUNGER && c.airTotalXOffset >= -4) {
+            return 0;
+        }
+        return c.airBackgroundHeight;
+    }
 
     @FunctionalInterface
     private interface OrchestratorCall {

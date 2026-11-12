@@ -4,7 +4,9 @@
   "package": "dev.muon.dynamic_resource_bars.mixin",
   "compatibilityLevel": "JAVA_21",
   "mixins": [],
-  "client": [],
+  "client": [
+    "MouseHandlerAccessor"
+  ],
   "server": [],
   "injectors": {
     "defaultRequire": 1

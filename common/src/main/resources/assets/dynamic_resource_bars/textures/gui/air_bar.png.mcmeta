@@ -1,7 +1,6 @@
 {
   "animation": {
-    "frametime": 3,
-    "interpolate": false,
-    "height": 32
+    "frametime": 2,
+    "height": 30
   }
 }
