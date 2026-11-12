@@ -151,4 +151,28 @@ public final class HudBarOrchestrator {
         CustomHudRenderer.renderExperienceLevel(graphics, deltaTracker);
         return true;
     }
+
+    public static void renderAllText(GuiGraphicsExtractor graphics, DeltaTracker deltaTracker) {
+        if (CustomHudRenderer.shouldReplaceHotbar()) {
+            CustomHudRenderer.renderOffhand(graphics, deltaTracker);
+        } else {
+            CustomHudRenderer.flushDeferredOffhandTasks();
+        }
+        Player player = clientPlayer();
+        if (player == null) return;
+        ClientConfig config = ModConfigManager.getClient();
+        if (config.healthBarBehavior == BarRenderBehavior.CUSTOM) {
+            HealthBarRenderer.INSTANCE.renderTextOverlay(graphics, player);
+        }
+        ManaBarRenderer.INSTANCE.renderTextOverlay(graphics, player);
+        if (config.staminaBarBehavior != StaminaBarBehavior.OFF) {
+            StaminaBarRenderer.INSTANCE.renderTextOverlay(graphics, player);
+        }
+        if (config.armorBarBehavior == BarRenderBehavior.CUSTOM) {
+            ArmorBarRenderer.INSTANCE.renderTextOverlay(graphics, player);
+        }
+        if (config.airBarBehavior == BarRenderBehavior.CUSTOM) {
+            AirBarRenderer.INSTANCE.renderTextOverlay(graphics, player);
+        }
+    }
 }

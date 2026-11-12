@@ -23,7 +23,7 @@ dependencies {
 
     compileOnly "com.github.TheDeathlyCow:thermoo:v${project.thermoo_version}"
 
-    implementation "dev.muon.combat_attributes:combat_attributes-neoforge:${combat_attributes_version}+${minecraft_version}"
+    compileOnly "dev.muon.combat_attributes:combat_attributes-neoforge:${combat_attributes_version}+${minecraft_version}"
 
     compileOnly "curse.maven:appleskin-248787:7854456"
     localRuntime "curse.maven:appleskin-248787:7854456"

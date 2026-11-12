@@ -389,16 +389,33 @@ public abstract class AbstractBarRenderer {
 
         renderBackgroundOverlays(graphics, player, complexRect, alpha);
 
+        if (EditModeManager.isEditModeEnabled()) {
+            renderEditModeOutlines(graphics, player, complexRect, cfg);
+        }
+
+    }
+
+    public final void renderTextOverlay(GuiGraphicsExtractor graphics, Player player) {
+        if (player == null) return;
+        if (!shouldRender(player)) return;
+
+        BarConfig cfg = config();
+        float current = currentValue(player);
+        float max = maxValue(player);
+
+        long offDuration = ModConfigManager.getClient().fadeHoldDuration + RenderUtil.BAR_FADEOUT_DURATION;
+        if (!isVisible() && !EditModeManager.isEditModeEnabled()
+                && (System.currentTimeMillis() - barDisabledStartTime) > offDuration) {
+            return;
+        }
+
+        float alpha = currentAlpha();
+        if (EditModeManager.isEditModeEnabled() && !isVisible()) alpha = 1.0f;
 
         if (shouldRenderText(current, max)) {
             renderText(graphics, player, current, max, alpha, cfg);
         }
         renderAuxiliaryText(graphics, player, alpha);
-
-        if (EditModeManager.isEditModeEnabled()) {
-            renderEditModeOutlines(graphics, player, complexRect, cfg);
-        }
-
     }
 
     // ===== Sub-element math =====

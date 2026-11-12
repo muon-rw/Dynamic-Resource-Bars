@@ -138,6 +138,10 @@ public class HudEditorScreen extends Screen {
                 CustomHudRenderer.renderExperienceLevel(graphics, dt);
             }
             for (BarHandle bar : bars) bar.renderer.render(graphics, player, dt);
+            if (CustomHudRenderer.shouldReplaceHotbar()) {
+                CustomHudRenderer.renderOffhand(graphics, dt);
+            }
+            for (BarHandle bar : bars) bar.renderer.renderTextOverlay(graphics, player);
         }
 
         rebuildAndRenderToolbar(graphics, mouseX, mouseY);
