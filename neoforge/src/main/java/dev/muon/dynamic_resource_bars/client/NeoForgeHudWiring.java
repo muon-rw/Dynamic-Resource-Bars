@@ -84,6 +84,11 @@ public final class NeoForgeHudWiring {
                             dev.muon.dynamic_resource_bars.Constants.MOD_ID, "stamina_paragliders"),
                     HudBarOrchestrator::renderStaminaForParagliders);
         }
+
+        event.registerAbove(VanillaGuiLayers.CONTEXTUAL_INFO_BAR,
+                net.minecraft.resources.Identifier.fromNamespaceAndPath(
+                        dev.muon.dynamic_resource_bars.Constants.MOD_ID, "bar_text"),
+                HudBarOrchestrator::renderAllText);
     }
 
     private static GuiLayer orchestratorOrFallback(GuiLayer vanilla, OrchestratorCall call,

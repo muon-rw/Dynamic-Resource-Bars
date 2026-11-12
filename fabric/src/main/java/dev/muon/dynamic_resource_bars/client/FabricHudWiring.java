@@ -38,6 +38,12 @@ public final class FabricHudWiring {
                         dev.muon.dynamic_resource_bars.Constants.MOD_ID, "mana_bar"),
                 HudBarOrchestrator::renderMana);
 
+        HudElementRegistry.attachElementAfter(
+                VanillaHudElements.EXPERIENCE_LEVEL,
+                net.minecraft.resources.Identifier.fromNamespaceAndPath(
+                        dev.muon.dynamic_resource_bars.Constants.MOD_ID, "bar_text"),
+                HudBarOrchestrator::renderAllText);
+
         // CA suppression is deferred to ClientLifecycleEvents.CLIENT_STARTED — see
         // DynamicResourceBars.onInitializeClient. CA registers its layers in its own
         // onInitializeClient and entrypoint order is not guaranteed across mods, so calling

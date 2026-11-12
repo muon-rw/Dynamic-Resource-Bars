@@ -18,7 +18,42 @@ import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.GameType;
 
+import org.joml.Matrix3x2f;
+
+import java.util.ArrayList;
+import java.util.List;
+
 public final class CustomHudRenderer {
+
+    private static final List<Runnable> DEFERRED_OFFHAND_TASKS = new ArrayList<>(4);
+
+    public static void clearDeferredOffhandTasks() {
+        DEFERRED_OFFHAND_TASKS.clear();
+    }
+
+    public static void deferOffhandTask(GuiGraphicsExtractor graphics, Runnable task) {
+        Matrix3x2f snapshot = new Matrix3x2f(graphics.pose());
+        DEFERRED_OFFHAND_TASKS.add(() -> {
+            graphics.pose().pushMatrix();
+            graphics.pose().set(snapshot);
+            try {
+                task.run();
+            } finally {
+                graphics.pose().popMatrix();
+            }
+        });
+    }
+
+    public static void flushDeferredOffhandTasks() {
+        if (DEFERRED_OFFHAND_TASKS.isEmpty()) return;
+        try {
+            for (Runnable task : DEFERRED_OFFHAND_TASKS) {
+                task.run();
+            }
+        } finally {
+            DEFERRED_OFFHAND_TASKS.clear();
+        }
+    }
 
     private static final Identifier HUD_HOTBAR = Constants.loc("textures/gui/hud_hotbar.png");
     private static final Identifier HUD_OFFHAND_LEFT = Constants.loc("textures/gui/hud_offhand_left.png");
@@ -69,10 +104,10 @@ public final class CustomHudRenderer {
     }
 
     public static void renderHotbar(GuiGraphicsExtractor graphics, DeltaTracker deltaTracker) {
+        DEFERRED_OFFHAND_TASKS.clear();
         Minecraft mc = Minecraft.getInstance();
         if (!(mc.getCameraEntity() instanceof Player player)) return;
 
-        ItemStack offhand = player.getOffhandItem();
         HumanoidArm offhandArm = player.getMainArm().getOpposite();
         int screenCenter = graphics.guiWidth() / 2;
         int guiHeight = graphics.guiHeight();
@@ -85,28 +120,11 @@ public final class CustomHudRenderer {
                 screenCenter - 91 - 1 + player.getInventory().getSelectedSlot() * 20,
                 guiHeight - 22 - 1, 24, 23);
 
-        if (!offhand.isEmpty()) {
-            if (offhandArm == HumanoidArm.LEFT) {
-                graphics.blit(RenderPipelines.GUI_TEXTURED, HUD_OFFHAND_LEFT,
-                        screenCenter - 123, guiHeight - 25, 0, 0,
-                        OFFHAND_TEX_WIDTH, OFFHAND_TEX_HEIGHT, OFFHAND_TEX_WIDTH, OFFHAND_TEX_HEIGHT, -1);
-            } else {
-                graphics.blit(RenderPipelines.GUI_TEXTURED, HUD_OFFHAND_RIGHT,
-                        screenCenter + 96, guiHeight - 25, 0, 0,
-                        OFFHAND_TEX_WIDTH, OFFHAND_TEX_HEIGHT, OFFHAND_TEX_WIDTH, OFFHAND_TEX_HEIGHT, -1);
-            }
-        }
-
         int seed = 1;
         int itemY = guiHeight - 19;
         for (int i = 0; i < 9; i++) {
             int itemX = screenCenter - 90 + i * 20 + 2;
             renderSlot(graphics, deltaTracker, player, player.getInventory().getItem(i), itemX, itemY, seed++);
-        }
-
-        if (!offhand.isEmpty()) {
-            int offhandX = offhandArm == HumanoidArm.LEFT ? screenCenter - 91 - 26 : screenCenter + 91 + 10;
-            renderSlot(graphics, deltaTracker, player, offhand, offhandX, itemY, seed);
         }
 
         if (mc.options.attackIndicator().get() == AttackIndicatorStatus.HOTBAR && mc.player != null) {
@@ -119,6 +137,32 @@ public final class CustomHudRenderer {
                 graphics.blitSprite(RenderPipelines.GUI_TEXTURED, HOTBAR_ATTACK_INDICATOR_PROGRESS_SPRITE, 18, 18, 0, 18 - progress, indX, indY + 18 - progress, 18, progress);
             }
         }
+    }
+
+    public static void renderOffhand(GuiGraphicsExtractor graphics, DeltaTracker deltaTracker) {
+        Minecraft mc = Minecraft.getInstance();
+        if (!(mc.getCameraEntity() instanceof Player player)) return;
+
+        ItemStack offhand = player.getOffhandItem();
+        if (offhand.isEmpty()) return;
+
+        HumanoidArm offhandArm = player.getMainArm().getOpposite();
+        int screenCenter = graphics.guiWidth() / 2;
+        int guiHeight = graphics.guiHeight();
+
+        if (offhandArm == HumanoidArm.LEFT) {
+            graphics.blit(RenderPipelines.GUI_TEXTURED, HUD_OFFHAND_LEFT,
+                    screenCenter - 123, guiHeight - 25, 0, 0,
+                    OFFHAND_TEX_WIDTH, OFFHAND_TEX_HEIGHT, OFFHAND_TEX_WIDTH, OFFHAND_TEX_HEIGHT, -1);
+        } else {
+            graphics.blit(RenderPipelines.GUI_TEXTURED, HUD_OFFHAND_RIGHT,
+                    screenCenter + 96, guiHeight - 25, 0, 0,
+                    OFFHAND_TEX_WIDTH, OFFHAND_TEX_HEIGHT, OFFHAND_TEX_WIDTH, OFFHAND_TEX_HEIGHT, -1);
+        }
+
+        int itemY = guiHeight - 19;
+        int offhandX = offhandArm == HumanoidArm.LEFT ? screenCenter - 91 - 26 : screenCenter + 91 + 10;
+        renderSlot(graphics, deltaTracker, player, offhand, offhandX, itemY, 10);
     }
 
     public static void renderInfoBar(GuiGraphicsExtractor graphics, DeltaTracker deltaTracker) {
