@@ -27,6 +27,9 @@ public final class AppleSkinCancellationFabric {
         HUDOverlayEvent.Saturation.EVENT.register(event -> {
             if (suppressFoodOverlays()) event.isCanceled = true;
         });
+        HUDOverlayEvent.Exhaustion.EVENT.register(event -> {
+            if (suppressFoodOverlays()) event.isCanceled = true;
+        });
         // Health restored sits on the vanilla heart row. When our health bar is custom, we
         // render the estimated-health-on-eat preview ourselves on top of the bar fill.
         HUDOverlayEvent.HealthRestored.EVENT.register(event -> {

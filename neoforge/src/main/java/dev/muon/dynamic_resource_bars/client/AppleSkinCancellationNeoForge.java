@@ -24,6 +24,9 @@ public final class AppleSkinCancellationNeoForge {
         NeoForge.EVENT_BUS.addListener(HUDOverlayEvent.Saturation.class, event -> {
             if (suppressFoodOverlays()) event.setCanceled(true);
         });
+        NeoForge.EVENT_BUS.addListener(HUDOverlayEvent.Exhaustion.class, event -> {
+            if (suppressFoodOverlays()) event.setCanceled(true);
+        });
         NeoForge.EVENT_BUS.addListener(HUDOverlayEvent.HealthRestored.class, event -> {
             if (suppressHealthOverlays()) event.setCanceled(true);
         });
