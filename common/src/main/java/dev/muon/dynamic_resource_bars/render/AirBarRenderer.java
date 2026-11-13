@@ -1,6 +1,7 @@
 package dev.muon.dynamic_resource_bars.render;
 
 import dev.muon.dynamic_resource_bars.Constants;
+import dev.muon.dynamic_resource_bars.compat.LsoCompat;
 import dev.muon.dynamic_resource_bars.config.ClientConfig;
 import dev.muon.dynamic_resource_bars.config.ModConfigManager;
 import dev.muon.dynamic_resource_bars.util.AnimationMetadata;
@@ -73,19 +74,55 @@ public class AirBarRenderer extends AbstractBarRenderer {
         );
     }
 
-    @Override protected ResourceLocation backgroundTexture() { return Constants.loc("textures/gui/air_background.png"); }
-    @Override protected ResourceLocation foregroundTexture() { return Constants.loc("textures/gui/air_foreground.png"); }
-    @Override protected ResourceLocation barTexture(Player p, float c, float m) { return Constants.loc("textures/gui/air_bar.png"); }
+    private static final float CRITICAL_RATIO = 0.2f;
+
+    private static final ResourceLocation BACKGROUND_ID = Constants.loc("textures/gui/air_background.png");
+    private static final ResourceLocation FOREGROUND_ID = Constants.loc("textures/gui/air_foreground.png");
+    private static final ResourceLocation AIR_BAR = Constants.loc("textures/gui/air_bar.png");
+    private static final ResourceLocation AIR_BAR_CRITICAL = Constants.loc("textures/gui/air_bar_critical.png");
+    private static final ResourceLocation THIRST_BAR = Constants.loc("textures/gui/thirst_bar.png");
+    private static final ResourceLocation THIRST_BAR_THIRSTY = Constants.loc("textures/gui/thirst_bar_thirsty.png");
+    private static final ResourceLocation THIRST_BAR_HEAT = Constants.loc("textures/gui/thirst_bar_heat.png");
+    private static final ResourceLocation THIRST_BAR_CRITICAL = Constants.loc("textures/gui/thirst_bar_critical.png");
+
+    @Override protected ResourceLocation backgroundTexture() { return BACKGROUND_ID; }
+    @Override protected ResourceLocation foregroundTexture() { return FOREGROUND_ID; }
+
+    @Override
+    protected ResourceLocation barTexture(Player player, float current, float max) {
+        float ratio = max <= 0 ? 0f : current / max;
+        if (isShowingThirst(player)) {
+            if (LsoCompat.hasThirstEffect(player)) return THIRST_BAR_THIRSTY;
+            if (LsoCompat.hasHeatThirstEffect(player)) return THIRST_BAR_HEAT;
+            if (ratio <= CRITICAL_RATIO) return THIRST_BAR_CRITICAL;
+            return THIRST_BAR;
+        }
+        return ratio <= CRITICAL_RATIO ? AIR_BAR_CRITICAL : AIR_BAR;
+    }
     @Override protected AnimationMetadata.AnimationData barAnimation() { return AnimationMetadataCache.getAirBarAnimation(); }
     @Override protected AnimationMetadata.ScalingInfo backgroundScaling() { return AnimationMetadataCache.getAirBackgroundScaling(); }
     @Override protected AnimationMetadata.ScalingInfo foregroundScaling() { return AnimationMetadataCache.getAirForegroundScaling(); }
 
-    @Override protected float currentValue(Player player) { return player.getAirSupply(); }
-    @Override protected float maxValue(Player player) { return player.getMaxAirSupply(); }
+    private static boolean isShowingThirst(Player player) {
+        return LsoCompat.isThirstActive(player) && player.getAirSupply() >= player.getMaxAirSupply();
+    }
 
-    /** Air hides when full unless the player is underwater. */
+    @Override
+    protected float currentValue(Player player) {
+        return isShowingThirst(player) ? LsoCompat.getCurrentThirst(player) : player.getAirSupply();
+    }
+
+    @Override
+    protected float maxValue(Player player) {
+        return isShowingThirst(player) ? LsoCompat.getMaxThirst(player) : player.getMaxAirSupply();
+    }
+
+    /** Air hides when full unless underwater; thirst hides when full (when smart fade is active). */
     @Override
     protected boolean smartFadeTrigger(Player player, float current, float max) {
+        if (isShowingThirst(player)) {
+            return current >= max;
+        }
         return !player.isUnderWater() && current >= max;
     }
 
@@ -103,6 +140,7 @@ public class AirBarRenderer extends AbstractBarRenderer {
                                      float current, float max, ScreenRect barRect, float alpha) {
         ClientConfig c = ModConfigManager.getClient();
         if (!c.enableAirIcon && !EditModeManager.isEditModeEnabled()) return;
+        if (isShowingThirst(player) && !EditModeManager.isEditModeEnabled()) return;
         int displayAir = (EditModeManager.isEditModeEnabled() && current >= max) ? (int) (max / 2f) : (int) current;
         AirIcon icon = AirIcon.forValue(displayAir, (int) max);
         ScreenRect rect = getSubElementRect(SubElementType.ICON, player);

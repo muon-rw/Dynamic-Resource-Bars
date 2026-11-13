@@ -45,6 +45,8 @@ dependencies {
     compileOnly("com.hollingsworth.ars_nouveau:ars_nouveau-${minecraft_version}:${ars_nouveau_version}") { transitive = false }
     compileOnly("io.redspace:irons_spellbooks:${irons_spellbooks_version}") { transitive = false }
     compileOnly("io.redspace:irons_lib:${irons_lib_version}") { transitive = false }
+    compileOnly("maven.modrinth:legendary-survival-overhaul:${lso_neoforge_version}") { transitive = false }
+    compileOnly("maven.modrinth:just-another-witchery-remake:${witchery_neoforge_version}") { transitive = false }
 
     // Runtime-only testing & transitive deps
     localRuntime "maven.modrinth:frostiful:${frostiful_neoforge_version}"

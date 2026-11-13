@@ -3,6 +3,7 @@ package dev.muon.dynamic_resource_bars.render;
 import dev.muon.dynamic_resource_bars.Constants;
 import dev.muon.dynamic_resource_bars.compat.AppleSkinCompat;
 import dev.muon.dynamic_resource_bars.compat.StaminaProviderManager;
+import dev.muon.dynamic_resource_bars.compat.VampireBloodCompat;
 import dev.muon.dynamic_resource_bars.config.ClientConfig;
 import dev.muon.dynamic_resource_bars.config.ModConfigManager;
 import dev.muon.dynamic_resource_bars.platform.Services;
@@ -181,6 +182,7 @@ public class StaminaBarRenderer extends AbstractBarRenderer {
                                      float current, float max, ScreenRect barRect, float alpha) {
         if (currentMount(player) != null) return; // Mount-health mode hides food-related overlays.
         if (ModConfigManager.getClient().staminaBarBehavior != StaminaBarBehavior.FOOD) return;
+        if (VampireBloodCompat.isVampire(player)) return;
         if (!Services.PLATFORM.isModLoaded(AppleSkinCompat.MOD_ID)) return;
 
         float saturation = player.getFoodData().getSaturationLevel();
@@ -232,6 +234,7 @@ public class StaminaBarRenderer extends AbstractBarRenderer {
         renderReserveFadingChunks(barRect, graphics);
 
         if (ModConfigManager.getClient().staminaBarBehavior != StaminaBarBehavior.FOOD) return;
+        if (VampireBloodCompat.isVampire(player)) return;
         if (!Services.PLATFORM.isModLoaded(AppleSkinCompat.MOD_ID)) return;
         ItemStack held = AppleSkinCompat.pickHeldFood(player);
         if (held.isEmpty()) return;

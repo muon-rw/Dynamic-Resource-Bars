@@ -3,6 +3,7 @@ package dev.muon.dynamic_resource_bars.config;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import dev.muon.dynamic_resource_bars.Constants; // For logging
+import dev.muon.dynamic_resource_bars.compat.LsoCompat;
 import dev.muon.dynamic_resource_bars.platform.Services;
 import dev.muon.dynamic_resource_bars.util.AbsorptionDisplayMode;
 import dev.muon.dynamic_resource_bars.util.HUDPositioning;
@@ -380,6 +381,7 @@ public class ClientConfig {
     public HUDPositioning.BarPlacement airBarAnchor;
     public boolean enableAirBackground;
     public BarVisibility airBarVisibility;
+    public boolean airVisibilityChangedWithThirstMod = false;
     public int airBackgroundWidth;
     public int airBackgroundHeight;
     public int airBarWidth;
@@ -862,6 +864,10 @@ public class ClientConfig {
         if (cfg.airBarBehavior == null) { cfg.airBarBehavior = DEFAULT_AIR_BAR_BEHAVIOR; modified = true; }
         if (cfg.airBarAnchor == null) { cfg.airBarAnchor = DEFAULT_AIR_BAR_ANCHOR; modified = true; }
         if (cfg.airBarVisibility == null) { cfg.airBarVisibility = DEFAULT_AIR_BAR_VISIBILITY; modified = true; }
+        if (LsoCompat.hasThirstMod() && !cfg.airVisibilityChangedWithThirstMod && cfg.airBarVisibility != BarVisibility.ALWAYS) {
+            cfg.airBarVisibility = BarVisibility.ALWAYS;
+            modified = true;
+        }
         if (cfg.showAirText == null) { cfg.showAirText = DEFAULT_SHOW_AIR_TEXT; modified = true; }
         if (cfg.airTextAlign == null) { cfg.airTextAlign = DEFAULT_AIR_TEXT_ALIGN; modified = true; }
         if (cfg.airFillDirection == null) { cfg.airFillDirection = DEFAULT_AIR_FILL_DIRECTION; modified = true; }

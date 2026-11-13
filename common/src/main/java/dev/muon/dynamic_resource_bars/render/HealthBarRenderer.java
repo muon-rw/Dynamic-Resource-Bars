@@ -24,6 +24,7 @@ import net.minecraft.world.entity.player.Player;
 
 import dev.muon.dynamic_resource_bars.compat.AppleSkinCompat;
 import dev.muon.dynamic_resource_bars.compat.FarmersDelightCompat;
+import dev.muon.dynamic_resource_bars.compat.LsoCompat;
 import dev.muon.dynamic_resource_bars.compat.ThermooCompat;
 import net.minecraft.world.item.ItemStack;
 
@@ -320,23 +321,30 @@ public class HealthBarRenderer extends AbstractBarRenderer {
     // load when Thermoo is absent, so the dependency stays optional.
 
     private static float getTemperatureScale(Player player) {
-        if (!Services.PLATFORM.isModLoaded(ThermooCompat.MOD_ID)) return 0f;
-        return ThermooCompat.getTemperatureScale(player);
+        if (Services.PLATFORM.isModLoaded(ThermooCompat.MOD_ID)) {
+            float thermoo = ThermooCompat.getTemperatureScale(player);
+            if (thermoo != 0f) return thermoo;
+        }
+        return LsoCompat.getTemperatureScale(player);
     }
 
     private static float getWetnessScale(Player player) {
-        if (!Services.PLATFORM.isModLoaded(ThermooCompat.MOD_ID)) return 0f;
-        return ThermooCompat.getSoakedScale(player);
+        float wet = Services.PLATFORM.isModLoaded(ThermooCompat.MOD_ID) ? ThermooCompat.getSoakedScale(player) : 0f;
+        return Math.max(wet, LsoCompat.getWetnessScale(player));
     }
 
     private static boolean isScorched(Player player) {
-        if (!Services.PLATFORM.isModLoaded(ThermooCompat.MOD_ID)) return false;
-        return ThermooCompat.isScorched(player);
+        if (Services.PLATFORM.isModLoaded(ThermooCompat.MOD_ID) && ThermooCompat.isScorched(player)) {
+            return true;
+        }
+        return LsoCompat.isScorched(player);
     }
 
     private static boolean isFrozen(Player player) {
         if (player.isFullyFrozen()) return true;
-        if (!Services.PLATFORM.isModLoaded(ThermooCompat.MOD_ID)) return false;
-        return ThermooCompat.isFrozen(player);
+        if (Services.PLATFORM.isModLoaded(ThermooCompat.MOD_ID) && ThermooCompat.isFrozen(player)) {
+            return true;
+        }
+        return LsoCompat.isFrozen(player);
     }
 }

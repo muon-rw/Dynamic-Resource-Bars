@@ -10,11 +10,17 @@ public class FoodStaminaProvider implements StaminaProvider {
 
     @Override
     public float getCurrentStamina(Player player) {
+        if (VampireBloodCompat.isVampire(player)) {
+            return VampireBloodCompat.getCurrentBlood(player);
+        }
         return player.getFoodData().getFoodLevel();
     }
 
     @Override
     public float getMaxStamina(Player player) {
+        if (VampireBloodCompat.isVampire(player)) {
+            return VampireBloodCompat.getMaxBlood(player);
+        }
         return 20.0f;
     }
 
@@ -28,6 +34,9 @@ public class FoodStaminaProvider implements StaminaProvider {
 
     @Override
     public String getBarTexture(Player player, float currentValue) {
+        if (VampireBloodCompat.isVampire(player)) {
+            return "stamina_bar_blood";
+        }
         if (Services.PLATFORM.isModLoaded(FarmersDelightCompat.MOD_ID) && FarmersDelightCompat.hasNourishment(player)) {
             return "stamina_bar_nourished";
         }

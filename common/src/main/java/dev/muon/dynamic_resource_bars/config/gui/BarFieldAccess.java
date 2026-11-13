@@ -1,5 +1,6 @@
 package dev.muon.dynamic_resource_bars.config.gui;
 
+import dev.muon.dynamic_resource_bars.compat.LsoCompat;
 import dev.muon.dynamic_resource_bars.config.ClientConfig;
 import dev.muon.dynamic_resource_bars.util.AbsorptionDisplayMode;
 import dev.muon.dynamic_resource_bars.util.BarVisibility;
@@ -650,7 +651,12 @@ public abstract class BarFieldAccess {
         public boolean enableIcon(ClientConfig c) { return c.enableAirIcon; }
         public void setEnableIcon(ClientConfig c, boolean v) { c.enableAirIcon = v; }
         public BarVisibility visibility(ClientConfig c) { return c.airBarVisibility; }
-        public void setVisibility(ClientConfig c, BarVisibility v) { c.airBarVisibility = v; }
+        public void setVisibility(ClientConfig c, BarVisibility v) {
+            c.airBarVisibility = v;
+            if (LsoCompat.hasThirstMod()) {
+                c.airVisibilityChangedWithThirstMod = true;
+            }
+        }
         public TextBehavior textBehavior(ClientConfig c) { return c.showAirText; }
         public void setTextBehavior(ClientConfig c, TextBehavior v) { c.showAirText = v; }
         public HUDPositioning.BarPlacement anchor(ClientConfig c) { return c.airBarAnchor; }
@@ -666,7 +672,8 @@ public abstract class BarFieldAccess {
         public void resetBehaviorFields(ClientConfig live, ClientConfig defaults) {
             live.airBarBehavior = defaults.airBarBehavior;
             live.airBarAnchor = defaults.airBarAnchor;
-            live.airBarVisibility = defaults.airBarVisibility;
+            live.airVisibilityChangedWithThirstMod = false;
+            live.airBarVisibility = LsoCompat.hasThirstMod() ? BarVisibility.ALWAYS : defaults.airBarVisibility;
             live.showAirText = defaults.showAirText;
             live.airTextAlign = defaults.airTextAlign;
             live.airTextScale = defaults.airTextScale;

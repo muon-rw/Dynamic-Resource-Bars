@@ -8,9 +8,14 @@ import dev.muon.dynamic_resource_bars.compat.AppleSkinCompat;
 import dev.muon.dynamic_resource_bars.compat.AppleSkinCompatNeoForge;
 import dev.muon.dynamic_resource_bars.compat.ArsNouveauManaProvider;
 import dev.muon.dynamic_resource_bars.compat.IronsSpellbooksManaProvider;
+import dev.muon.dynamic_resource_bars.compat.LsoCompat;
+import dev.muon.dynamic_resource_bars.compat.LsoCompatNeoForge;
 import dev.muon.dynamic_resource_bars.compat.ManaProviderManager;
 import dev.muon.dynamic_resource_bars.compat.ParaglidersStaminaProvider;
 import dev.muon.dynamic_resource_bars.compat.StaminaProviderManager;
+import dev.muon.dynamic_resource_bars.compat.VampireBloodCompat;
+import dev.muon.dynamic_resource_bars.compat.WitcheryAbilityCompat;
+import dev.muon.dynamic_resource_bars.compat.WitcheryCompatNeoForge;
 import dev.muon.dynamic_resource_bars.config.gui.ModConfigScreen;
 import dev.muon.dynamic_resource_bars.harness.UiHarness;
 import dev.muon.dynamic_resource_bars.platform.Services;
@@ -55,6 +60,14 @@ public class DynamicResourceBars {
         }
         if (Services.PLATFORM.isModLoaded(ManaProviderManager.ARS_NOUVEAU_MOD_ID)) {
             ManaProviderManager.setArsProvider(new ArsNouveauManaProvider());
+        }
+        if (Services.PLATFORM.isModLoaded(LsoCompat.MOD_ID)) {
+            LsoCompat.setProvider(new LsoCompatNeoForge());
+        }
+        if (Services.PLATFORM.isModLoaded(VampireBloodCompat.WITCHERY_MOD_ID)) {
+            WitcheryCompatNeoForge witcheryCompat = new WitcheryCompatNeoForge();
+            VampireBloodCompat.setProvider(witcheryCompat);
+            WitcheryAbilityCompat.setProvider(witcheryCompat);
         }
         NeoForgeCompatSuppression.install();
     }

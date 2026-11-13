@@ -18,6 +18,10 @@ public final class NeoForgeCompatSuppression {
     private static final ResourceLocation RPGMANA_HUD = ResourceLocation.fromNamespaceAndPath("rpgmana", "mana_hud");
     private static final ResourceLocation FD_COMFORT = ResourceLocation.fromNamespaceAndPath("farmersdelight", "comfort");
     private static final ResourceLocation FD_NOURISHMENT = ResourceLocation.fromNamespaceAndPath("farmersdelight", "nourishment");
+    private static final ResourceLocation LSO_TEMPERATURE = ResourceLocation.fromNamespaceAndPath("legendarysurvivaloverhaul", "temperature");
+    private static final ResourceLocation LSO_WETNESS = ResourceLocation.fromNamespaceAndPath("legendarysurvivaloverhaul", "wetness");
+    private static final ResourceLocation LSO_THIRST = ResourceLocation.fromNamespaceAndPath("legendarysurvivaloverhaul", "thirst");
+    private static final ResourceLocation LSO_COLD_HUNGER = ResourceLocation.fromNamespaceAndPath("legendarysurvivaloverhaul", "cold_hunger");
 
     private NeoForgeCompatSuppression() {}
 
@@ -49,6 +53,12 @@ public final class NeoForgeCompatSuppression {
         } else if (FD_COMFORT.equals(name) && config.healthBarBehavior == BarRenderBehavior.CUSTOM) {
             event.setCanceled(true);
         } else if (FD_NOURISHMENT.equals(name) && config.staminaBarBehavior == StaminaBarBehavior.FOOD) {
+            event.setCanceled(true);
+        } else if ((LSO_TEMPERATURE.equals(name) || LSO_WETNESS.equals(name)) && config.healthBarBehavior == BarRenderBehavior.CUSTOM) {
+            event.setCanceled(true);
+        } else if (LSO_THIRST.equals(name) && config.airBarBehavior != BarRenderBehavior.VANILLA) {
+            event.setCanceled(true);
+        } else if (LSO_COLD_HUNGER.equals(name) && config.staminaBarBehavior == StaminaBarBehavior.FOOD) {
             event.setCanceled(true);
         }
     }
