@@ -12,6 +12,7 @@ import dev.muon.dynamic_resource_bars.util.TextBehavior;
 import dev.muon.dynamic_resource_bars.util.FillDirection;
 import dev.muon.dynamic_resource_bars.util.BarRenderBehavior;
 import dev.muon.dynamic_resource_bars.util.BarVisibility;
+import dev.muon.dynamic_resource_bars.util.ManaEventTrigger;
 import dev.muon.dynamic_resource_bars.provider.ManaBarBehavior;
 import dev.muon.dynamic_resource_bars.provider.StaminaBarBehavior;
 
@@ -209,7 +210,9 @@ public class ClientConfig {
     public static final boolean DEFAULT_ENABLE_MANA_BACKGROUND = true;
     public static final boolean DEFAULT_ENABLE_MANA_FOREGROUND = true;
     public static final BarVisibility DEFAULT_MANA_BAR_VISIBILITY = BarVisibility.SMART_FADE;
-    public static final TextBehavior DEFAULT_SHOW_MANA_TEXT = TextBehavior.WHEN_NOT_FULL;
+    public static final TextBehavior DEFAULT_SHOW_MANA_TEXT = TextBehavior.NEVER;
+    public static final ManaEventTrigger DEFAULT_MANA_BAR_EVENT_TRIGGER = ManaEventTrigger.ON_DRAIN_ATTEMPT;
+    public static final ManaEventTrigger DEFAULT_MANA_TEXT_EVENT_TRIGGER = ManaEventTrigger.ON_DRAIN_ATTEMPT;
     public static final HorizontalAlignment DEFAULT_MANA_TEXT_ALIGN = HorizontalAlignment.CENTER;
     public static final FillDirection DEFAULT_MANA_FILL_DIRECTION = FillDirection.VERTICAL;
     public static final int DEFAULT_MANA_TOTAL_X_OFFSET = -18;
@@ -238,6 +241,8 @@ public class ClientConfig {
     public boolean enableManaForeground = DEFAULT_ENABLE_MANA_FOREGROUND;
     public BarVisibility manaBarVisibility = DEFAULT_MANA_BAR_VISIBILITY;
     public TextBehavior showManaText;
+    public ManaEventTrigger manaBarEventTrigger = DEFAULT_MANA_BAR_EVENT_TRIGGER;
+    public ManaEventTrigger manaTextEventTrigger = DEFAULT_MANA_TEXT_EVENT_TRIGGER;
     public HorizontalAlignment manaTextAlign;
     public FillDirection manaFillDirection;
     public int manaBackgroundWidth;
@@ -621,6 +626,8 @@ public class ClientConfig {
         this.manaBarAnchor = DEFAULT_MANA_BAR_ANCHOR;
         this.manaBarVisibility = DEFAULT_MANA_BAR_VISIBILITY;
         this.showManaText = DEFAULT_SHOW_MANA_TEXT;
+        this.manaBarEventTrigger = DEFAULT_MANA_BAR_EVENT_TRIGGER;
+        this.manaTextEventTrigger = DEFAULT_MANA_TEXT_EVENT_TRIGGER;
         this.manaTextAlign = DEFAULT_MANA_TEXT_ALIGN;
         this.enableManaForeground = DEFAULT_ENABLE_MANA_FOREGROUND;
         this.enableManaBackground = DEFAULT_ENABLE_MANA_BACKGROUND;
@@ -830,6 +837,8 @@ public class ClientConfig {
         if (cfg.manaBarAnchor == null) { cfg.manaBarAnchor = DEFAULT_MANA_BAR_ANCHOR; modified = true; }
         if (cfg.manaBarVisibility == null) { cfg.manaBarVisibility = DEFAULT_MANA_BAR_VISIBILITY; modified = true; }
         if (cfg.showManaText == null) { cfg.showManaText = DEFAULT_SHOW_MANA_TEXT; modified = true; }
+        if (cfg.manaBarEventTrigger == null) { cfg.manaBarEventTrigger = DEFAULT_MANA_BAR_EVENT_TRIGGER; modified = true; }
+        if (cfg.manaTextEventTrigger == null) { cfg.manaTextEventTrigger = DEFAULT_MANA_TEXT_EVENT_TRIGGER; modified = true; }
         if (cfg.manaTextAlign == null) { cfg.manaTextAlign = DEFAULT_MANA_TEXT_ALIGN; modified = true; }
         if (cfg.manaFillDirection == null) { cfg.manaFillDirection = DEFAULT_MANA_FILL_DIRECTION; modified = true; }
         if (cfg.manaBarBehavior == null) { cfg.manaBarBehavior = DEFAULT_MANA_BAR_BEHAVIOR; modified = true; }

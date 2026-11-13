@@ -19,6 +19,7 @@ import dev.muon.dynamic_resource_bars.util.EditModeManager;
 import dev.muon.dynamic_resource_bars.util.FillDirection;
 import dev.muon.dynamic_resource_bars.util.HUDPositioning;
 import dev.muon.dynamic_resource_bars.util.HorizontalAlignment;
+import dev.muon.dynamic_resource_bars.util.ManaEventTrigger;
 import dev.muon.dynamic_resource_bars.util.ScreenRect;
 import dev.muon.dynamic_resource_bars.util.SubElementType;
 import dev.muon.dynamic_resource_bars.util.TextBehavior;
@@ -1083,6 +1084,10 @@ public class HudEditorScreen extends Screen {
         }
         items.add(barVisibilityItem(bar));
         items.add(textVisibilityItem(bar));
+        if (bar.element == DraggableElement.MANA_BAR) {
+            items.add(manaBarEventItem(bar));
+            items.add(manaTextEventItem(bar));
+        }
         items.add(anchorPointItem(bar));
         items.add(fillDirectionItem(bar));
         if (bar.element == DraggableElement.HEALTH_BAR) {
@@ -1197,6 +1202,24 @@ public class HudEditorScreen extends Screen {
                 TextBehavior.values(),
                 TextBehavior::getTranslationKey,
                 bar.access::textBehavior, bar.access::setTextBehavior);
+    }
+
+    private ContextMenuItem manaBarEventItem(BarHandle bar) {
+        return enumItem(bar,
+                "gui.dynamic_resource_bars.context.mana_bar_event",
+                "gui.dynamic_resource_bars.enum_select.mana_bar_event",
+                ManaEventTrigger.values(),
+                ManaEventTrigger::getTranslationKey,
+                c -> c.manaBarEventTrigger, (c, v) -> c.manaBarEventTrigger = v);
+    }
+
+    private ContextMenuItem manaTextEventItem(BarHandle bar) {
+        return enumItem(bar,
+                "gui.dynamic_resource_bars.context.mana_text_event",
+                "gui.dynamic_resource_bars.enum_select.mana_text_event",
+                ManaEventTrigger.values(),
+                ManaEventTrigger::getTranslationKey,
+                c -> c.manaTextEventTrigger, (c, v) -> c.manaTextEventTrigger = v);
     }
 
     /** Toggle for the active sub-element's visibility — only added when {@link SubElementType#isToggleable()}. */

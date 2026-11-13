@@ -9,6 +9,8 @@ import dev.muon.dynamic_resource_bars.util.AnimationMetadata;
 import dev.muon.dynamic_resource_bars.util.AnimationMetadataCache;
 import dev.muon.dynamic_resource_bars.util.DraggableElement;
 import dev.muon.dynamic_resource_bars.util.FillDirection;
+import dev.muon.dynamic_resource_bars.util.ManaEventTrigger;
+import dev.muon.dynamic_resource_bars.util.RenderUtil;
 import dev.muon.dynamic_resource_bars.util.ScreenRect;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.resources.ResourceLocation;
@@ -19,6 +21,51 @@ public class ManaBarRenderer extends AbstractBarRenderer {
     public static final ManaBarRenderer INSTANCE = new ManaBarRenderer();
 
     private static final int RESERVED_MANA_COLOR = 0x232323;
+    private static final long BAR_EVENT_HOLD_MS = 100L;
+
+    private long lastBarEventTime = 0L;
+    private long lastTextEventTime = 0L;
+    private float previousObservedMana = -1f;
+    private boolean textShownByBaseRule = false;
+
+    public void onManaDrain() {
+        ClientConfig cfg = ModConfigManager.getClient();
+        long now = System.currentTimeMillis();
+        if (cfg.manaBarEventTrigger == ManaEventTrigger.ON_DRAIN
+                || cfg.manaBarEventTrigger == ManaEventTrigger.ON_DRAIN_ATTEMPT) {
+            lastBarEventTime = now;
+        }
+        if (cfg.manaTextEventTrigger == ManaEventTrigger.ON_DRAIN
+                || cfg.manaTextEventTrigger == ManaEventTrigger.ON_DRAIN_ATTEMPT) {
+            lastTextEventTime = now;
+        }
+    }
+
+    public void onManaDrainAttempt() {
+        ClientConfig cfg = ModConfigManager.getClient();
+        long now = System.currentTimeMillis();
+        if (cfg.manaBarEventTrigger == ManaEventTrigger.ON_DRAIN_ATTEMPT) {
+            lastBarEventTime = now;
+        }
+        if (cfg.manaTextEventTrigger == ManaEventTrigger.ON_DRAIN_ATTEMPT) {
+            lastTextEventTime = now;
+        }
+    }
+
+    private boolean isBarEventActive() {
+        if (ModConfigManager.getClient().manaBarEventTrigger == ManaEventTrigger.NEVER) {
+            return false;
+        }
+        return lastBarEventTime > 0L && (System.currentTimeMillis() - lastBarEventTime) < BAR_EVENT_HOLD_MS;
+    }
+
+    private boolean isTextEventActive() {
+        if (ModConfigManager.getClient().manaTextEventTrigger == ManaEventTrigger.NEVER) {
+            return false;
+        }
+        return lastTextEventTime > 0L
+                && (System.currentTimeMillis() - lastTextEventTime) < RenderUtil.textDisplayDuration();
+    }
 
     @Override protected DraggableElement draggable() { return DraggableElement.MANA_BAR; }
     @Override protected int editModeBarOutlineColor() { return 0xA000FFFF; }
@@ -64,6 +111,15 @@ public class ManaBarRenderer extends AbstractBarRenderer {
     /** Provider-driven visibility: lets compat providers override the simple "fade when full" rule. */
     @Override
     protected boolean shouldFadeWhenFull(Player player, float current, float max) {
+        if (previousObservedMana >= 0f && current < previousObservedMana) {
+            onManaDrain();
+        }
+        previousObservedMana = current;
+
+        if (isBarEventActive()) {
+            return false;
+        }
+
         ClientConfig cfg = ModConfigManager.getClient();
         switch (cfg.manaBarVisibility) {
             case ALWAYS -> { return false; }
@@ -78,6 +134,21 @@ public class ManaBarRenderer extends AbstractBarRenderer {
         boolean providerForcesShow = provider.forceShowBarConditions(player);
         boolean manaFull = provider.getCurrentMana() >= provider.getMaxMana();
         return !providerForcesShow && manaFull;
+    }
+
+    @Override
+    protected boolean shouldRenderText(float current, float max) {
+        textShownByBaseRule = super.shouldRenderText(current, max);
+        return textShownByBaseRule || isTextEventActive();
+    }
+
+    @Override
+    protected float textFadeMultiplier(float current, float max, BarConfig cfg) {
+        if (!textShownByBaseRule && isTextEventActive()) {
+            long timeSinceEvent = System.currentTimeMillis() - lastTextEventTime;
+            return RenderUtil.calculateTextAlpha(timeSinceEvent) / (float) RenderUtil.BASE_TEXT_ALPHA;
+        }
+        return super.textFadeMultiplier(current, max, cfg);
     }
 
     @Override

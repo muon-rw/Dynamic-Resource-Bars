@@ -61,6 +61,10 @@
   "gui.dynamic_resource_bars.bar_visibility.never": "Never",
   "gui.dynamic_resource_bars.bar_visibility.smart_fade": "Smart Fade",
 
+  "gui.dynamic_resource_bars.mana_event.never": "Never",
+  "gui.dynamic_resource_bars.mana_event.on_drain": "On Drain",
+  "gui.dynamic_resource_bars.mana_event.on_drain_attempt": "On Drain / Attempt",
+
   "gui.dynamic_resource_bars.absorption_display_mode.overlay": "Overlay",
   "gui.dynamic_resource_bars.absorption_display_mode.squeeze": "Squeeze",
 
@@ -154,9 +158,13 @@
   "gui.dynamic_resource_bars.context.fade_when_full": "Fade When Full: %s",
   "gui.dynamic_resource_bars.context.bar_visibility": "Bar Visibility: %s",
   "gui.dynamic_resource_bars.context.text_visibility": "Text Visibility: %s",
+  "gui.dynamic_resource_bars.context.mana_bar_event": "Show Bar on Event: %s",
+  "gui.dynamic_resource_bars.context.mana_text_event": "Show Text on Event: %s",
   "gui.dynamic_resource_bars.context.absorption_display_mode": "Absorption: %s",
   "gui.dynamic_resource_bars.enum_select.bar_visibility": "Bar Visibility",
   "gui.dynamic_resource_bars.enum_select.text_visibility": "Text Visibility",
+  "gui.dynamic_resource_bars.enum_select.mana_bar_event": "Show Mana Bar on Event",
+  "gui.dynamic_resource_bars.enum_select.mana_text_event": "Show Mana Text on Event",
   "gui.dynamic_resource_bars.enum_select.absorption_display_mode": "Absorption Display Mode",
   "gui.dynamic_resource_bars.context.text_behavior": "Text: %s",
   "gui.dynamic_resource_bars.context.text_align": "Text Align: %s",

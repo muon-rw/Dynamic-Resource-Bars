@@ -699,15 +699,20 @@ public abstract class AbstractBarRenderer {
     private int computeTextColor(float current, float max, float barAlpha, BarConfig cfg) {
         int baseColor = cfg.textColor() & 0xFFFFFF;
         int alpha = cfg.textOpacity();
+        alpha = (int) (alpha * textFadeMultiplier(current, max, cfg));
+        alpha = (int) (alpha * barAlpha);
+        alpha = Math.max(10, Math.min(255, alpha));
+        return (alpha << 24) | baseColor;
+    }
+
+    protected float textFadeMultiplier(float current, float max, BarConfig cfg) {
         if (!EditModeManager.isEditModeEnabled()
                 && cfg.textBehavior() == TextBehavior.WHEN_NOT_FULL
                 && current >= max) {
             long timeSinceFull = System.currentTimeMillis() - fullValueStartTime;
-            alpha = (int) (alpha * (RenderUtil.calculateTextAlpha(timeSinceFull) / (float) RenderUtil.BASE_TEXT_ALPHA));
+            return RenderUtil.calculateTextAlpha(timeSinceFull) / (float) RenderUtil.BASE_TEXT_ALPHA;
         }
-        alpha = (int) (alpha * barAlpha);
-        alpha = Math.max(10, Math.min(255, alpha));
-        return (alpha << 24) | baseColor;
+        return 1.0f;
     }
 
     // ===== Edit mode =====

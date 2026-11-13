@@ -448,6 +448,8 @@ public abstract class BarFieldAccess {
             live.manaBarAnchor = defaults.manaBarAnchor;
             live.manaBarVisibility = defaults.manaBarVisibility;
             live.showManaText = defaults.showManaText;
+            live.manaBarEventTrigger = defaults.manaBarEventTrigger;
+            live.manaTextEventTrigger = defaults.manaTextEventTrigger;
             live.manaTextAlign = defaults.manaTextAlign;
             live.manaTextScale = defaults.manaTextScale;
             live.manaFillDirection = defaults.manaFillDirection;
