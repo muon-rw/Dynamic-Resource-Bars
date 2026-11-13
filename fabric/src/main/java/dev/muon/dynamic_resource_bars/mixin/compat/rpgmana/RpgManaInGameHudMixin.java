@@ -1,4 +1,4 @@
-package dev.muon.dynamic_resource_bars.mixin.compat;
+package dev.muon.dynamic_resource_bars.mixin.compat.rpgmana;
 
 import dev.muon.dynamic_resource_bars.config.ModConfigManager;
 import dev.muon.dynamic_resource_bars.provider.ManaBarBehavior;

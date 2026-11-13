@@ -1,4 +1,4 @@
-package dev.muon.dynamic_resource_bars.mixin.compat;
+package dev.muon.dynamic_resource_bars.mixin.compat.farmersdelight;
 
 import dev.muon.dynamic_resource_bars.config.ClientConfig;
 import dev.muon.dynamic_resource_bars.config.ModConfigManager;

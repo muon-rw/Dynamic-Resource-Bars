@@ -7,10 +7,10 @@
   "mixins": [],
   "client": [
     "FabricGuiMixin",
-    "compat.FarmersDelightOverlayMixin",
-    "compat.ManaAttributesClientMixin",
-    "compat.RpgManaInGameHudMixin",
-    "compat.StaminaAttributesClientMixin"
+    "compat.farmersdelight.FarmersDelightOverlayMixin",
+    "compat.manaattributes.ManaAttributesClientMixin",
+    "compat.rpgmana.RpgManaInGameHudMixin",
+    "compat.staminaattributes.StaminaAttributesClientMixin"
   ],
   "server": [],
   "injectors": {

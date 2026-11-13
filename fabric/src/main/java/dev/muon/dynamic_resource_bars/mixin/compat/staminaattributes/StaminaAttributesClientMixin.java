@@ -1,7 +1,7 @@
-package dev.muon.dynamic_resource_bars.mixin.compat;
+package dev.muon.dynamic_resource_bars.mixin.compat.staminaattributes;
 
 import dev.muon.dynamic_resource_bars.config.ModConfigManager;
-import dev.muon.dynamic_resource_bars.provider.ManaBarBehavior;
+import dev.muon.dynamic_resource_bars.provider.StaminaBarBehavior;
 import net.minecraft.client.DeltaTracker;
 import net.minecraft.client.gui.GuiGraphics;
 import org.spongepowered.asm.mixin.Mixin;
@@ -11,12 +11,12 @@ import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
 @Pseudo
-@Mixin(targets = "com.github.theredbrain.manaattributes.registry.ClientEventsRegistry", remap = false)
-public class ManaAttributesClientMixin {
+@Mixin(targets = "com.github.theredbrain.staminaattributes.registry.ClientEventsRegistry", remap = false)
+public class StaminaAttributesClientMixin {
 
     @Inject(method = "lambda$initializeClientEvents$0", at = @At("HEAD"), cancellable = true, remap = false)
-    private static void cancelManaAttributesHud(GuiGraphics guiGraphics, DeltaTracker deltaTracker, CallbackInfo ci) {
-        if (ModConfigManager.getClient().manaBarBehavior == ManaBarBehavior.MANA_ATTRIBUTES) {
+    private static void cancelStaminaAttributesHud(GuiGraphics guiGraphics, DeltaTracker deltaTracker, CallbackInfo ci) {
+        if (ModConfigManager.getClient().staminaBarBehavior == StaminaBarBehavior.STAMINA_ATTRIBUTES) {
             ci.cancel();
         }
     }
