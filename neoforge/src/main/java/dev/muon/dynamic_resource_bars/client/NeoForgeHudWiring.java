@@ -2,6 +2,8 @@ package dev.muon.dynamic_resource_bars.client;
 
 import dev.muon.dynamic_resource_bars.Constants;
 import dev.muon.dynamic_resource_bars.compat.StaminaProviderManager;
+import dev.muon.dynamic_resource_bars.compat.VampireBloodCompat;
+import dev.muon.dynamic_resource_bars.compat.WitcheryCompatNeoForge;
 import dev.muon.dynamic_resource_bars.config.ClientConfig;
 import dev.muon.dynamic_resource_bars.config.ModConfigManager;
 import dev.muon.dynamic_resource_bars.platform.Services;
@@ -33,6 +35,7 @@ public final class NeoForgeHudWiring {
     private static final ResourceLocation MANA_BAR = Constants.loc("mana_bar");
     private static final ResourceLocation STAMINA_PARAGLIDERS = Constants.loc("stamina_paragliders");
     private static final ResourceLocation BAR_TEXT = Constants.loc("bar_text");
+    private static final ResourceLocation WITCHERY_ABILITY_HUD = Constants.loc("witchery_ability_hud");
 
     private NeoForgeHudWiring() {}
 
@@ -82,6 +85,10 @@ public final class NeoForgeHudWiring {
         }
 
         event.registerAbove(VanillaGuiLayers.EXPERIENCE_LEVEL, BAR_TEXT, HudBarOrchestrator::renderAllText);
+
+        if (Services.PLATFORM.isModLoaded(VampireBloodCompat.WITCHERY_MOD_ID)) {
+            event.registerAbove(BAR_TEXT, WITCHERY_ABILITY_HUD, WitcheryCompatNeoForge::renderAbilityHud);
+        }
     }
 
     private static void registerBar(RegisterGuiLayersEvent event, ResourceLocation anchor, ResourceLocation id,

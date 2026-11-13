@@ -2,6 +2,7 @@ package dev.muon.dynamic_resource_bars.render;
 
 import com.mojang.blaze3d.systems.RenderSystem;
 import dev.muon.dynamic_resource_bars.Constants;
+import dev.muon.dynamic_resource_bars.compat.WitcheryAbilityCompat;
 import dev.muon.dynamic_resource_bars.config.ModConfigManager;
 import net.minecraft.client.AttackIndicatorStatus;
 import net.minecraft.client.DeltaTracker;
@@ -117,9 +118,11 @@ public final class CustomHudRenderer {
                 screenCenter - 97, guiHeight - 25, 0, 0,
                 HOTBAR_TEX_WIDTH, HOTBAR_TEX_HEIGHT, HOTBAR_TEX_WIDTH, HOTBAR_TEX_HEIGHT);
 
-        graphics.blitSprite(HOTBAR_SELECTION_SPRITE,
-                screenCenter - 91 - 1 + player.getInventory().selected * 20,
-                guiHeight - 22 - 1, 24, 23);
+        if (!WitcheryAbilityCompat.hasSelectedAbility(player)) {
+            graphics.blitSprite(HOTBAR_SELECTION_SPRITE,
+                    screenCenter - 91 - 1 + player.getInventory().selected * 20,
+                    guiHeight - 22 - 1, 24, 23);
+        }
         RenderSystem.disableBlend();
 
         int seed = 1;
