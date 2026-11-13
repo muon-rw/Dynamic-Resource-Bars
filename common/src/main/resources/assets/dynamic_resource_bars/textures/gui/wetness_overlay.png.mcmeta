@@ -1,4 +1,8 @@
 {
+  "animation": {
+    "frametime": 2,
+    "height": 66
+  },
   "gui": {
     "scaling": {
       "type": "stretch"

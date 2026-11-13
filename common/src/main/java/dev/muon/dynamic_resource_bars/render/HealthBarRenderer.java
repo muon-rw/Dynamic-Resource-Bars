@@ -1,5 +1,6 @@
 package dev.muon.dynamic_resource_bars.render;
 
+import com.mojang.blaze3d.systems.RenderSystem;
 import dev.muon.dynamic_resource_bars.Constants;
 import dev.muon.dynamic_resource_bars.config.ClientConfig;
 import dev.muon.dynamic_resource_bars.config.ModConfigManager;
@@ -126,15 +127,24 @@ public class HealthBarRenderer extends AbstractBarRenderer {
 
         float tempScale = getTemperatureScale(player);
         if (tempScale != 0) {
-            ResourceLocation tex = tempScale > 0 ? HEAT_OVERLAY : COLD_OVERLAY;
-            int width = (int) (barRect.width() * Math.abs(tempScale));
-            AnimationMetadata.ScalingInfo scaling = tempScale > 0
-                    ? AnimationMetadataCache.getHeatOverlayScaling()
-                    : AnimationMetadataCache.getColdOverlayScaling();
-            AnimationMetadata.TextureDimensions dims = AnimationMetadataCache.getTextureDimensions(tex);
-            NineSliceRenderer.renderWithScaling(graphics, tex, scaling,
-                    barRect.x(), barRect.y(), width, barRect.height(),
-                    dims.width, dims.height, tint);
+            float magnitude = Math.min(1f, Math.abs(tempScale));
+            if (tempScale > 0) {
+                AnimationMetadata.AnimationData anim = AnimationMetadataCache.getHeatOverlayAnimation();
+                int tiers = Math.max(1, anim.textureWidth / anim.frameHeight);
+                int frameWidth = anim.textureWidth / tiers;
+                int tier = Math.min(tiers - 1, (int) (magnitude * tiers));
+                int uOffset = tier * frameWidth;
+                int vOffset = AnimationMetadata.calculateAnimationOffset(anim, currentTicks());
+                renderOverlayFrame(graphics, HEAT_OVERLAY, anim, uOffset, vOffset, frameWidth, anim.frameHeight,
+                        barRect.x(), barRect.y(), barRect.width(), barRect.height(), alpha);
+            } else {
+                AnimationMetadata.AnimationData anim = AnimationMetadataCache.getColdOverlayAnimation();
+                int frameIndex = Math.min(anim.totalFrames - 1,
+                        Math.max(0, Math.round(magnitude * (anim.totalFrames - 1))));
+                int vOffset = frameIndex * anim.frameHeight;
+                renderOverlayFrame(graphics, COLD_OVERLAY, anim, 0, vOffset, anim.textureWidth, anim.frameHeight,
+                        barRect.x(), barRect.y(), barRect.width(), barRect.height(), alpha);
+            }
         }
 
         // Pulse overlay is OVERLAY-mode only — in SQUEEZE the bar's absorption slice carries
@@ -265,12 +275,33 @@ public class HealthBarRenderer extends AbstractBarRenderer {
         }
         float wet = getWetnessScale(player);
         if (wet > 0) {
-            AnimationMetadata.TextureDimensions dims = AnimationMetadataCache.getTextureDimensions(WETNESS_OVERLAY);
-            NineSliceRenderer.renderWithScaling(graphics, WETNESS_OVERLAY,
-                    AnimationMetadataCache.getWetnessOverlayScaling(),
-                    complexRect.x(), complexRect.y(), complexRect.width(), complexRect.height(),
-                    dims.width, dims.height,
-                    RenderUtil.whiteWithAlpha(wet * alpha));
+            AnimationMetadata.AnimationData anim = AnimationMetadataCache.getWetnessOverlayAnimation();
+            int baseFrameWidth = Math.max(1, (anim.frameHeight * 32) / 33);
+            int tiers = Math.max(1, anim.textureWidth / baseFrameWidth);
+            int frameWidth = anim.textureWidth / tiers;
+            int tier = Math.min(tiers - 1, (int) (Math.min(1f, wet) * tiers));
+            int uOffset = tier * frameWidth;
+            int vOffset = AnimationMetadata.calculateAnimationOffset(anim, currentTicks());
+            renderOverlayFrame(graphics, WETNESS_OVERLAY, anim, uOffset, vOffset, frameWidth, anim.frameHeight,
+                    complexRect.x(), complexRect.y(), complexRect.width(), complexRect.height(), alpha);
+        }
+    }
+
+    private void renderOverlayFrame(GuiGraphics graphics, ResourceLocation texture,
+                                    AnimationMetadata.AnimationData anim,
+                                    int uOffset, int vOffset, int frameWidth, int frameHeight,
+                                    int x, int y, int width, int height, float alpha) {
+        float clampedAlpha = Math.max(0f, Math.min(1f, alpha));
+        RenderSystem.enableBlend();
+        RenderSystem.setShaderColor(1.0f, 1.0f, 1.0f, clampedAlpha);
+        try {
+            graphics.blit(texture, x, y, width, height,
+                    (float) uOffset, (float) vOffset,
+                    frameWidth, frameHeight,
+                    anim.textureWidth, anim.textureHeight);
+        } finally {
+            RenderSystem.setShaderColor(1.0f, 1.0f, 1.0f, 1.0f);
+            RenderSystem.disableBlend();
         }
     }
 

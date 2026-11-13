@@ -89,6 +89,18 @@ public class AnimationMetadataCache {
         ResourceLocation location = Constants.loc("textures/gui/armor_bar.png");
         return getOrLoad(location);
     }
+
+    public static AnimationMetadata.AnimationData getHeatOverlayAnimation() {
+        return getOrLoad(Constants.loc("textures/gui/heat_overlay.png"));
+    }
+
+    public static AnimationMetadata.AnimationData getColdOverlayAnimation() {
+        return getOrLoad(Constants.loc("textures/gui/cold_overlay.png"));
+    }
+
+    public static AnimationMetadata.AnimationData getWetnessOverlayAnimation() {
+        return getOrLoad(Constants.loc("textures/gui/wetness_overlay.png"));
+    }
     
     /**
      * Internal method to get or load animation data
