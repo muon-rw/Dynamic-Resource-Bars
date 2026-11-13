@@ -1,6 +1,6 @@
 package dev.muon.dynamic_resource_bars.config.gui;
 
-import net.minecraft.client.gui.GuiGraphicsExtractor;
+import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.network.chat.Component;
@@ -44,10 +44,10 @@ public class ConfirmResetScreen extends Screen {
     }
 
     @Override
-    public void extractRenderState(@NotNull GuiGraphicsExtractor graphics, int mouseX, int mouseY, float partialTicks) {
-        super.extractRenderState(graphics, mouseX, mouseY, partialTicks);
-        graphics.centeredText(this.font, this.title, this.width / 2, this.height / 2 - 20, 0xFFFFFFFF);
-        graphics.centeredText(this.font, this.explanation, this.width / 2, this.height / 2 - 5, 0xFFFFFFFF);
+    public void render(@NotNull GuiGraphics graphics, int mouseX, int mouseY, float partialTicks) {
+        super.render(graphics, mouseX, mouseY, partialTicks);
+        graphics.drawCenteredString(this.font, this.title, this.width / 2, this.height / 2 - 20, 0xFFFFFFFF);
+        graphics.drawCenteredString(this.font, this.explanation, this.width / 2, this.height / 2 - 5, 0xFFFFFFFF);
     }
 
     @Override

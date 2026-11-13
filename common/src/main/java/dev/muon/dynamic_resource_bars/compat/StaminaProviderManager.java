@@ -19,11 +19,11 @@ import net.minecraft.client.Minecraft;
  */
 public class StaminaProviderManager {
 
-    public static final String COMBAT_ATTRIBUTES_MOD_ID = "combat_attributes";
+    public static final String STAMINA_ATTRIBUTES_MOD_ID = "staminaattributes";
     public static final String PARAGLIDERS_MOD_ID = "paraglider";
 
     private static FoodStaminaProvider foodProvider;
-    private static StaminaProvider combatAttributesProvider;
+    private static StaminaProvider staminaAttributesProvider;
     private static StaminaProvider paraglidersProvider;
 
     private static final StaminaProvider EMPTY_PROVIDER = new StaminaProvider() {
@@ -38,8 +38,8 @@ public class StaminaProviderManager {
         StaminaProviderRegistry.clear();
         if (foodProvider == null) foodProvider = new FoodStaminaProvider();
         StaminaProviderRegistry.registerProvider(() -> foodProvider);
-        if (combatAttributesProvider != null) {
-            StaminaProviderRegistry.registerProvider(() -> combatAttributesProvider);
+        if (staminaAttributesProvider != null) {
+            StaminaProviderRegistry.registerProvider(() -> staminaAttributesProvider);
         }
         if (paraglidersProvider != null) {
             StaminaProviderRegistry.registerProvider(() -> paraglidersProvider);
@@ -50,7 +50,7 @@ public class StaminaProviderManager {
     public static StaminaProvider getProviderForBehavior(StaminaBarBehavior behavior) {
         return switch (behavior) {
             case FOOD -> foodProvider != null ? foodProvider : EMPTY_PROVIDER;
-            case COMBAT_ATTRIBUTES -> combatAttributesProvider != null ? combatAttributesProvider : EMPTY_PROVIDER;
+            case STAMINA_ATTRIBUTES -> staminaAttributesProvider != null ? staminaAttributesProvider : EMPTY_PROVIDER;
             case PARAGLIDERS -> paraglidersProvider != null ? paraglidersProvider : EMPTY_PROVIDER;
             case OFF -> EMPTY_PROVIDER;
         };
@@ -68,14 +68,18 @@ public class StaminaProviderManager {
     public static boolean isModLoaded(StaminaBarBehavior behavior) {
         return switch (behavior) {
             case FOOD -> true;
-            case COMBAT_ATTRIBUTES -> combatAttributesProvider != null;
+            case STAMINA_ATTRIBUTES -> staminaAttributesProvider != null;
             case PARAGLIDERS -> paraglidersProvider != null;
             case OFF -> true;
         };
     }
 
     public static boolean hasAnyStaminaMods() {
-        return combatAttributesProvider != null || paraglidersProvider != null;
+        return staminaAttributesProvider != null || paraglidersProvider != null;
+    }
+
+    public static void setStaminaAttributesProvider(StaminaProvider provider) {
+        staminaAttributesProvider = provider;
     }
 
     /**
@@ -89,10 +93,6 @@ public class StaminaProviderManager {
 
     public static void initialize() {
         foodProvider = new FoodStaminaProvider();
-        // Optional: only instantiate when CA is present, so the CA classes never get touched without the mod.
-        if (Services.PLATFORM.isModLoaded(COMBAT_ATTRIBUTES_MOD_ID)) {
-            combatAttributesProvider = new CombatAttributesStaminaProvider();
-        }
         updateActiveProvider();
     }
 

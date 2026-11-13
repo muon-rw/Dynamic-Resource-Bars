@@ -12,7 +12,7 @@ import dev.muon.dynamic_resource_bars.render.StaminaBarRenderer;
 import dev.muon.dynamic_resource_bars.util.BarRenderBehavior;
 import net.minecraft.client.DeltaTracker;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.gui.GuiGraphicsExtractor;
+import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.world.entity.player.Player;
 
 /**
@@ -33,7 +33,7 @@ public final class HudBarOrchestrator {
         return mc.player;
     }
 
-    public static boolean renderHealth(GuiGraphicsExtractor graphics, DeltaTracker deltaTracker) {
+    public static boolean renderHealth(GuiGraphics graphics, DeltaTracker deltaTracker) {
         BarRenderBehavior behavior = ModConfigManager.getClient().healthBarBehavior;
         if (behavior == BarRenderBehavior.VANILLA) return false;
         Player player = clientPlayer();
@@ -42,7 +42,7 @@ public final class HudBarOrchestrator {
         return true;
     }
 
-    public static boolean renderFood(GuiGraphicsExtractor graphics, DeltaTracker deltaTracker) {
+    public static boolean renderFood(GuiGraphics graphics, DeltaTracker deltaTracker) {
         ClientConfig config = ModConfigManager.getClient();
         if (!StaminaBarBehavior.FOOD.equals(config.staminaBarBehavior)) return false;
         Player player = clientPlayer();
@@ -55,7 +55,7 @@ public final class HudBarOrchestrator {
      * Three-state behavior: VANILLA → fall through, CUSTOM → render ours, HIDDEN → suppress
      * the vanilla layer and render nothing.
      */
-    public static boolean renderArmor(GuiGraphicsExtractor graphics, DeltaTracker deltaTracker) {
+    public static boolean renderArmor(GuiGraphics graphics, DeltaTracker deltaTracker) {
         BarRenderBehavior behavior = ModConfigManager.getClient().armorBarBehavior;
         if (behavior == BarRenderBehavior.VANILLA) return false;
         Player player = clientPlayer();
@@ -64,7 +64,7 @@ public final class HudBarOrchestrator {
         return true;
     }
 
-    public static boolean renderAir(GuiGraphicsExtractor graphics, DeltaTracker deltaTracker) {
+    public static boolean renderAir(GuiGraphics graphics, DeltaTracker deltaTracker) {
         BarRenderBehavior behavior = ModConfigManager.getClient().airBarBehavior;
         if (behavior == BarRenderBehavior.VANILLA) return false;
         Player player = clientPlayer();
@@ -74,7 +74,7 @@ public final class HudBarOrchestrator {
     }
 
     /** Free-standing mana render — no vanilla equivalent. Loader wirings register this above PLAYER_HEALTH. */
-    public static void renderMana(GuiGraphicsExtractor graphics, DeltaTracker deltaTracker) {
+    public static void renderMana(GuiGraphics graphics, DeltaTracker deltaTracker) {
         Player player = clientPlayer();
         if (player == null) return;
         ManaBarRenderer.INSTANCE.render(graphics, player, deltaTracker);
@@ -87,14 +87,10 @@ public final class HudBarOrchestrator {
     }
 
     /**
-     * Renders the stamina bar from the mount-health slot. Used by Fabric, where
-     * {@code FOOD_BAR} is a virtual layer that doesn't fire when the player is mounted on a
-     * hearted vehicle (Mojang skips the {@code extractFood} call). The stamina renderer detects
-     * the mount internally and switches to mount HP — this just routes the render through the
-     * layer that DOES fire while mounted. NeoForge doesn't need this hook because its
-     * {@code FOOD_LEVEL} layer always fires.
+     * Renders the stamina bar from the mount-health slot when the player is mounted on a hearted
+     * vehicle. The stamina renderer detects the mount internally and switches to mount HP.
      */
-    public static boolean renderStaminaInMountSlot(GuiGraphicsExtractor graphics, DeltaTracker deltaTracker) {
+    public static boolean renderStaminaInMountSlot(GuiGraphics graphics, DeltaTracker deltaTracker) {
         if (!suppressVehicleHealth()) return false;
         Player player = clientPlayer();
         if (player == null) return false;
@@ -102,14 +98,8 @@ public final class HudBarOrchestrator {
         return true;
     }
 
-    /**
-     * Drives the render from Combat Attributes' stamina layer slot. When our stamina source is
-     * CA, our DRB-styled bar takes over CA's slot (CA's own pip-bar render is replaced); otherwise
-     * the caller falls through to CA's own render. The stamina-bar position itself comes from
-     * {@code staminaBarAnchor} in config — this hook only decides which layer triggers the render.
-     */
-    public static boolean renderStaminaFromCASlot(GuiGraphicsExtractor graphics, DeltaTracker deltaTracker) {
-        if (ModConfigManager.getClient().staminaBarBehavior != StaminaBarBehavior.COMBAT_ATTRIBUTES) return false;
+    public static boolean renderStaminaForStaminaAttributes(GuiGraphics graphics, DeltaTracker deltaTracker) {
+        if (ModConfigManager.getClient().staminaBarBehavior != StaminaBarBehavior.STAMINA_ATTRIBUTES) return false;
         Player player = clientPlayer();
         if (player == null) return false;
         StaminaBarRenderer.INSTANCE.render(graphics, player, deltaTracker);
@@ -117,42 +107,34 @@ public final class HudBarOrchestrator {
     }
 
     /**
-     * Free-standing trigger for the Paragliders-sourced stamina bar (NeoForge-only). Registered
-     * via {@code event.registerAbove(PLAYER_HEALTH, ...)} like {@link #renderMana}, since wrapping
-     * Paragliders' own {@code paraglider:stamina_wheel} layer fails on event-listener ordering
-     * (Paragliders registers that layer in a default-priority listener that runs after ours).
-     * The wheel itself is suppressed via the {@code @ParagliderPlugin} on the loader side.
-     *
-     * <p>Gates on {@link StaminaBarBehavior#PARAGLIDERS} so the renderer doesn't double-fire when
-     * the user has FOOD or CA selected — those modes already trigger via the food-bar wrap and the
-     * CA-bar wrap respectively.
+     * Free-standing trigger for the Paragliders-sourced stamina bar (NeoForge-only).
      */
-    public static void renderStaminaForParagliders(GuiGraphicsExtractor graphics, DeltaTracker deltaTracker) {
+    public static void renderStaminaForParagliders(GuiGraphics graphics, DeltaTracker deltaTracker) {
         if (ModConfigManager.getClient().staminaBarBehavior != StaminaBarBehavior.PARAGLIDERS) return;
         Player player = clientPlayer();
         if (player == null) return;
         StaminaBarRenderer.INSTANCE.render(graphics, player, deltaTracker);
     }
 
-    public static boolean renderHotbar(GuiGraphicsExtractor graphics, DeltaTracker deltaTracker) {
+    public static boolean renderHotbar(GuiGraphics graphics, DeltaTracker deltaTracker) {
         if (!CustomHudRenderer.shouldReplaceHotbar()) return false;
         CustomHudRenderer.renderHotbar(graphics, deltaTracker);
         return true;
     }
 
-    public static boolean renderInfoBar(GuiGraphicsExtractor graphics, DeltaTracker deltaTracker) {
+    public static boolean renderInfoBar(GuiGraphics graphics, DeltaTracker deltaTracker) {
         if (!CustomHudRenderer.shouldReplaceInfoBar()) return false;
         CustomHudRenderer.renderInfoBar(graphics, deltaTracker);
         return true;
     }
 
-    public static boolean renderExperienceLevel(GuiGraphicsExtractor graphics, DeltaTracker deltaTracker) {
+    public static boolean renderExperienceLevel(GuiGraphics graphics, DeltaTracker deltaTracker) {
         if (!CustomHudRenderer.shouldReplaceExperienceLevel()) return false;
         CustomHudRenderer.renderExperienceLevel(graphics, deltaTracker);
         return true;
     }
 
-    public static void renderAllText(GuiGraphicsExtractor graphics, DeltaTracker deltaTracker) {
+    public static void renderAllText(GuiGraphics graphics, DeltaTracker deltaTracker) {
         if (CustomHudRenderer.shouldReplaceHotbar()) {
             CustomHudRenderer.renderOffhand(graphics, deltaTracker);
         } else {
@@ -161,18 +143,25 @@ public final class HudBarOrchestrator {
         Player player = clientPlayer();
         if (player == null) return;
         ClientConfig config = ModConfigManager.getClient();
-        if (config.healthBarBehavior == BarRenderBehavior.CUSTOM) {
-            HealthBarRenderer.INSTANCE.renderTextOverlay(graphics, player);
-        }
-        ManaBarRenderer.INSTANCE.renderTextOverlay(graphics, player);
-        if (config.staminaBarBehavior != StaminaBarBehavior.OFF) {
-            StaminaBarRenderer.INSTANCE.renderTextOverlay(graphics, player);
-        }
-        if (config.armorBarBehavior == BarRenderBehavior.CUSTOM) {
-            ArmorBarRenderer.INSTANCE.renderTextOverlay(graphics, player);
-        }
-        if (config.airBarBehavior == BarRenderBehavior.CUSTOM) {
-            AirBarRenderer.INSTANCE.renderTextOverlay(graphics, player);
+        // Items render around Z=150..200 in 1.21.1, so elevate bar text above them.
+        graphics.pose().pushPose();
+        graphics.pose().translate(0.0F, 0.0F, 250.0F);
+        try {
+            if (config.healthBarBehavior == BarRenderBehavior.CUSTOM) {
+                HealthBarRenderer.INSTANCE.renderTextOverlay(graphics, player);
+            }
+            ManaBarRenderer.INSTANCE.renderTextOverlay(graphics, player);
+            if (config.staminaBarBehavior != StaminaBarBehavior.OFF) {
+                StaminaBarRenderer.INSTANCE.renderTextOverlay(graphics, player);
+            }
+            if (config.armorBarBehavior == BarRenderBehavior.CUSTOM) {
+                ArmorBarRenderer.INSTANCE.renderTextOverlay(graphics, player);
+            }
+            if (config.airBarBehavior == BarRenderBehavior.CUSTOM) {
+                AirBarRenderer.INSTANCE.renderTextOverlay(graphics, player);
+            }
+        } finally {
+            graphics.pose().popPose();
         }
     }
 }

@@ -1,10 +1,10 @@
 package dev.muon.dynamic_resource_bars.util;
 
+import com.mojang.blaze3d.vertex.PoseStack;
 import dev.muon.dynamic_resource_bars.config.ModConfigManager;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.gui.GuiGraphicsExtractor;
+import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.network.chat.Component;
-import org.joml.Matrix3x2fStack;
 
 public class RenderUtil {
     public static final long BAR_FADEOUT_DURATION = 1500L;
@@ -20,14 +20,14 @@ public class RenderUtil {
      * Renders the "current / max" text vertically centered on {@code baseY}.
      * Final scale = {@code textScale × globalTextSize}.
      */
-    public static void renderText(float current, float max, GuiGraphicsExtractor graphics,
+    public static void renderText(float current, float max, GuiGraphics graphics,
                                   int baseX, int baseY, float textScale, int color, HorizontalAlignment alignment) {
         Minecraft minecraft = Minecraft.getInstance();
-        Matrix3x2fStack pose = graphics.pose();
-        pose.pushMatrix();
+        PoseStack pose = graphics.pose();
+        pose.pushPose();
         float finalScale = computeScale(textScale);
 
-        pose.scale(finalScale, finalScale);
+        pose.scale(finalScale, finalScale, 1.0f);
         int scaledX = (int) (baseX / finalScale);
         int scaledY = (int) (baseY / finalScale) - (minecraft.font.lineHeight / 2);
 
@@ -42,22 +42,22 @@ public class RenderUtil {
             case LEFT -> scaledX;
         };
 
-        graphics.text(minecraft.font, fullTextComponent, actualX, scaledY, color, true);
+        graphics.drawString(minecraft.font, fullTextComponent, actualX, scaledY, color, true);
 
-        pose.popMatrix();
+        pose.popPose();
     }
 
-    public static void renderAdditionText(String text, GuiGraphicsExtractor graphics,
+    public static void renderAdditionText(String text, GuiGraphics graphics,
                                           int baseX, int baseY, float textScale, int color,
                                           HorizontalAlignment alignment) {
         Minecraft minecraft = Minecraft.getInstance();
-        Matrix3x2fStack pose = graphics.pose();
-        pose.pushMatrix();
+        PoseStack pose = graphics.pose();
+        pose.pushPose();
         float finalScale = computeScale(textScale);
 
         int scaledX = (int) (baseX / finalScale);
         int yPos = (int) (baseY / finalScale) - (minecraft.font.lineHeight / 2);
-        pose.scale(finalScale, finalScale);
+        pose.scale(finalScale, finalScale, 1.0f);
 
         int textWidth = minecraft.font.width(text);
         int actualX = switch (alignment) {
@@ -66,9 +66,9 @@ public class RenderUtil {
             case LEFT -> scaledX;
         };
 
-        graphics.text(minecraft.font, text, actualX, yPos, color, true);
+        graphics.drawString(minecraft.font, text, actualX, yPos, color, true);
 
-        pose.popMatrix();
+        pose.popPose();
     }
 
     private static float computeScale(float textScale) {

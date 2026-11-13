@@ -1,7 +1,7 @@
 package dev.muon.dynamic_resource_bars.compat;
 
-import com.github.thedeathlycow.thermoo.api.core.v2.Soakable;
-import com.github.thedeathlycow.thermoo.api.core.v2.TemperatureAware;
+import com.github.thedeathlycow.thermoo.api.temperature.Soakable;
+import com.github.thedeathlycow.thermoo.api.temperature.TemperatureAware;
 import net.minecraft.world.entity.player.Player;
 
 /**
@@ -22,6 +22,17 @@ public final class ThermooCompat {
     /** Range [-1.0, 1.0]. Negative = cold, positive = hot. 0 when neutral. */
     public static float getTemperatureScale(Player player) {
         return ((TemperatureAware) player).thermoo$getTemperatureScale();
+    }
+
+    public static void setTemperatureScale(Player player, float scale) {
+        TemperatureAware aware = (TemperatureAware) player;
+        if (scale < 0f) {
+            aware.thermoo$setTemperature(Math.round(-scale * aware.thermoo$getMinTemperature()));
+        } else if (scale > 0f) {
+            aware.thermoo$setTemperature(Math.round(scale * aware.thermoo$getMaxTemperature()));
+        } else {
+            aware.thermoo$setTemperature(0);
+        }
     }
 
     /** Range [0.0, 1.0]. 1.0 when fully soaked. */

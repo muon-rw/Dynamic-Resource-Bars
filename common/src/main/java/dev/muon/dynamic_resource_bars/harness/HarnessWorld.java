@@ -41,9 +41,9 @@ final class HarnessWorld {
             return;
         }
         LevelSettings settings = new LevelSettings(levelId, GameType.SURVIVAL,
-                new LevelSettings.DifficultySettings(Difficulty.PEACEFUL, false, false), true, WorldDataConfiguration.DEFAULT);
+                false, Difficulty.PEACEFUL, true, new net.minecraft.world.level.GameRules(), WorldDataConfiguration.DEFAULT);
         mc.createWorldOpenFlows().createFreshLevel(levelId, settings, new WorldOptions(0L, false, false),
-                WorldPresets::createFlatWorldDimensions, null);
+                WorldPresets::createNormalWorldDimensions, null);
     }
 
     static void runSetupCommands(Minecraft mc) {

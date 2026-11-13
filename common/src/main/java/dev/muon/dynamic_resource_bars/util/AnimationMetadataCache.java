@@ -2,7 +2,7 @@ package dev.muon.dynamic_resource_bars.util;
 
 import dev.muon.dynamic_resource_bars.Constants;
 import net.minecraft.client.Minecraft;
-import net.minecraft.resources.Identifier;
+import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.packs.resources.ResourceManager;
 
 import java.util.HashMap;
@@ -14,10 +14,10 @@ import java.util.Map;
  */
 public class AnimationMetadataCache {
     
-    private static final Map<Identifier, AnimationMetadata.AnimationData> animationCache = new HashMap<>();
-    private static final Map<Identifier, AnimationMetadata.BarDimensions> dimensionsCache = new HashMap<>();
-    private static final Map<Identifier, AnimationMetadata.ScalingInfo> scalingCache = new HashMap<>();
-    private static final Map<Identifier, AnimationMetadata.TextureDimensions> textureDimensionsCache = new HashMap<>();
+    private static final Map<ResourceLocation, AnimationMetadata.AnimationData> animationCache = new HashMap<>();
+    private static final Map<ResourceLocation, AnimationMetadata.BarDimensions> dimensionsCache = new HashMap<>();
+    private static final Map<ResourceLocation, AnimationMetadata.ScalingInfo> scalingCache = new HashMap<>();
+    private static final Map<ResourceLocation, AnimationMetadata.TextureDimensions> textureDimensionsCache = new HashMap<>();
     private static boolean needsRefresh = true;
     
     /** Mark cache as needing refresh — called on resource pack reload via the loader's reload listener. */
@@ -41,19 +41,19 @@ public class AnimationMetadataCache {
      * All health bar variants (normal, poisoned, withered, etc.) share the same animation settings.
      */
     public static AnimationMetadata.AnimationData getHealthBarAnimation() {
-        Identifier location = Constants.loc("textures/gui/health_bar.png");
+        ResourceLocation location = Constants.loc("textures/gui/health_bar.png");
         return getOrLoad(location);
     }
 
     /** Animation data for the SQUEEZE-mode absorption fill texture. */
     public static AnimationMetadata.AnimationData getAbsorptionBarAnimation() {
-        Identifier location = Constants.loc("textures/gui/absorption_bar.png");
+        ResourceLocation location = Constants.loc("textures/gui/absorption_bar.png");
         return getOrLoad(location);
     }
 
     /** Animation data for the extra-stamina (overshield) fill texture used by the stamina squeeze. */
     public static AnimationMetadata.AnimationData getExtraStaminaBarAnimation() {
-        Identifier location = Constants.loc("textures/gui/extra_stamina_bar.png");
+        ResourceLocation location = Constants.loc("textures/gui/extra_stamina_bar.png");
         return getOrLoad(location);
     }
     
@@ -62,7 +62,7 @@ public class AnimationMetadataCache {
      * All stamina bar variants (normal, critical, mounted, etc.) share the same animation settings.
      */
     public static AnimationMetadata.AnimationData getStaminaBarAnimation() {
-        Identifier location = Constants.loc("textures/gui/stamina_bar.png");
+        ResourceLocation location = Constants.loc("textures/gui/stamina_bar.png");
         return getOrLoad(location);
     }
     
@@ -70,7 +70,7 @@ public class AnimationMetadataCache {
      * Get animation data for mana bar
      */
     public static AnimationMetadata.AnimationData getManaBarAnimation() {
-        Identifier location = Constants.loc("textures/gui/mana_bar.png");
+        ResourceLocation location = Constants.loc("textures/gui/mana_bar.png");
         return getOrLoad(location);
     }
     
@@ -78,7 +78,7 @@ public class AnimationMetadataCache {
      * Get animation data for air bar
      */
     public static AnimationMetadata.AnimationData getAirBarAnimation() {
-        Identifier location = Constants.loc("textures/gui/air_bar.png");
+        ResourceLocation location = Constants.loc("textures/gui/air_bar.png");
         return getOrLoad(location);
     }
 
@@ -86,14 +86,14 @@ public class AnimationMetadataCache {
      * Get animation data for armor bar (static — no .mcmeta — but the cache returns a single-frame stub).
      */
     public static AnimationMetadata.AnimationData getArmorBarAnimation() {
-        Identifier location = Constants.loc("textures/gui/armor_bar.png");
+        ResourceLocation location = Constants.loc("textures/gui/armor_bar.png");
         return getOrLoad(location);
     }
     
     /**
      * Internal method to get or load animation data
      */
-    private static AnimationMetadata.AnimationData getOrLoad(Identifier location) {
+    private static AnimationMetadata.AnimationData getOrLoad(ResourceLocation location) {
         if (needsRefresh) {
             Constants.LOG.debug("CACHE: Refreshing animation cache...");
             animationCache.clear();
@@ -120,7 +120,7 @@ public class AnimationMetadataCache {
      * Get or load scaling info for any texture with specified type.
      * Public method for textures without dedicated getters (e.g., armor_background).
      */
-    public static AnimationMetadata.ScalingInfo getScalingOrLoad(Identifier location, AnimationMetadata.TextureType textureType) {
+    public static AnimationMetadata.ScalingInfo getScalingOrLoad(ResourceLocation location, AnimationMetadata.TextureType textureType) {
         // Refresh cache if needed
         if (needsRefresh) {
             animationCache.clear();
@@ -245,7 +245,7 @@ public class AnimationMetadataCache {
      * Get texture dimensions for any texture (backgrounds, overlays, etc.)
      * Used to get correct texture sheet dimensions for non-animated textures.
      */
-    public static AnimationMetadata.TextureDimensions getTextureDimensions(Identifier location) {
+    public static AnimationMetadata.TextureDimensions getTextureDimensions(ResourceLocation location) {
         if (needsRefresh) {
             textureDimensionsCache.clear();
         }

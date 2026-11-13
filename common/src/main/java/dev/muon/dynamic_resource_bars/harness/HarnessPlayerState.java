@@ -2,10 +2,13 @@ package dev.muon.dynamic_resource_bars.harness;
 
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
+import dev.muon.dynamic_resource_bars.compat.ThermooCompat;
+import dev.muon.dynamic_resource_bars.platform.Services;
+import net.minecraft.client.Minecraft;
 import net.minecraft.client.player.LocalPlayer;
 import net.minecraft.core.Holder;
 import net.minecraft.core.registries.BuiltInRegistries;
-import net.minecraft.resources.Identifier;
+import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.effect.MobEffect;
 import net.minecraft.world.effect.MobEffectInstance;
 import net.minecraft.world.entity.ai.attributes.Attribute;
@@ -21,7 +24,8 @@ import java.util.List;
  * scalar values every tick because the client still ticks air, freeze, and fire on its own.
  */
 record HarnessPlayerState(float maxHealth, Float health, float absorption, int food, float saturation,
-                          Integer air, int armor, int frozenTicks, int fireTicks, List<String> effects) {
+                          Integer air, int armor, int frozenTicks, int fireTicks, Float thermooScale,
+                          List<String> effects) {
 
     static HarnessPlayerState parse(JsonObject p) {
         List<String> effects = new ArrayList<>();
@@ -36,6 +40,7 @@ record HarnessPlayerState(float maxHealth, Float health, float absorption, int f
                 p.has("armor") ? p.get("armor").getAsInt() : 0,
                 p.has("frozenTicks") ? p.get("frozenTicks").getAsInt() : 0,
                 p.has("fireTicks") ? p.get("fireTicks").getAsInt() : 0,
+                p.has("thermooScale") ? p.get("thermooScale").getAsFloat() : null,
                 effects);
     }
 
@@ -43,9 +48,9 @@ record HarnessPlayerState(float maxHealth, Float health, float absorption, int f
         new ArrayList<>(player.getActiveEffectsMap().keySet()).forEach(player::removeEffectNoUpdate);
         for (String spec : effects) {
             String[] parts = spec.split("\\*");
-            Identifier id = Identifier.parse(parts[0].trim());
+            ResourceLocation id = ResourceLocation.parse(parts[0].trim());
             int amplifier = parts.length > 1 ? Integer.parseInt(parts[1].trim()) : 0;
-            Holder<MobEffect> effect = BuiltInRegistries.MOB_EFFECT.get(id)
+            Holder<MobEffect> effect = BuiltInRegistries.MOB_EFFECT.getHolder(id)
                     .orElseThrow(() -> new IllegalArgumentException("Unknown effect '" + id + "'"));
             player.forceAddEffect(new MobEffectInstance(effect, MobEffectInstance.INFINITE_DURATION, amplifier, false, true), null);
         }
@@ -63,6 +68,18 @@ record HarnessPlayerState(float maxHealth, Float health, float absorption, int f
         player.setAirSupply(air == null ? player.getMaxAirSupply() : air);
         player.setTicksFrozen(frozenTicks);
         player.setRemainingFireTicks(fireTicks);
+        if (thermooScale != null && Services.PLATFORM.isModLoaded(ThermooCompat.MOD_ID)) {
+            ThermooCompat.setTemperatureScale(player, thermooScale);
+            var server = Minecraft.getInstance().getSingleplayerServer();
+            if (server != null) {
+                var uuid = player.getUUID();
+                float scale = thermooScale;
+                server.execute(() -> {
+                    var sp = server.getPlayerList().getPlayer(uuid);
+                    if (sp != null) ThermooCompat.setTemperatureScale(sp, scale);
+                });
+            }
+        }
         // Vanilla skips the empty first-person arm for invisible players, which keeps it out from behind the right-side bars.
         player.setInvisible(true);
     }

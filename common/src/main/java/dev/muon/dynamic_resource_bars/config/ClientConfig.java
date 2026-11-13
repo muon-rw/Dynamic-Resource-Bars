@@ -30,12 +30,6 @@ public class ClientConfig {
             // .registerTypeAdapter(Path.class, new PathTypeAdapter()) // Example if complex types need adapters
             .create();
 
-    private static final String COMBAT_ATTRIBUTES_MOD_ID = "combat_attributes";
-
-    // One-way marker: flips to true the first time we load with Combat Attributes present.
-    // Lets us upgrade the legacy stamina default (FOOD) to COMBAT_ATTRIBUTES exactly once,
-    // without ever overriding choices the user made while CA was already on the classpath.
-    public boolean combatAttributesSeen = false;
     public boolean vesselLayoutMigrated = false;
 
     public static final boolean DEFAULT_ENABLE_CUSTOM_HUD = true;
@@ -44,6 +38,13 @@ public class ClientConfig {
     /** Milliseconds the bar (and its text) holds at full opacity after a smart-fade trigger fires before it begins fading. */
     public static final int DEFAULT_FADE_HOLD_DURATION = 1500;
     public int fadeHoldDuration = DEFAULT_FADE_HOLD_DURATION;
+
+    /** Extra vertical offset (in pixels) added to NeoForge's left/right HUD layer height counters. */
+    public static final int DEFAULT_LEFT_HUD_LAYER_OFFSET = 0;
+    public int leftHudLayerOffset = DEFAULT_LEFT_HUD_LAYER_OFFSET;
+
+    public static final int DEFAULT_RIGHT_HUD_LAYER_OFFSET = 0;
+    public int rightHudLayerOffset = DEFAULT_RIGHT_HUD_LAYER_OFFSET;
 
     // Global text defaults
     public static final int DEFAULT_TEXT_COLOR = 0xFFFFFF; // White
@@ -76,7 +77,7 @@ public class ClientConfig {
     public static final int DEFAULT_HEALTH_BAR_X_OFFSET = 14;
     public static final int DEFAULT_HEALTH_BAR_Y_OFFSET = 9;
     public static final int DEFAULT_HEALTH_TOTAL_X_OFFSET = -62;
-    public static final int DEFAULT_HEALTH_TOTAL_Y_OFFSET = -27;
+    public static final int DEFAULT_HEALTH_TOTAL_Y_OFFSET = -26;
     public static final int DEFAULT_HEALTH_OVERLAY_X_OFFSET = 0;
     public static final int DEFAULT_HEALTH_OVERLAY_Y_OFFSET = 0;
     public static final int DEFAULT_HEALTH_BACKGROUND_X_OFFSET = 0;
@@ -158,7 +159,7 @@ public class ClientConfig {
     public static final int DEFAULT_STAMINA_BAR_X_OFFSET = 4;
     public static final int DEFAULT_STAMINA_BAR_Y_OFFSET = 9;
     public static final int DEFAULT_STAMINA_TOTAL_X_OFFSET = -1;
-    public static final int DEFAULT_STAMINA_TOTAL_Y_OFFSET = -27;
+    public static final int DEFAULT_STAMINA_TOTAL_Y_OFFSET = -26;
     public static final int DEFAULT_STAMINA_BACKGROUND_X_OFFSET = 0;
     public static final int DEFAULT_STAMINA_BACKGROUND_Y_OFFSET = 0;
     public static final int DEFAULT_STAMINA_TEXT_X_OFFSET = 4;
@@ -202,7 +203,7 @@ public class ClientConfig {
     public float staminaTextScale;
 
     // Mana Defaults & Fields
-    public static final ManaBarBehavior DEFAULT_MANA_BAR_BEHAVIOR = ManaBarBehavior.COMBAT_ATTRIBUTES;
+    public static final ManaBarBehavior DEFAULT_MANA_BAR_BEHAVIOR = ManaBarBehavior.OFF;
     public static final HUDPositioning.BarPlacement DEFAULT_MANA_BAR_ANCHOR = HUDPositioning.BarPlacement.HEALTH;
     public static final boolean DEFAULT_ENABLE_MANA_BACKGROUND = true;
     public static final boolean DEFAULT_ENABLE_MANA_FOREGROUND = true;
@@ -234,7 +235,7 @@ public class ClientConfig {
     public HUDPositioning.BarPlacement manaBarAnchor = DEFAULT_MANA_BAR_ANCHOR;
     public boolean enableManaBackground = DEFAULT_ENABLE_MANA_BACKGROUND;
     public boolean enableManaForeground = DEFAULT_ENABLE_MANA_FOREGROUND;
-    public BarVisibility manaBarVisibility;
+    public BarVisibility manaBarVisibility = DEFAULT_MANA_BAR_VISIBILITY;
     public TextBehavior showManaText;
     public HorizontalAlignment manaTextAlign;
     public FillDirection manaFillDirection;
@@ -416,7 +417,6 @@ public class ClientConfig {
     public static ClientConfig createDefaults() {
         ClientConfig cfg = new ClientConfig();
         cfg.vesselLayoutMigrated = true;
-        applyCombatAttributesDefaults(cfg);
         return cfg;
     }
 
@@ -534,33 +534,13 @@ public class ClientConfig {
         return true;
     }
 
-    /**
-     * Upgrades the legacy stamina default (FOOD) to COMBAT_ATTRIBUTES the first time we observe
-     * CA on the classpath. Runs at most once per config — once {@link #combatAttributesSeen}
-     * flips to true, the user's choices are treated as deliberate and never overridden, even if
-     * CA is later removed and re-added.
-     *
-     * <p>Mana is not migrated: its default is already COMBAT_ATTRIBUTES, and the only non-default
-     * value (OFF) is necessarily a deliberate user choice.
-     *
-     * @return true if any field changed (caller should persist).
-     */
-    private static boolean applyCombatAttributesDefaults(ClientConfig cfg) {
-        if (!Services.PLATFORM.isModLoaded(COMBAT_ATTRIBUTES_MOD_ID)) return false;
-        if (cfg.combatAttributesSeen) return false;
-        if (cfg.staminaBarBehavior == StaminaBarBehavior.FOOD) {
-            cfg.staminaBarBehavior = StaminaBarBehavior.COMBAT_ATTRIBUTES;
-        }
-        cfg.combatAttributesSeen = true;
-        return true;
-    }
-
     // Private constructor to enforce singleton via getInstance and initialize defaults
     private ClientConfig() {
-        this.combatAttributesSeen = false;
         this.vesselLayoutMigrated = false;
         this.enableCustomHud = DEFAULT_ENABLE_CUSTOM_HUD;
         this.fadeHoldDuration = DEFAULT_FADE_HOLD_DURATION;
+        this.leftHudLayerOffset = DEFAULT_LEFT_HUD_LAYER_OFFSET;
+        this.rightHudLayerOffset = DEFAULT_RIGHT_HUD_LAYER_OFFSET;
         this.globalTextColor = DEFAULT_TEXT_COLOR;
         this.globalTextOpacity = DEFAULT_TEXT_OPACITY;
         this.globalTextSize = DEFAULT_GLOBAL_TEXT_SIZE;
@@ -786,10 +766,8 @@ public class ClientConfig {
         // A more sophisticated approach might involve version numbers and explicit migration
         boolean modifiedByDefaults = ensureDefaults(loadedConfig);
         boolean migratedVesselLayout = applyVesselLayoutDefaults(loadedConfig);
-        boolean migratedForCombatAttributes = applyCombatAttributesDefaults(loadedConfig);
 
-
-        if (newConfigCreated || modifiedByDefaults || migratedVesselLayout || migratedForCombatAttributes) {
+        if (newConfigCreated || modifiedByDefaults || migratedVesselLayout) {
             Constants.LOG.info("Saving new or updated default config to {}.", CONFIG_FILE_PATH);
             loadedConfig.save(); // Save if it's new or if defaults were applied
         }
@@ -848,6 +826,7 @@ public class ClientConfig {
 
         // Mana
         if (cfg.manaBarAnchor == null) { cfg.manaBarAnchor = DEFAULT_MANA_BAR_ANCHOR; modified = true; }
+        if (cfg.manaBarVisibility == null) { cfg.manaBarVisibility = DEFAULT_MANA_BAR_VISIBILITY; modified = true; }
         if (cfg.showManaText == null) { cfg.showManaText = DEFAULT_SHOW_MANA_TEXT; modified = true; }
         if (cfg.manaTextAlign == null) { cfg.manaTextAlign = DEFAULT_MANA_TEXT_ALIGN; modified = true; }
         if (cfg.manaFillDirection == null) { cfg.manaFillDirection = DEFAULT_MANA_FILL_DIRECTION; modified = true; }

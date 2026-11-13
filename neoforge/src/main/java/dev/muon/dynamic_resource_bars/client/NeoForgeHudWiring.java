@@ -1,35 +1,38 @@
 package dev.muon.dynamic_resource_bars.client;
 
+import dev.muon.dynamic_resource_bars.Constants;
+import dev.muon.dynamic_resource_bars.compat.StaminaProviderManager;
 import dev.muon.dynamic_resource_bars.config.ClientConfig;
 import dev.muon.dynamic_resource_bars.config.ModConfigManager;
-import dev.muon.dynamic_resource_bars.util.HUDPositioning;
+import dev.muon.dynamic_resource_bars.platform.Services;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Gui;
+import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.resources.ResourceLocation;
 import net.neoforged.neoforge.client.event.RegisterGuiLayersEvent;
-import net.neoforged.neoforge.client.gui.GuiLayer;
 import net.neoforged.neoforge.client.gui.VanillaGuiLayers;
-
-import java.util.function.IntSupplier;
-import java.util.function.ObjIntConsumer;
 
 /**
  * Wires {@link HudBarOrchestrator} into NeoForge's GUI layer registry.
  *
- * ly on<p>Vanilla layer fallback ({@code wrapLayer})</p>
- * Each vanilla bar is wrapped via {@link RegisterGuiLayersEvent#wrapLayer}, which gives us the
- * pre-existing layer so the orchestrator can fall back to vanilla rendering for {@code VANILLA}
- * mode without us having to re-implement Mojang's bar pixel pushing.
+ * <p>Resource bars are registered as separate layers above their vanilla counterparts while
+ * {@link NeoForgeCompatSuppression} cancels the vanilla layer at {@code HIGH} priority when DRB
+ * owns it, preventing third-party {@code RenderGuiLayerEvent.Pre} replacers (e.g. OverflowingBars)
+ * from swallowing our bars.
  *
- * <p>Why we mutate {@code Gui.leftHeight} / {@code rightHeight}</p>
- * NeoForge patches Mojang's {@link Gui} with two running counters that subsequent vanilla layers
- * read to position themselves above (or below) the stack — armor at {@code H - leftHeight + 10},
- * food at {@code H - rightHeight}, and so on. Each vanilla bar increments the counter by ~10.
- * If our wrap renders a custom bar without bumping the counter, the next vanilla layer will draw
- * over us (e.g. vanilla armor sliding down into our health row). When the orchestrator returns
- * true (we either rendered or hid the bar) we add our background height to the counter; when it
- * returns false the vanilla layer draws and bumps the counter itself.
+ * <p>Optional offsets to {@code Gui.leftHeight} / {@code rightHeight} are applied via
+ * {@link ClientConfig#leftHudLayerOffset} and {@link ClientConfig#rightHudLayerOffset}.
  */
 public final class NeoForgeHudWiring {
+
+    private static final ResourceLocation HUD_LAYER_OFFSETS = Constants.loc("hud_layer_offsets");
+    private static final ResourceLocation HEALTH_BAR = Constants.loc("health_bar");
+    private static final ResourceLocation STAMINA_BAR = Constants.loc("stamina_bar");
+    private static final ResourceLocation ARMOR_BAR = Constants.loc("armor_bar");
+    private static final ResourceLocation AIR_BAR = Constants.loc("air_bar");
+    private static final ResourceLocation MANA_BAR = Constants.loc("mana_bar");
+    private static final ResourceLocation STAMINA_PARAGLIDERS = Constants.loc("stamina_paragliders");
+    private static final ResourceLocation BAR_TEXT = Constants.loc("bar_text");
 
     private NeoForgeHudWiring() {}
 
@@ -39,7 +42,12 @@ public final class NeoForgeHudWiring {
                 vanilla.render(graphics, deltaTracker);
             }
         });
-        event.wrapLayer(VanillaGuiLayers.CONTEXTUAL_INFO_BAR_BACKGROUND, vanilla -> (graphics, deltaTracker) -> {
+        event.wrapLayer(VanillaGuiLayers.EXPERIENCE_BAR, vanilla -> (graphics, deltaTracker) -> {
+            if (!HudBarOrchestrator.renderInfoBar(graphics, deltaTracker)) {
+                vanilla.render(graphics, deltaTracker);
+            }
+        });
+        event.wrapLayer(VanillaGuiLayers.JUMP_METER, vanilla -> (graphics, deltaTracker) -> {
             if (!HudBarOrchestrator.renderInfoBar(graphics, deltaTracker)) {
                 vanilla.render(graphics, deltaTracker);
             }
@@ -49,90 +57,40 @@ public final class NeoForgeHudWiring {
                 vanilla.render(graphics, deltaTracker);
             }
         });
-        event.wrapLayer(VanillaGuiLayers.PLAYER_HEALTH, vanilla -> orchestratorOrFallback(
-                vanilla, HudBarOrchestrator::renderHealth, NeoForgeHudWiring::healthBumpHeight, BUMP_LEFT));
-        event.wrapLayer(VanillaGuiLayers.FOOD_LEVEL, vanilla -> orchestratorOrFallback(
-                vanilla, HudBarOrchestrator::renderFood, NeoForgeHudWiring::staminaBumpHeight, BUMP_RIGHT));
-        event.wrapLayer(VanillaGuiLayers.ARMOR_LEVEL, vanilla -> orchestratorOrFallback(
-                vanilla, HudBarOrchestrator::renderArmor, () -> ModConfigManager.getClient().armorBackgroundHeight, BUMP_LEFT));
-        event.wrapLayer(VanillaGuiLayers.AIR_LEVEL, vanilla -> orchestratorOrFallback(
-                vanilla, HudBarOrchestrator::renderAir, NeoForgeHudWiring::airBumpHeight, BUMP_RIGHT));
-        event.wrapLayer(VanillaGuiLayers.VEHICLE_HEALTH, vanilla -> (graphics, deltaTracker) -> {
-            // When stamina is sourcing mount health, suppress vanilla's mount-health row.
-            if (HudBarOrchestrator.suppressVehicleHealth()) return;
-            vanilla.render(graphics, deltaTracker);
+
+        event.registerAbove(VanillaGuiLayers.EXPERIENCE_BAR, HUD_LAYER_OFFSETS, (graphics, deltaTracker) -> {
+            ClientConfig config = ModConfigManager.getClient();
+            Gui gui = Minecraft.getInstance().gui;
+            gui.leftHeight += config.leftHudLayerOffset;
+            gui.rightHeight += config.rightHudLayerOffset;
         });
-        // Mana is free-standing (no vanilla equivalent) so it doesn't participate in the
-        // height-counter dance — renderAbove just stacks it above health in the layer order.
-        event.registerAbove(VanillaGuiLayers.PLAYER_HEALTH,
-                net.minecraft.resources.Identifier.fromNamespaceAndPath(
-                        dev.muon.dynamic_resource_bars.Constants.MOD_ID, "mana_bar"),
-                HudBarOrchestrator::renderMana);
 
-        if (dev.muon.dynamic_resource_bars.platform.Services.PLATFORM.isModLoaded("combat_attributes")) {
-            CombatAttributesSuppressionNeoForge.install(event);
-        }
+        registerBar(event, VanillaGuiLayers.PLAYER_HEALTH, HEALTH_BAR, HudBarOrchestrator::renderHealth);
+        registerBar(event, VanillaGuiLayers.FOOD_LEVEL, STAMINA_BAR, HudBarOrchestrator::renderFood);
+        registerBar(event, VanillaGuiLayers.ARMOR_LEVEL, ARMOR_BAR, HudBarOrchestrator::renderArmor);
+        registerBar(event, VanillaGuiLayers.AIR_LEVEL, AIR_BAR, HudBarOrchestrator::renderAir);
 
-        // Paragliders source: free-standing trigger above PLAYER_HEALTH (mirrors mana). Paragliders'
+        // Mana is free-standing (no vanilla equivalent); register above HEALTH_BAR so it draws on top of health.
+        event.registerAbove(HEALTH_BAR, MANA_BAR, HudBarOrchestrator::renderMana);
+
+        // Paragliders source: free-standing trigger above HEALTH_BAR (mirrors mana). Paragliders'
         // own stamina wheel is suppressed via DynamicResourceBarsParagliderPlugin (StaminaPlugin
         // API), not via wrapLayer — wrapping their layer hit ordering issues that left the bar
         // invisible AND the wheel still showing.
-        if (dev.muon.dynamic_resource_bars.platform.Services.PLATFORM.isModLoaded(
-                dev.muon.dynamic_resource_bars.compat.StaminaProviderManager.PARAGLIDERS_MOD_ID)) {
-            event.registerAbove(VanillaGuiLayers.PLAYER_HEALTH,
-                    net.minecraft.resources.Identifier.fromNamespaceAndPath(
-                            dev.muon.dynamic_resource_bars.Constants.MOD_ID, "stamina_paragliders"),
-                    HudBarOrchestrator::renderStaminaForParagliders);
+        if (Services.PLATFORM.isModLoaded(StaminaProviderManager.PARAGLIDERS_MOD_ID)) {
+            event.registerAbove(HEALTH_BAR, STAMINA_PARAGLIDERS, HudBarOrchestrator::renderStaminaForParagliders);
         }
 
-        event.registerAbove(VanillaGuiLayers.CONTEXTUAL_INFO_BAR,
-                net.minecraft.resources.Identifier.fromNamespaceAndPath(
-                        dev.muon.dynamic_resource_bars.Constants.MOD_ID, "bar_text"),
-                HudBarOrchestrator::renderAllText);
+        event.registerAbove(VanillaGuiLayers.EXPERIENCE_LEVEL, BAR_TEXT, HudBarOrchestrator::renderAllText);
     }
 
-    private static GuiLayer orchestratorOrFallback(GuiLayer vanilla, OrchestratorCall call,
-                                                   IntSupplier bumpAmount, ObjIntConsumer<Gui> bumpFn) {
-        return (graphics, deltaTracker) -> {
-            if (call.run(graphics, deltaTracker)) {
-                bumpFn.accept(Minecraft.getInstance().gui, bumpAmount.getAsInt());
-            } else {
-                vanilla.render(graphics, deltaTracker);
-            }
-        };
-    }
-
-    /** Adds to the left-side height counter (health, armor). */
-    private static final ObjIntConsumer<Gui> BUMP_LEFT = (gui, n) -> gui.leftHeight += n;
-    /** Adds to the right-side height counter (food, air, vehicle health). */
-    private static final ObjIntConsumer<Gui> BUMP_RIGHT = (gui, n) -> gui.rightHeight += n;
-
-    private static int healthBumpHeight() {
-        ClientConfig c = ModConfigManager.getClient();
-        if (c.healthBarAnchor == HUDPositioning.BarPlacement.HEALTH && c.healthTotalXOffset + c.healthBackgroundWidth <= 0) {
-            return 0;
-        }
-        return c.healthBackgroundHeight;
-    }
-
-    private static int staminaBumpHeight() {
-        ClientConfig c = ModConfigManager.getClient();
-        if (c.staminaBarAnchor == HUDPositioning.BarPlacement.HUNGER && c.staminaTotalXOffset >= 0) {
-            return 0;
-        }
-        return c.staminaBackgroundHeight;
-    }
-
-    private static int airBumpHeight() {
-        ClientConfig c = ModConfigManager.getClient();
-        if (c.airBarAnchor == HUDPositioning.BarPlacement.HUNGER && c.airTotalXOffset >= -4) {
-            return 0;
-        }
-        return c.airBackgroundHeight;
+    private static void registerBar(RegisterGuiLayersEvent event, ResourceLocation anchor, ResourceLocation id,
+                                    OrchestratorCall call) {
+        event.registerAbove(anchor, id, call::run);
     }
 
     @FunctionalInterface
     private interface OrchestratorCall {
-        boolean run(net.minecraft.client.gui.GuiGraphicsExtractor graphics, net.minecraft.client.DeltaTracker deltaTracker);
+        boolean run(GuiGraphics graphics, net.minecraft.client.DeltaTracker deltaTracker);
     }
 }

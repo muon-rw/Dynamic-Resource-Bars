@@ -24,10 +24,8 @@ import dev.muon.dynamic_resource_bars.util.SubElementType;
 import dev.muon.dynamic_resource_bars.util.TextBehavior;
 import net.minecraft.client.DeltaTracker;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.gui.GuiGraphicsExtractor;
+import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.screens.Screen;
-import net.minecraft.client.input.KeyEvent;
-import net.minecraft.client.input.MouseButtonEvent;
 import net.minecraft.network.chat.Component;
 import net.minecraft.world.entity.player.Player;
 import org.jetbrains.annotations.NotNull;
@@ -84,6 +82,8 @@ public class HudEditorScreen extends Screen {
     private float dragStartScale;
 
     private ContextMenu activeContextMenu;
+    private long lastLeftClickTime;
+    private DraggableElement lastLeftClickElement;
 
     private enum DragKind { NONE, MOVE_BAR, MOVE_SUB, RESIZE_W, RESIZE_H, RESIZE_CORNER, RESIZE_TEXT_SCALE }
 
@@ -117,17 +117,17 @@ public class HudEditorScreen extends Screen {
     }
 
     @Override
-    public void extractBackground(@NotNull GuiGraphicsExtractor graphics, int mouseX, int mouseY, float partialTicks) {
+    public void renderBackground(@NotNull GuiGraphics graphics, int mouseX, int mouseY, float partialTicks) {
         graphics.fill(0, 0, this.width, this.height, OVERLAY_DIM_COLOR);
     }
 
     @Override
-    public void extractRenderState(@NotNull GuiGraphicsExtractor graphics, int mouseX, int mouseY, float partialTicks) {
-        super.extractRenderState(graphics, mouseX, mouseY, partialTicks);
+    public void render(@NotNull GuiGraphics graphics, int mouseX, int mouseY, float partialTicks) {
+        super.render(graphics, mouseX, mouseY, partialTicks);
 
         Player player = player();
         if (player != null) {
-            DeltaTracker dt = Minecraft.getInstance().getDeltaTracker();
+            DeltaTracker dt = Minecraft.getInstance().getTimer();
             if (CustomHudRenderer.shouldReplaceHotbar()) {
                 CustomHudRenderer.renderHotbar(graphics, dt);
             }
@@ -148,11 +148,11 @@ public class HudEditorScreen extends Screen {
         renderFocusModeOverlay(graphics, mouseX, mouseY);
 
         if (activeContextMenu != null && activeContextMenu.isVisible()) {
-            activeContextMenu.extractRenderState(graphics, mouseX, mouseY, partialTicks);
+            activeContextMenu.render(graphics, mouseX, mouseY, partialTicks);
         }
     }
 
-    private void rebuildAndRenderToolbar(GuiGraphicsExtractor graphics, int mouseX, int mouseY) {
+    private void rebuildAndRenderToolbar(GuiGraphics graphics, int mouseX, int mouseY) {
         chipButtons.clear();
         BarHandle focused = focusedBar();
         ClientConfig c = ModConfigManager.getClient();
@@ -164,7 +164,7 @@ public class HudEditorScreen extends Screen {
         int panelH = 54;
 
         graphics.fill(panelX, panelY, panelX + panelW, panelY + panelH, PANEL_BG_COLOR);
-        graphics.outline(panelX, panelY, panelW, panelH, PANEL_BORDER_COLOR);
+        graphics.renderOutline(panelX, panelY, panelW, panelH, PANEL_BORDER_COLOR);
 
         // Row 1: Mode / Selector chips (y = panelY + 4, height = 14)
         int row1Y = panelY + 4;
@@ -210,7 +210,7 @@ public class HudEditorScreen extends Screen {
         // Row 2: Live readout + Quick actions (y = panelY + 21, height = 14)
         int row2Y = panelY + 21;
         String readout = buildInspectorReadout(focused, c, inFocus);
-        graphics.text(this.font, Component.literal(readout), panelX + 6, row2Y + 3, 0xFFE6EDF5, true);
+        graphics.drawString(this.font, Component.literal(readout), panelX + 6, row2Y + 3, 0xFFE6EDF5, true);
 
         int rightX = panelX + panelW - 6;
         Component doneLabel = Component.translatable("gui.done");
@@ -284,11 +284,11 @@ public class HudEditorScreen extends Screen {
             int bg = chip.selected ? CHIP_ACTIVE_BG_COLOR : (hot ? CHIP_HOVER_COLOR : CHIP_BG_COLOR);
             int border = chip.selected ? CHIP_ACTIVE_BORDER_COLOR : (chip.accent ? 0xFF4F74A8 : CHIP_BORDER_COLOR);
             graphics.fill(chip.x, chip.y, chip.x + chip.width, chip.y + chip.height, bg);
-            graphics.outline(chip.x, chip.y, chip.width, chip.height, border);
+            graphics.renderOutline(chip.x, chip.y, chip.width, chip.height, border);
             int textX = chip.x + (chip.width - this.font.width(chip.label)) / 2;
             int textY = chip.y + (chip.height - this.font.lineHeight) / 2 + 1;
             int textColor = chip.selected ? 0xFFFFFFFF : (chip.accent ? 0xFFD8E8FF : 0xFFD0D6E0);
-            graphics.text(this.font, chip.label, textX, textY, textColor, false);
+            graphics.drawString(this.font, chip.label, textX, textY, textColor, false);
         }
 
         // Row 3: Concise accurate shortcut hint
@@ -301,16 +301,16 @@ public class HudEditorScreen extends Screen {
         int hintW = this.font.width(hint);
         int maxHintW = panelW - 12;
         var pose = graphics.pose();
-        pose.pushMatrix();
+        pose.pushPose();
         if (hintW > maxHintW) {
             float scale = maxHintW / (float) hintW;
-            pose.translate(this.width / 2f, row3Y + 2);
-            pose.scale(scale, scale);
-            graphics.text(this.font, hint, -hintW / 2, 0, 0xFFA8B4C4, false);
+            pose.translate(this.width / 2f, row3Y + 2, 0.0f);
+            pose.scale(scale, scale, 1.0f);
+            graphics.drawString(this.font, hint, -hintW / 2, 0, 0xFFA8B4C4, false);
         } else {
-            graphics.centeredText(this.font, hint, this.width / 2, row3Y, 0xFFA8B4C4);
+            graphics.drawCenteredString(this.font, hint, this.width / 2, row3Y, 0xFFA8B4C4);
         }
-        pose.popMatrix();
+        pose.popPose();
 
         if (hoveredChip != null && hoveredChip.tooltip != null) {
             renderTooltip(graphics, hoveredChip.tooltip, mouseX, mouseY);
@@ -374,7 +374,7 @@ public class HudEditorScreen extends Screen {
         return r.width() > 0 && r.height() > 0;
     }
 
-    private void renderFocusModeOverlay(GuiGraphicsExtractor graphics, int mouseX, int mouseY) {
+    private void renderFocusModeOverlay(GuiGraphics graphics, int mouseX, int mouseY) {
         if (!EditModeManager.isFocusMode()) return;
         BarHandle bar = focusedBar();
         if (bar == null) return;
@@ -386,7 +386,7 @@ public class HudEditorScreen extends Screen {
             if (!barExposesSub(bar, sub, player)) continue;
             ScreenRect r = bar.renderer.getSubElementRect(sub, player);
             if (sub != activeSub) {
-                graphics.outline(r.x() - 1, r.y() - 1, r.width() + 2, r.height() + 2, FOCUS_INACTIVE_OUTLINE_COLOR);
+                graphics.renderOutline(r.x() - 1, r.y() - 1, r.width() + 2, r.height() + 2, FOCUS_INACTIVE_OUTLINE_COLOR);
             }
             if (isInside(mouseX, mouseY, r)) hoveredSub = sub;
         }
@@ -396,7 +396,7 @@ public class HudEditorScreen extends Screen {
             if (isInside(mouseX, mouseY, r) && dragKind == DragKind.NONE) {
                 graphics.fill(r.x(), r.y(), r.x() + r.width(), r.y() + r.height(), FOCUS_HOVER_COLOR);
             }
-            graphics.outline(r.x() - 1, r.y() - 1, r.width() + 2, r.height() + 2, FOCUS_OUTLINE_COLOR);
+            graphics.renderOutline(r.x() - 1, r.y() - 1, r.width() + 2, r.height() + 2, FOCUS_OUTLINE_COLOR);
 
             if (activeSub.isResizable()) {
                 boolean hasScale = bar.access.hasTextScale(activeSub);
@@ -440,13 +440,13 @@ public class HudEditorScreen extends Screen {
         }
     }
 
-    private static void drawHandle(GuiGraphicsExtractor graphics, int cx, int cy, int fillColor) {
+    private static void drawHandle(GuiGraphics graphics, int cx, int cy, int fillColor) {
         int half = HANDLE_DRAW_SIZE / 2;
         graphics.fill(cx - half - 1, cy - half - 1, cx + half + 1, cy + half + 1, 0xFF000000);
         graphics.fill(cx - half, cy - half, cx + half, cy + half, fillColor);
     }
 
-    private void renderTooltip(GuiGraphicsExtractor graphics, Component label, int mouseX, int mouseY) {
+    private void renderTooltip(GuiGraphics graphics, Component label, int mouseX, int mouseY) {
         int textWidth = this.font.width(label);
         int padding = 3;
         int boxWidth = textWidth + padding * 2;
@@ -456,8 +456,8 @@ public class HudEditorScreen extends Screen {
         if (x + boxWidth > this.width - 2) x = this.width - boxWidth - 2;
         if (y < 60) y = mouseY + 12;
         graphics.fill(x, y, x + boxWidth, y + boxHeight, 0xF0101216);
-        graphics.outline(x, y, boxWidth, boxHeight, 0xFF586578);
-        graphics.text(this.font, label, x + padding, y + padding, 0xFFFFFFFF, false);
+        graphics.renderOutline(x, y, boxWidth, boxHeight, 0xFF586578);
+        graphics.drawString(this.font, label, x + padding, y + padding, 0xFFFFFFFF, false);
     }
 
     // ===== Mouse & Scroll =====
@@ -476,17 +476,16 @@ public class HudEditorScreen extends Screen {
     }
 
     @Override
-    public boolean mouseClicked(@NotNull MouseButtonEvent event, boolean doubleClick) {
+    public boolean mouseClicked(double mouseXDouble, double mouseYDouble, int button) {
         ContextMenu menu = activeContextMenu;
         if (menu != null && menu.isVisible()) {
-            boolean consumed = menu.handleMouseClicked(event);
+            boolean consumed = menu.handleMouseClicked(mouseXDouble, mouseYDouble, button);
             if (!menu.isVisible()) activeContextMenu = null;
             if (consumed) return true;
         }
 
-        int mouseX = (int) event.x();
-        int mouseY = (int) event.y();
-        int button = event.button();
+        int mouseX = (int) mouseXDouble;
+        int mouseY = (int) mouseYDouble;
 
         if (button == 0) {
             for (ChipButton chip : chipButtons) {
@@ -497,7 +496,7 @@ public class HudEditorScreen extends Screen {
             }
         }
 
-        if (super.mouseClicked(event, doubleClick)) return true;
+        if (super.mouseClicked(mouseXDouble, mouseYDouble, button)) return true;
 
         if (EditModeManager.isFocusMode()) {
             BarHandle bar = focusedBar();
@@ -567,6 +566,10 @@ public class HudEditorScreen extends Screen {
                 EditModeManager.clearFocusedElement();
                 return true;
             }
+            long now = net.minecraft.Util.getMillis();
+            boolean doubleClick = (now - lastLeftClickTime) < 250L && lastLeftClickElement == hit.element;
+            lastLeftClickTime = now;
+            lastLeftClickElement = hit.element;
             if (doubleClick && EditModeManager.getFocusedElement() == hit.element) {
                 enterFocus();
                 return true;
@@ -579,13 +582,13 @@ public class HudEditorScreen extends Screen {
     }
 
     @Override
-    public boolean mouseDragged(@NotNull MouseButtonEvent event, double dx, double dy) {
-        if (dragKind == DragKind.NONE) return super.mouseDragged(event, dx, dy);
+    public boolean mouseDragged(double mouseX, double mouseY, int button, double dx, double dy) {
+        if (dragKind == DragKind.NONE) return super.mouseDragged(mouseX, mouseY, button, dx, dy);
         BarHandle bar = focusedBar();
         if (bar == null) return false;
         ClientConfig c = ModConfigManager.getClient();
-        int dxInt = (int) (event.x() - dragStartMouseX);
-        int dyInt = (int) (event.y() - dragStartMouseY);
+        int dxInt = (int) (mouseX - dragStartMouseX);
+        int dyInt = (int) (mouseY - dragStartMouseY);
         switch (dragKind) {
             case MOVE_BAR -> {
                 bar.access.setTotalX(c, dragStartValueA + dxInt);
@@ -621,8 +624,8 @@ public class HudEditorScreen extends Screen {
     }
 
     @Override
-    public boolean mouseReleased(@NotNull MouseButtonEvent event) {
-        if (dragKind != DragKind.NONE && event.button() == 0) {
+    public boolean mouseReleased(double mouseX, double mouseY, int button) {
+        if (dragKind != DragKind.NONE && button == 0) {
             BarHandle bar = focusedBar();
             ClientConfig c = ModConfigManager.getClient();
             if (bar != null) {
@@ -682,24 +685,23 @@ public class HudEditorScreen extends Screen {
             c.save();
             return true;
         }
-        return super.mouseReleased(event);
+        return super.mouseReleased(mouseX, mouseY, button);
     }
 
     // ===== Keyboard =====
 
     @Override
-    public boolean keyPressed(@NotNull KeyEvent event) {
+    public boolean keyPressed(int key, int scanCode, int modifiers) {
         ContextMenu menu = activeContextMenu;
         if (menu != null && menu.isVisible()) {
-            if (menu.handleKeyPressed(event.key())) {
+            if (menu.handleKeyPressed(key)) {
                 if (!menu.isVisible()) activeContextMenu = null;
                 return true;
             }
         }
 
-        int key = event.key();
-        boolean shift = (event.modifiers() & GLFW.GLFW_MOD_SHIFT) != 0;
-        boolean ctrl = (event.modifiers() & GLFW.GLFW_MOD_CONTROL) != 0;
+        boolean shift = (modifiers & GLFW.GLFW_MOD_SHIFT) != 0;
+        boolean ctrl = (modifiers & GLFW.GLFW_MOD_CONTROL) != 0;
         BarHandle bar = focusedBar();
 
         if (key == GLFW.GLFW_KEY_ESCAPE) {
@@ -856,7 +858,7 @@ public class HudEditorScreen extends Screen {
                 }
             }
         }
-        return super.keyPressed(event);
+        return super.keyPressed(key, scanCode, modifiers);
     }
 
     // ===== Helpers =====

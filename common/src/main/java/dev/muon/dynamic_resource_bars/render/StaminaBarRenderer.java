@@ -16,9 +16,8 @@ import dev.muon.dynamic_resource_bars.util.HUDPositioning;
 import dev.muon.dynamic_resource_bars.util.NineSliceRenderer;
 import dev.muon.dynamic_resource_bars.util.RenderUtil;
 import dev.muon.dynamic_resource_bars.util.ScreenRect;
-import net.minecraft.client.gui.GuiGraphicsExtractor;
-import net.minecraft.client.renderer.RenderPipelines;
-import net.minecraft.resources.Identifier;
+import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
@@ -57,18 +56,18 @@ public class StaminaBarRenderer extends AbstractBarRenderer {
         );
     }
 
-    private static final Identifier BACKGROUND_ID = Constants.loc("textures/gui/stamina_background.png");
-    private static final Identifier FOREGROUND_ID = Constants.loc("textures/gui/stamina_foreground.png");
-    private static final Identifier BAR_DEFAULT = Constants.loc("textures/gui/stamina_bar.png");
-    private static final Identifier BAR_CRITICAL = Constants.loc("textures/gui/stamina_bar_critical.png");
-    private static final Identifier BAR_MOUNTED = Constants.loc("textures/gui/stamina_bar_mounted.png");
-    private static final Identifier SATURATION_OVERLAY = Constants.loc("textures/gui/saturation_overlay.png");
-    private static final Identifier EXTRA_STAMINA_BAR = Constants.loc("textures/gui/extra_stamina_bar.png");
+    private static final ResourceLocation BACKGROUND_ID = Constants.loc("textures/gui/stamina_background.png");
+    private static final ResourceLocation FOREGROUND_ID = Constants.loc("textures/gui/stamina_foreground.png");
+    private static final ResourceLocation BAR_DEFAULT = Constants.loc("textures/gui/stamina_bar.png");
+    private static final ResourceLocation BAR_CRITICAL = Constants.loc("textures/gui/stamina_bar_critical.png");
+    private static final ResourceLocation BAR_MOUNTED = Constants.loc("textures/gui/stamina_bar_mounted.png");
+    private static final ResourceLocation SATURATION_OVERLAY = Constants.loc("textures/gui/saturation_overlay.png");
+    private static final ResourceLocation EXTRA_STAMINA_BAR = Constants.loc("textures/gui/extra_stamina_bar.png");
     /** Per-name cache for provider-supplied bar textures (FoodStaminaProvider, CA, etc.). */
-    private static final Map<String, Identifier> BAR_TEXTURE_CACHE = new ConcurrentHashMap<>();
+    private static final Map<String, ResourceLocation> BAR_TEXTURE_CACHE = new ConcurrentHashMap<>();
 
-    @Override protected Identifier backgroundTexture() { return BACKGROUND_ID; }
-    @Override protected Identifier foregroundTexture() { return FOREGROUND_ID; }
+    @Override protected ResourceLocation backgroundTexture() { return BACKGROUND_ID; }
+    @Override protected ResourceLocation foregroundTexture() { return FOREGROUND_ID; }
     @Override protected AnimationMetadata.AnimationData barAnimation() { return AnimationMetadataCache.getStaminaBarAnimation(); }
     @Override protected AnimationMetadata.ScalingInfo backgroundScaling() { return AnimationMetadataCache.getStaminaBackgroundScaling(); }
     @Override protected AnimationMetadata.ScalingInfo foregroundScaling() { return AnimationMetadataCache.getStaminaForegroundScaling(); }
@@ -90,7 +89,7 @@ public class StaminaBarRenderer extends AbstractBarRenderer {
     }
 
     @Override
-    protected Identifier barTexture(Player player, float current, float max) {
+    protected ResourceLocation barTexture(Player player, float current, float max) {
         LivingEntity mount = currentMount(player);
         if (mount != null) {
             float ratio = max <= 0 ? 0 : current / max;
@@ -178,7 +177,7 @@ public class StaminaBarRenderer extends AbstractBarRenderer {
      * via {@link #renderBetweenBarAndForeground} so it appears under this overlay.
      */
     @Override
-    protected void renderBarOverlays(GuiGraphicsExtractor graphics, Player player,
+    protected void renderBarOverlays(GuiGraphics graphics, Player player,
                                      float current, float max, ScreenRect barRect, float alpha) {
         if (currentMount(player) != null) return; // Mount-health mode hides food-related overlays.
         if (ModConfigManager.getClient().staminaBarBehavior != StaminaBarBehavior.FOOD) return;
@@ -192,7 +191,7 @@ public class StaminaBarRenderer extends AbstractBarRenderer {
             int satHeight = (int) (barRect.height() * satRatio);
             if (satHeight <= 0) return;
             int yOffset = barRect.height() - satHeight;
-            graphics.blit(RenderPipelines.GUI_TEXTURED, SATURATION_OVERLAY,
+            blitTinted(graphics, SATURATION_OVERLAY,
                     barRect.x(), barRect.y() + yOffset, 0, yOffset,
                     barRect.width(), satHeight, dims.width, dims.height,
                     RenderUtil.whiteWithAlpha(alpha));
@@ -220,7 +219,7 @@ public class StaminaBarRenderer extends AbstractBarRenderer {
      * in the same frame as a render produce a chunk this frame.
      */
     @Override
-    protected void renderBetweenBarAndForeground(GuiGraphicsExtractor graphics, Player player,
+    protected void renderBetweenBarAndForeground(GuiGraphics graphics, Player player,
                                                  float current, float max, ScreenRect barRect,
                                                  int animOffset, AnimationMetadata.AnimationData animData) {
         // Track unconditionally so previousExtra stays in sync even during mount mode (otherwise a
@@ -274,7 +273,7 @@ public class StaminaBarRenderer extends AbstractBarRenderer {
      * itself <i>is</i> the leading-edge zone). Each chunk's value range maps via its snapshot
      * denominator, so chunks recede inward as the live reserve shrinks past them.
      */
-    private void renderReserveFadingChunks(ScreenRect barRect, GuiGraphicsExtractor graphics) {
+    private void renderReserveFadingChunks(ScreenRect barRect, GuiGraphics graphics) {
         BarConfig cfg = config();
         boolean rightAnchored = cfg.anchor().getSide() == HUDPositioning.AnchorSide.RIGHT;
         paintFadingChunks(graphics, reserveChunks, barRect, rightAnchored, 0,
@@ -292,7 +291,7 @@ public class StaminaBarRenderer extends AbstractBarRenderer {
      * extra" sub-portion) because Paragliders only exposes the current extra value — the max is
      * implicit and shifts as extra is gained or used.
      */
-    private void renderSqueezeExtraStamina(GuiGraphicsExtractor graphics, Player player,
+    private void renderSqueezeExtraStamina(GuiGraphics graphics, Player player,
                                            float current, float max, ScreenRect barRect) {
         int extraSize = leadingFillOffset(player, current, max, barRect);
         if (extraSize <= 0) return;
@@ -306,7 +305,7 @@ public class StaminaBarRenderer extends AbstractBarRenderer {
             int yOffset = barRect.height() - extraSize;
             int y = barRect.y() + yOffset;
             int v = extraAnimOffset + yOffset;
-            graphics.blit(RenderPipelines.GUI_TEXTURED, EXTRA_STAMINA_BAR, barRect.x(), y, 0, v,
+            blitTinted(graphics, EXTRA_STAMINA_BAR, barRect.x(), y, 0, v,
                     barRect.width(), extraSize, animData.textureWidth, animData.textureHeight, tint);
             return;
         }
@@ -315,7 +314,7 @@ public class StaminaBarRenderer extends AbstractBarRenderer {
         int x = rightAnchored
                 ? barRect.x() + barRect.width() - extraSize
                 : barRect.x();
-        graphics.blit(RenderPipelines.GUI_TEXTURED, EXTRA_STAMINA_BAR, x, barRect.y(), 0, extraAnimOffset,
+        blitTinted(graphics, EXTRA_STAMINA_BAR, x, barRect.y(), 0, extraAnimOffset,
                 extraSize, barRect.height(), animData.textureWidth, animData.textureHeight, tint);
     }
 }

@@ -4,7 +4,7 @@ import dev.muon.dynamic_resource_bars.config.ClientConfig;
 import dev.muon.dynamic_resource_bars.config.ModConfigManager;
 import dev.muon.dynamic_resource_bars.util.DraggableElement;
 import dev.muon.dynamic_resource_bars.util.SubElementType;
-import net.minecraft.client.gui.GuiGraphicsExtractor;
+import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.network.chat.Component;
@@ -74,11 +74,11 @@ public class ToggleLayersScreen extends Screen {
     }
 
     @Override
-    public void extractRenderState(@NotNull GuiGraphicsExtractor graphics, int mouseX, int mouseY, float partialTicks) {
-        super.extractRenderState(graphics, mouseX, mouseY, partialTicks);
-        graphics.centeredText(this.font, this.title, this.width / 2, 20, 0xFFFFFFFF);
+    public void render(@NotNull GuiGraphics graphics, int mouseX, int mouseY, float partialTicks) {
+        super.render(graphics, mouseX, mouseY, partialTicks);
+        graphics.drawCenteredString(this.font, this.title, this.width / 2, 20, 0xFFFFFFFF);
         // Sit just above the Done button (button top = height - 36, button height 20).
-        graphics.centeredText(this.font,
+        graphics.drawCenteredString(this.font,
                 Component.translatable("gui.dynamic_resource_bars.toggle_layers.text_note"),
                 this.width / 2, this.height - 50, 0xFFAAAAAA);
     }

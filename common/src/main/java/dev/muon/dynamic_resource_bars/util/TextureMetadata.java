@@ -4,7 +4,7 @@ import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import com.mojang.blaze3d.platform.NativeImage;
 import dev.muon.dynamic_resource_bars.Constants;
-import net.minecraft.resources.Identifier;
+import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.packs.resources.Resource;
 import net.minecraft.server.packs.resources.ResourceManager;
 
@@ -97,7 +97,7 @@ public class TextureMetadata {
      * @param textureLocation The texture location (without .mcmeta)
      * @return Complete metadata for the texture
      */
-    public static FullMetadata loadFullMetadata(ResourceManager resourceManager, Identifier textureLocation) {
+    public static FullMetadata loadFullMetadata(ResourceManager resourceManager, ResourceLocation textureLocation) {
         // 1. Load texture dimensions from PNG
         int textureWidth = 256;  // Default
         int textureHeight = 1024; // Default for animated bars
@@ -122,8 +122,8 @@ public class TextureMetadata {
         UVMapping uvMapping = null;
         NineSliceInfo nineSlice = null;
         
-        Identifier mcmetaLocation;
-        mcmetaLocation = Identifier.fromNamespaceAndPath(
+        ResourceLocation mcmetaLocation;
+        mcmetaLocation = ResourceLocation.fromNamespaceAndPath(
             textureLocation.getNamespace(),
             textureLocation.getPath() + ".mcmeta"
         );
@@ -185,7 +185,7 @@ public class TextureMetadata {
         return new FullMetadata(textureWidth, textureHeight, animation, uvMapping, nineSlice);
     }
     
-    private static AnimationInfo parseAnimation(JsonObject root, Identifier location, int textureHeight) {
+    private static AnimationInfo parseAnimation(JsonObject root, ResourceLocation location, int textureHeight) {
         if (!root.has("animation")) {
             return null; // Will use defaults
         }

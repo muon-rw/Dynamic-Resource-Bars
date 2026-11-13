@@ -10,9 +10,8 @@ import dev.muon.dynamic_resource_bars.util.EditModeManager;
 import dev.muon.dynamic_resource_bars.util.RenderUtil;
 import dev.muon.dynamic_resource_bars.util.ScreenRect;
 import dev.muon.dynamic_resource_bars.util.SubElementType;
-import net.minecraft.client.gui.GuiGraphicsExtractor;
-import net.minecraft.client.renderer.RenderPipelines;
-import net.minecraft.resources.Identifier;
+import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.entity.player.Player;
 
 public class AirBarRenderer extends AbstractBarRenderer {
@@ -36,7 +35,7 @@ public class AirBarRenderer extends AbstractBarRenderer {
 
         AirIcon(String texture) { this.texture = texture; }
 
-        public Identifier loc() { return Constants.loc("textures/gui/air/" + texture + ".png"); }
+        public ResourceLocation loc() { return Constants.loc("textures/gui/air/" + texture + ".png"); }
 
         static AirIcon forValue(int air, int max) {
             if (air <= 0 || max <= 0) return NONE;
@@ -74,9 +73,9 @@ public class AirBarRenderer extends AbstractBarRenderer {
         );
     }
 
-    @Override protected Identifier backgroundTexture() { return Constants.loc("textures/gui/air_background.png"); }
-    @Override protected Identifier foregroundTexture() { return Constants.loc("textures/gui/air_foreground.png"); }
-    @Override protected Identifier barTexture(Player p, float c, float m) { return Constants.loc("textures/gui/air_bar.png"); }
+    @Override protected ResourceLocation backgroundTexture() { return Constants.loc("textures/gui/air_background.png"); }
+    @Override protected ResourceLocation foregroundTexture() { return Constants.loc("textures/gui/air_foreground.png"); }
+    @Override protected ResourceLocation barTexture(Player p, float c, float m) { return Constants.loc("textures/gui/air_bar.png"); }
     @Override protected AnimationMetadata.AnimationData barAnimation() { return AnimationMetadataCache.getAirBarAnimation(); }
     @Override protected AnimationMetadata.ScalingInfo backgroundScaling() { return AnimationMetadataCache.getAirBackgroundScaling(); }
     @Override protected AnimationMetadata.ScalingInfo foregroundScaling() { return AnimationMetadataCache.getAirForegroundScaling(); }
@@ -100,7 +99,7 @@ public class AirBarRenderer extends AbstractBarRenderer {
 
     /** Bubble icon, overlaid after the bar fill — separate texture per air tier. */
     @Override
-    protected void renderBarOverlays(GuiGraphicsExtractor graphics, Player player,
+    protected void renderBarOverlays(GuiGraphics graphics, Player player,
                                      float current, float max, ScreenRect barRect, float alpha) {
         ClientConfig c = ModConfigManager.getClient();
         if (!c.enableAirIcon && !EditModeManager.isEditModeEnabled()) return;
@@ -108,9 +107,9 @@ public class AirBarRenderer extends AbstractBarRenderer {
         AirIcon icon = AirIcon.forValue(displayAir, (int) max);
         ScreenRect rect = getSubElementRect(SubElementType.ICON, player);
         if (rect.width() <= 0 || rect.height() <= 0) return;
-        Identifier texture = icon.loc();
+        ResourceLocation texture = icon.loc();
         int color = RenderUtil.whiteWithAlpha(alpha);
-        graphics.blit(RenderPipelines.GUI_TEXTURED, texture, rect.x(), rect.y(), 0, 0,
+        blitTinted(graphics, texture, rect.x(), rect.y(), 0, 0,
                 rect.width(), rect.height(), rect.width(), rect.height(), color);
     }
 

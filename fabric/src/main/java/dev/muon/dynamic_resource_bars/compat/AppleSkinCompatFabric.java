@@ -3,7 +3,6 @@ package dev.muon.dynamic_resource_bars.compat;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.food.FoodProperties;
 import net.minecraft.world.item.ItemStack;
-import squeek.appleskin.helpers.ConsumableFood;
 import squeek.appleskin.helpers.FoodHelper;
 
 /**
@@ -27,7 +26,7 @@ public final class AppleSkinCompatFabric implements AppleSkinCompat.Provider {
         if (q == null) return 0f;
         FoodProperties props = props(q);
         if (props == null) return 0f;
-        return FoodHelper.getEstimatedHealthIncrement(player, new ConsumableFood(props, q.consumableComponent));
+        return FoodHelper.getEstimatedHealthIncrement(player, props);
     }
 
     @Override

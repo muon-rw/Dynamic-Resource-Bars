@@ -1,13 +1,12 @@
 package dev.muon.dynamic_resource_bars.config.gui;
 
+import com.mojang.blaze3d.vertex.PoseStack;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
-import net.minecraft.client.gui.GuiGraphicsExtractor;
+import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.Renderable;
 import net.minecraft.client.gui.components.events.GuiEventListener;
-import net.minecraft.client.input.MouseButtonEvent;
 import org.jetbrains.annotations.NotNull;
-import org.joml.Matrix3x2fStack;
 import org.lwjgl.glfw.GLFW;
 
 import java.util.ArrayList;
@@ -70,7 +69,7 @@ public class ContextMenu implements Renderable, GuiEventListener {
     }
 
     @Override
-    public void extractRenderState(@NotNull GuiGraphicsExtractor graphics, int mouseX, int mouseY, float partialTick) {
+    public void render(@NotNull GuiGraphics graphics, int mouseX, int mouseY, float partialTick) {
         if (!visible) return;
 
         graphics.fill(x, y, x + width, y + height, BACKGROUND_COLOR);
@@ -84,7 +83,7 @@ public class ContextMenu implements Renderable, GuiEventListener {
         }
 
         Font font = Minecraft.getInstance().font;
-        Matrix3x2fStack pose = graphics.pose();
+        PoseStack pose = graphics.pose();
         int itemY = y + PADDING;
         for (int i = 0; i < items.size(); i++) {
             ContextMenuItem item = items.get(i);
@@ -96,13 +95,13 @@ public class ContextMenu implements Renderable, GuiEventListener {
                 if (i == hoveredIndex && item.isClickable()) {
                     graphics.fill(x + 2, itemY, x + width - 2, itemY + rHeight, HOVER_COLOR);
                 }
-                pose.pushMatrix();
+                pose.pushPose();
                 int textOffsetY = Math.max(1, (int) ((rHeight - font.lineHeight * TEXT_SCALE) / 2f));
-                pose.translate(x + PADDING + 2, itemY + textOffsetY);
-                pose.scale(TEXT_SCALE, TEXT_SCALE);
+                pose.translate(x + PADDING + 2, itemY + textOffsetY, 0);
+                pose.scale(TEXT_SCALE, TEXT_SCALE, 1.0f);
                 int color = item.isEnabled() ? item.textColor() : 0xFF808080;
-                graphics.text(font, item.label(), 0, 0, color, true);
-                pose.popMatrix();
+                graphics.drawString(font, item.label(), 0, 0, color, true);
+                pose.popPose();
                 if (item.isTitle()) {
                     graphics.fill(x + 3, itemY + rHeight - 1, x + width - 3, itemY + rHeight, SEPARATOR_COLOR);
                 }
@@ -127,17 +126,17 @@ public class ContextMenu implements Renderable, GuiEventListener {
         }
     }
 
-    public boolean handleMouseClicked(MouseButtonEvent event) {
+    public boolean handleMouseClicked(double mouseX, double mouseY, int button) {
         if (!visible) return false;
-        int mx = (int) event.x();
-        int my = (int) event.y();
+        int mx = (int) mouseX;
+        int my = (int) mouseY;
         boolean inside = mx >= x && mx < x + width && my >= y && my < y + height;
         if (!inside) {
             close();
             return false;
         }
         updateHovered(mx, my);
-        if (event.button() == 0 && hoveredIndex >= 0 && hoveredIndex < items.size()) {
+        if (button == 0 && hoveredIndex >= 0 && hoveredIndex < items.size()) {
             ContextMenuItem item = items.get(hoveredIndex);
             if (item.isClickable()) {
                 item.execute();

@@ -1,3 +1,10 @@
+## 1.0.0
+- Backported to 1.21.1
+- Renamed to Raven's RPG Resource Orbs 
+- New sprites
+- Editor tweaks
+- New animation features: flow on vertical fill bars, and gradual painting
+
 ## 0.9.6
 - Sprite revamp!
 - - Default backgrounds are now vanilla styled instead of Stoneborn styled

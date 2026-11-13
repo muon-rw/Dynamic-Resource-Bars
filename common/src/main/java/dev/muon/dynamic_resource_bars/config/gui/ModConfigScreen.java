@@ -4,13 +4,15 @@ import dev.muon.dynamic_resource_bars.Constants;
 import dev.muon.dynamic_resource_bars.config.ClientConfig;
 import dev.muon.dynamic_resource_bars.config.ModConfigManager;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.gui.GuiGraphicsExtractor;
+import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.components.EditBox;
 import net.minecraft.client.gui.components.Tooltip;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.network.chat.Component;
 import org.jetbrains.annotations.NotNull;
+
+import java.util.function.IntConsumer;
 
 public class ModConfigScreen extends Screen {
 
@@ -23,6 +25,8 @@ public class ModConfigScreen extends Screen {
     private EditBox textOpacityBox;
     private EditBox textSizeBox;
     private EditBox fadeHoldBox;
+    private EditBox leftHudOffsetBox;
+    private EditBox rightHudOffsetBox;
 
     public ModConfigScreen(Screen parent) {
         super(Component.literal(Constants.MOD_NAME + " Configuration"));
@@ -40,7 +44,7 @@ public class ModConfigScreen extends Screen {
         int rowGap = 4;
         int centerX = this.width / 2;
 
-        int totalContentHeight = buttonHeight + 4 + buttonHeight + 10 + 4 * (rowHeight + rowGap);
+        int totalContentHeight = buttonHeight + 4 + buttonHeight + 10 + 6 * (rowHeight + rowGap);
         int topLimit = 32;
         int bottomLimit = this.height - 36;
         int currentY = Math.max(topLimit, topLimit + (bottomLimit - topLimit - totalContentHeight) / 2);
@@ -134,32 +138,55 @@ public class ModConfigScreen extends Screen {
         this.addRenderableWidget(textSizeBox);
         currentY += rowHeight + rowGap;
 
-        fadeHoldBox = new EditBox(this.font, editX, currentY, editBoxWidth, rowHeight, Component.empty());
-        fadeHoldBox.setMaxLength(5);
-        fadeHoldBox.setValue(String.valueOf(config.fadeHoldDuration));
-        fadeHoldBox.setTextColor(VALID_TEXT_COLOR);
-        fadeHoldBox.setTooltip(Tooltip.create(
-                Component.translatable("gui.dynamic_resource_bars.config.tooltip.fade_hold_duration")));
-        fadeHoldBox.setResponder(text -> {
-            try {
-                int ms = Integer.parseInt(text.trim());
-                if (ms >= 0 && ms <= 60000) {
-                    config.fadeHoldDuration = ms;
-                    fadeHoldBox.setTextColor(VALID_TEXT_COLOR);
-                } else {
-                    fadeHoldBox.setTextColor(INVALID_TEXT_COLOR);
-                }
-            } catch (NumberFormatException e) {
-                fadeHoldBox.setTextColor(INVALID_TEXT_COLOR);
-            }
-        });
+        fadeHoldBox = createIntEditBox(editX, currentY, editBoxWidth, rowHeight, 5,
+                config.fadeHoldDuration, 0, 60000,
+                "gui.dynamic_resource_bars.config.tooltip.fade_hold_duration",
+                ms -> config.fadeHoldDuration = ms);
         this.addRenderableWidget(fadeHoldBox);
+        currentY += rowHeight + rowGap;
+
+        leftHudOffsetBox = createIntEditBox(editX, currentY, editBoxWidth, rowHeight, 4,
+                config.leftHudLayerOffset, -200, 200,
+                "gui.dynamic_resource_bars.config.tooltip.left_hud_offset",
+                offset -> config.leftHudLayerOffset = offset);
+        this.addRenderableWidget(leftHudOffsetBox);
+        currentY += rowHeight + rowGap;
+
+        rightHudOffsetBox = createIntEditBox(editX, currentY, editBoxWidth, rowHeight, 4,
+                config.rightHudLayerOffset, -200, 200,
+                "gui.dynamic_resource_bars.config.tooltip.right_hud_offset",
+                offset -> config.rightHudLayerOffset = offset);
+        this.addRenderableWidget(rightHudOffsetBox);
 
         this.addRenderableWidget(Button.builder(
                         Component.translatable("gui.done"),
                         b -> onClose())
                 .bounds(centerX - buttonWidth / 2, this.height - buttonHeight - 10, buttonWidth, buttonHeight)
                 .build());
+    }
+
+    private EditBox createIntEditBox(int x, int y, int width, int height, int maxLength,
+                                   int initialValue, int min, int max,
+                                   String tooltipKey, IntConsumer onValid) {
+        EditBox box = new EditBox(this.font, x, y, width, height, Component.empty());
+        box.setMaxLength(maxLength);
+        box.setValue(String.valueOf(initialValue));
+        box.setTextColor(VALID_TEXT_COLOR);
+        box.setTooltip(Tooltip.create(Component.translatable(tooltipKey)));
+        box.setResponder(text -> {
+            try {
+                int parsed = Integer.parseInt(text.trim());
+                if (parsed >= min && parsed <= max) {
+                    onValid.accept(parsed);
+                    box.setTextColor(VALID_TEXT_COLOR);
+                } else {
+                    box.setTextColor(INVALID_TEXT_COLOR);
+                }
+            } catch (NumberFormatException e) {
+                box.setTextColor(INVALID_TEXT_COLOR);
+            }
+        });
+        return box;
     }
 
     private static void applyGlobalTextColor(ClientConfig config, int color) {
@@ -181,15 +208,17 @@ public class ModConfigScreen extends Screen {
     }
 
     @Override
-    public void extractRenderState(@NotNull GuiGraphicsExtractor graphics, int mouseX, int mouseY, float partialTicks) {
-        super.extractRenderState(graphics, mouseX, mouseY, partialTicks);
-        graphics.centeredText(this.font, this.title, this.width / 2, 12, 0xFFFFFFFF);
+    public void render(@NotNull GuiGraphics graphics, int mouseX, int mouseY, float partialTicks) {
+        super.render(graphics, mouseX, mouseY, partialTicks);
+        graphics.drawCenteredString(this.font, this.title, this.width / 2, 12, 0xFFFFFFFF);
 
         if (textColorBox == null) return;
         FieldEditorUtils.drawLabel(graphics, this.font, "gui.dynamic_resource_bars.config.label.text_color", 0, textColorBox);
         FieldEditorUtils.drawLabel(graphics, this.font, "gui.dynamic_resource_bars.config.label.text_opacity", 0, textOpacityBox);
         FieldEditorUtils.drawLabel(graphics, this.font, "gui.dynamic_resource_bars.config.label.text_size", 0, textSizeBox);
         FieldEditorUtils.drawLabel(graphics, this.font, "gui.dynamic_resource_bars.config.label.fade_hold_duration", 0, fadeHoldBox);
+        FieldEditorUtils.drawLabel(graphics, this.font, "gui.dynamic_resource_bars.config.label.left_hud_offset", 0, leftHudOffsetBox);
+        FieldEditorUtils.drawLabel(graphics, this.font, "gui.dynamic_resource_bars.config.label.right_hud_offset", 0, rightHudOffsetBox);
 
         int swatchX = textColorBox.getX() + textColorBox.getWidth() + 4;
         int swatchY = textColorBox.getY() + 2;

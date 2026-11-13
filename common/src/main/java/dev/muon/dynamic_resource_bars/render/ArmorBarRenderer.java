@@ -13,9 +13,8 @@ import dev.muon.dynamic_resource_bars.util.RenderUtil;
 import dev.muon.dynamic_resource_bars.util.ScreenRect;
 import dev.muon.dynamic_resource_bars.util.SubElementType;
 import dev.muon.dynamic_resource_bars.util.TickHandler;
-import net.minecraft.client.gui.GuiGraphicsExtractor;
-import net.minecraft.client.renderer.RenderPipelines;
-import net.minecraft.resources.Identifier;
+import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.entity.player.Player;
 
 public class ArmorBarRenderer extends AbstractBarRenderer {
@@ -26,7 +25,7 @@ public class ArmorBarRenderer extends AbstractBarRenderer {
     private enum ArmorIcon {
         NONE, LIGHT, MEDIUM, HEAVY, PLATE, REINFORCED, ENHANCED, MASTERWORK, LEGENDARY, MYTHICAL, DIVINE;
 
-        public Identifier loc() {
+        public ResourceLocation loc() {
             return Constants.loc("textures/gui/armors/tier_" + ordinal() + ".png");
         }
 
@@ -57,9 +56,9 @@ public class ArmorBarRenderer extends AbstractBarRenderer {
         );
     }
 
-    @Override protected Identifier backgroundTexture() { return Constants.loc("textures/gui/armor_background.png"); }
-    @Override protected Identifier foregroundTexture() { return Constants.loc("textures/gui/armor_foreground.png"); }
-    @Override protected Identifier barTexture(Player p, float c, float m) { return Constants.loc("textures/gui/armor_bar.png"); }
+    @Override protected ResourceLocation backgroundTexture() { return Constants.loc("textures/gui/armor_background.png"); }
+    @Override protected ResourceLocation foregroundTexture() { return Constants.loc("textures/gui/armor_foreground.png"); }
+    @Override protected ResourceLocation barTexture(Player p, float c, float m) { return Constants.loc("textures/gui/armor_bar.png"); }
     /** Armor bar is static — single-frame "animation" yields a 0 offset every frame. */
     @Override protected AnimationMetadata.AnimationData barAnimation() {
         return AnimationMetadataCache.getArmorBarAnimation();
@@ -100,7 +99,7 @@ public class ArmorBarRenderer extends AbstractBarRenderer {
 
     /** Protection-enchantment overlay (pulses) followed by the armor-tier icon. */
     @Override
-    protected void renderBarOverlays(GuiGraphicsExtractor graphics, Player player,
+    protected void renderBarOverlays(GuiGraphics graphics, Player player,
                                      float current, float max, ScreenRect barRect, float alpha) {
         ClientConfig c = ModConfigManager.getClient();
 
@@ -113,7 +112,7 @@ public class ArmorBarRenderer extends AbstractBarRenderer {
             int overlayW = (int) (adjustedW * protRatio);
             int overlayX = barRect.x() + iconReserve;
             if (overlayW > 0) {
-                Identifier tex = Constants.loc("textures/gui/protection_overlay.png");
+                ResourceLocation tex = Constants.loc("textures/gui/protection_overlay.png");
                 AnimationMetadata.TextureDimensions dims = AnimationMetadataCache.getTextureDimensions(tex);
                 NineSliceRenderer.renderWithScaling(graphics, tex,
                         AnimationMetadataCache.getProtectionOverlayScaling(),
@@ -127,9 +126,9 @@ public class ArmorBarRenderer extends AbstractBarRenderer {
             ArmorIcon icon = ArmorIcon.forArmor((int) current, c.maxExpectedArmor);
             ScreenRect rect = getSubElementRect(SubElementType.ICON, player);
             if (rect.width() > 0 && rect.height() > 0) {
-                Identifier texture = icon.loc();
+                ResourceLocation texture = icon.loc();
                 int color = RenderUtil.whiteWithAlpha(alpha);
-                graphics.blit(RenderPipelines.GUI_TEXTURED, texture, rect.x(), rect.y(), 0, 0,
+                blitTinted(graphics, texture, rect.x(), rect.y(), 0, 0,
                         rect.width(), rect.height(), rect.width(), rect.height(), color);
             }
         }

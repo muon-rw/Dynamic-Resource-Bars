@@ -10,9 +10,8 @@ import dev.muon.dynamic_resource_bars.util.AnimationMetadataCache;
 import dev.muon.dynamic_resource_bars.util.DraggableElement;
 import dev.muon.dynamic_resource_bars.util.FillDirection;
 import dev.muon.dynamic_resource_bars.util.ScreenRect;
-import net.minecraft.client.gui.GuiGraphicsExtractor;
-import net.minecraft.client.renderer.RenderPipelines;
-import net.minecraft.resources.Identifier;
+import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.entity.player.Player;
 
 public class ManaBarRenderer extends AbstractBarRenderer {
@@ -41,9 +40,9 @@ public class ManaBarRenderer extends AbstractBarRenderer {
         );
     }
 
-    @Override protected Identifier backgroundTexture() { return Constants.loc("textures/gui/mana_background.png"); }
-    @Override protected Identifier foregroundTexture() { return Constants.loc("textures/gui/mana_foreground.png"); }
-    @Override protected Identifier barTexture(Player p, float c, float m) { return Constants.loc("textures/gui/mana_bar.png"); }
+    @Override protected ResourceLocation backgroundTexture() { return Constants.loc("textures/gui/mana_background.png"); }
+    @Override protected ResourceLocation foregroundTexture() { return Constants.loc("textures/gui/mana_foreground.png"); }
+    @Override protected ResourceLocation barTexture(Player p, float c, float m) { return Constants.loc("textures/gui/mana_bar.png"); }
     @Override protected AnimationMetadata.AnimationData barAnimation() { return AnimationMetadataCache.getManaBarAnimation(); }
     @Override protected AnimationMetadata.ScalingInfo backgroundScaling() { return AnimationMetadataCache.getManaBackgroundScaling(); }
     @Override protected AnimationMetadata.ScalingInfo foregroundScaling() { return AnimationMetadataCache.getManaForegroundScaling(); }
@@ -82,7 +81,7 @@ public class ManaBarRenderer extends AbstractBarRenderer {
     }
 
     @Override
-    protected void renderBetweenBarAndForeground(GuiGraphicsExtractor graphics, Player player,
+    protected void renderBetweenBarAndForeground(GuiGraphics graphics, Player player,
                                                  float current, float max, ScreenRect barRect,
                                                  int animOffset, AnimationMetadata.AnimationData animData) {
         ManaProvider provider = ManaProviderManager.getCurrentProvider();
@@ -91,11 +90,11 @@ public class ManaBarRenderer extends AbstractBarRenderer {
         if (reservedFraction <= 0) return;
 
         int tint = 0xFF000000 | RESERVED_MANA_COLOR;
-        Identifier texture = Constants.loc("textures/gui/mana_bar.png");
+        ResourceLocation texture = Constants.loc("textures/gui/mana_bar.png");
         if (config().fillDirection() == FillDirection.VERTICAL) {
             int reservedHeight = (int) (barRect.height() * (reservedFraction / (1f + reservedFraction)));
             if (reservedHeight <= 0) return;
-            graphics.blit(RenderPipelines.GUI_TEXTURED, texture, barRect.x(), barRect.y(), 0, animOffset,
+            blitTinted(graphics, texture, barRect.x(), barRect.y(), 0, animOffset,
                     barRect.width(), reservedHeight, animData.textureWidth, animData.textureHeight, tint);
             return;
         }
@@ -104,7 +103,7 @@ public class ManaBarRenderer extends AbstractBarRenderer {
         if (reservedWidth <= 0) return;
 
         int x = barRect.x() + barRect.width() - reservedWidth;
-        graphics.blit(RenderPipelines.GUI_TEXTURED, texture, x, barRect.y(), 0, animOffset,
+        blitTinted(graphics, texture, x, barRect.y(), 0, animOffset,
                 reservedWidth, barRect.height(), animData.textureWidth, animData.textureHeight, tint);
     }
 

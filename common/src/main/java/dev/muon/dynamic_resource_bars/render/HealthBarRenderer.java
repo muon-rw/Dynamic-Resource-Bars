@@ -17,9 +17,8 @@ import dev.muon.dynamic_resource_bars.util.RenderUtil;
 import dev.muon.dynamic_resource_bars.util.ScreenRect;
 import dev.muon.dynamic_resource_bars.util.SubElementType;
 import dev.muon.dynamic_resource_bars.util.TickHandler;
-import net.minecraft.client.gui.GuiGraphicsExtractor;
-import net.minecraft.client.renderer.RenderPipelines;
-import net.minecraft.resources.Identifier;
+import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.effect.MobEffects;
 import net.minecraft.world.entity.player.Player;
 
@@ -39,11 +38,11 @@ public class HealthBarRenderer extends AbstractBarRenderer {
         FROZEN("health_bar_frozen"),
         SCORCHED("health_bar_scorched");
 
-        private final Identifier id;
+        private final ResourceLocation id;
 
         BarType(String texture) { this.id = Constants.loc("textures/gui/" + texture + ".png"); }
 
-        public Identifier loc() { return id; }
+        public ResourceLocation loc() { return id; }
 
         public static BarType fromPlayerState(Player player) {
             if (player.hasEffect(MobEffects.POISON)) return POISON;
@@ -55,16 +54,16 @@ public class HealthBarRenderer extends AbstractBarRenderer {
     }
 
     // Cached identifiers — these used to be allocated every frame inside render hooks.
-    private static final Identifier BACKGROUND_ID = Constants.loc("textures/gui/health_background.png");
-    private static final Identifier FOREGROUND_ID = Constants.loc("textures/gui/health_foreground.png");
-    private static final Identifier HEAT_OVERLAY = Constants.loc("textures/gui/heat_overlay.png");
-    private static final Identifier COLD_OVERLAY = Constants.loc("textures/gui/cold_overlay.png");
-    private static final Identifier ABSORPTION_OVERLAY = Constants.loc("textures/gui/absorption_overlay.png");
-    private static final Identifier ABSORPTION_BAR = Constants.loc("textures/gui/absorption_bar.png");
-    private static final Identifier REGENERATION_OVERLAY = Constants.loc("textures/gui/regeneration_overlay.png");
-    private static final Identifier HARDCORE_OVERLAY = Constants.loc("textures/gui/hardcore_overlay.png");
-    private static final Identifier WETNESS_OVERLAY = Constants.loc("textures/gui/wetness_overlay.png");
-    private static final Identifier COMFORT_OVERLAY = Constants.loc("textures/gui/comfort_overlay.png");
+    private static final ResourceLocation BACKGROUND_ID = Constants.loc("textures/gui/health_background.png");
+    private static final ResourceLocation FOREGROUND_ID = Constants.loc("textures/gui/health_foreground.png");
+    private static final ResourceLocation HEAT_OVERLAY = Constants.loc("textures/gui/heat_overlay.png");
+    private static final ResourceLocation COLD_OVERLAY = Constants.loc("textures/gui/cold_overlay.png");
+    private static final ResourceLocation ABSORPTION_OVERLAY = Constants.loc("textures/gui/absorption_overlay.png");
+    private static final ResourceLocation ABSORPTION_BAR = Constants.loc("textures/gui/absorption_bar.png");
+    private static final ResourceLocation REGENERATION_OVERLAY = Constants.loc("textures/gui/regeneration_overlay.png");
+    private static final ResourceLocation HARDCORE_OVERLAY = Constants.loc("textures/gui/hardcore_overlay.png");
+    private static final ResourceLocation WETNESS_OVERLAY = Constants.loc("textures/gui/wetness_overlay.png");
+    private static final ResourceLocation COMFORT_OVERLAY = Constants.loc("textures/gui/comfort_overlay.png");
 
     @Override protected DraggableElement draggable() { return DraggableElement.HEALTH_BAR; }
 
@@ -85,13 +84,13 @@ public class HealthBarRenderer extends AbstractBarRenderer {
         );
     }
 
-    @Override protected Identifier backgroundTexture() { return BACKGROUND_ID; }
-    @Override protected Identifier foregroundTexture() { return FOREGROUND_ID; }
+    @Override protected ResourceLocation backgroundTexture() { return BACKGROUND_ID; }
+    @Override protected ResourceLocation foregroundTexture() { return FOREGROUND_ID; }
     @Override protected AnimationMetadata.AnimationData barAnimation() { return AnimationMetadataCache.getHealthBarAnimation(); }
     @Override protected AnimationMetadata.ScalingInfo backgroundScaling() { return AnimationMetadataCache.getHealthBackgroundScaling(); }
     @Override protected AnimationMetadata.ScalingInfo foregroundScaling() { return AnimationMetadataCache.getHealthForegroundScaling(); }
 
-    @Override protected Identifier barTexture(Player player, float current, float max) {
+    @Override protected ResourceLocation barTexture(Player player, float current, float max) {
         return BarType.fromPlayerState(player).loc();
     }
 
@@ -120,13 +119,13 @@ public class HealthBarRenderer extends AbstractBarRenderer {
     }
 
     @Override
-    protected void renderBarOverlays(GuiGraphicsExtractor graphics, Player player,
+    protected void renderBarOverlays(GuiGraphics graphics, Player player,
                                      float current, float max, ScreenRect barRect, float alpha) {
         int tint = RenderUtil.whiteWithAlpha(alpha);
 
         float tempScale = getTemperatureScale(player);
         if (tempScale != 0) {
-            Identifier tex = tempScale > 0 ? HEAT_OVERLAY : COLD_OVERLAY;
+            ResourceLocation tex = tempScale > 0 ? HEAT_OVERLAY : COLD_OVERLAY;
             int width = (int) (barRect.width() * Math.abs(tempScale));
             AnimationMetadata.ScalingInfo scaling = tempScale > 0
                     ? AnimationMetadataCache.getHeatOverlayScaling()
@@ -180,7 +179,7 @@ public class HealthBarRenderer extends AbstractBarRenderer {
      * </ol>
      */
     @Override
-    protected void renderBetweenBarAndForeground(GuiGraphicsExtractor graphics, Player player,
+    protected void renderBetweenBarAndForeground(GuiGraphics graphics, Player player,
                                                  float current, float max, ScreenRect barRect,
                                                  int animOffset, AnimationMetadata.AnimationData animData) {
         // Resolve the food preview width up-front so SQUEEZE absorption can slide right by exactly
@@ -214,7 +213,7 @@ public class HealthBarRenderer extends AbstractBarRenderer {
      * food-restore preview can occupy the freed-up gap (horizontal bars only — vertical fills
      * always pass 0).
      */
-    private void renderSqueezeAbsorption(GuiGraphicsExtractor graphics, Player player,
+    private void renderSqueezeAbsorption(GuiGraphics graphics, Player player,
                                          float current, float max, ScreenRect barRect, int previewShift) {
         if (ModConfigManager.getClient().healthAbsorptionDisplayMode != AbsorptionDisplayMode.SQUEEZE) return;
         float absorption = player.getAbsorptionAmount();
@@ -248,12 +247,12 @@ public class HealthBarRenderer extends AbstractBarRenderer {
         int x = rightAnchored
                 ? barRect.x() + barRect.width() - healthFilled - previewShift - absFilled
                 : barRect.x() + healthFilled + previewShift;
-        graphics.blit(RenderPipelines.GUI_TEXTURED, ABSORPTION_BAR, x, barRect.y(), 0, absAnimOffset,
+        blitTinted(graphics, ABSORPTION_BAR, x, barRect.y(), 0, absAnimOffset,
                 absFilled, barRect.height(), animData.textureWidth, animData.textureHeight, tint);
     }
 
     @Override
-    protected void renderBackgroundOverlays(GuiGraphicsExtractor graphics, Player player,
+    protected void renderBackgroundOverlays(GuiGraphics graphics, Player player,
                                             ScreenRect complexRect, float alpha) {
         int tint = RenderUtil.whiteWithAlpha(alpha);
         if (player.level().getLevelData().isHardcore()) {
@@ -275,9 +274,13 @@ public class HealthBarRenderer extends AbstractBarRenderer {
     }
 
     @Override
-    protected void renderAuxiliaryText(GuiGraphicsExtractor graphics, Player player, float alpha) {
+    protected void renderAuxiliaryText(GuiGraphics graphics, Player player, float alpha) {
         ClientConfig c = ModConfigManager.getClient();
         if (!c.enableHealthAbsorptionText) return;
+        boolean focusedHere = EditModeManager.isFocusMode()
+                && EditModeManager.getFocusedElement() == draggable()
+                && EditModeManager.getFocusedSubElement() == SubElementType.ABSORPTION_TEXT;
+        if (!focusedHere && !shouldRenderText(currentValue(player), maxValue(player))) return;
         float absorption = player.getAbsorptionAmount();
         if (absorption <= 0 && !EditModeManager.isEditModeEnabled()) return;
         String text = "+" + (EditModeManager.isEditModeEnabled() && absorption == 0 ? "8" : (int) absorption);

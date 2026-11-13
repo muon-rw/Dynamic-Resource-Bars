@@ -35,7 +35,8 @@ record HarnessRequest(String id, String command, boolean reloadResources, List<S
     }
 
     record Shot(String name, String screen, JsonObject player, JsonObject config, List<String> commands,
-                List<JsonObject> actions, int settleTicks, List<Crop> crops, int zoom, int padding, float[] look) {}
+                List<JsonObject> actions, int settleTicks, List<Crop> crops, int zoom, int padding, float[] look,
+                List<String> requiresMods, int recordTicks, List<JsonObject> timeline) {}
 
     /** Either a bar (optionally one of its sub-elements) or a literal GUI-space rect relative to {@code anchor}. */
     record Crop(String name, DraggableElement element, SubElementType sub, int[] rect, String anchor) {
@@ -125,6 +126,13 @@ record HarnessRequest(String id, String command, boolean reloadResources, List<S
             look = new float[]{0f, -90f};
         }
 
+        List<String> requiresMods = new ArrayList<>();
+        if (s.has("requiresMod")) requiresMods.add(s.get("requiresMod").getAsString());
+        if (s.has("requiresMods")) s.getAsJsonArray("requiresMods").forEach(m -> requiresMods.add(m.getAsString()));
+
+        List<JsonObject> timeline = new ArrayList<>();
+        if (s.has("timeline")) s.getAsJsonArray("timeline").forEach(t -> timeline.add(t.getAsJsonObject()));
+
         return new Shot(
                 name,
                 s.has("screen") ? s.get("screen").getAsString() : "hud",
@@ -136,6 +144,9 @@ record HarnessRequest(String id, String command, boolean reloadResources, List<S
                 crops,
                 s.has("zoom") ? s.get("zoom").getAsInt() : 0,
                 s.has("padding") ? s.get("padding").getAsInt() : 4,
-                look);
+                look,
+                requiresMods,
+                s.has("recordTicks") ? s.get("recordTicks").getAsInt() : 0,
+                timeline);
     }
 }

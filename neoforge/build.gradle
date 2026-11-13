@@ -1,3 +1,6 @@
+import java.nio.file.Files
+import java.nio.file.StandardCopyOption
+
 plugins {
     id 'multiloader-loader'
     id 'net.neoforged.moddev'
@@ -18,27 +21,46 @@ dependencies {
 
     compileOnly(annotationProcessor("com.github.bawnorton.mixinsquared:mixinsquared-common:${mixin_squared_version}"))
     jarJar(implementation("com.github.bawnorton.mixinsquared:mixinsquared-neoforge:${mixin_squared_version}")) {
-        version { strictly '[0.3.4,)'; prefer '0.3.7-beta.1' }
+        version { strictly '[0.3.4,)'; prefer "${mixin_squared_version}" }
     }
 
-    compileOnly "com.github.TheDeathlyCow:thermoo:v${project.thermoo_version}"
+    // Compats (compile + dev runtime)
+    compileOnly "maven.modrinth:thermoo:${project.thermoo_neoforge_version}"
+    localRuntime "maven.modrinth:thermoo:${project.thermoo_neoforge_version}"
 
-    compileOnly "dev.muon.combat_attributes:combat_attributes-neoforge:${combat_attributes_version}+${minecraft_version}"
+    compileOnly "squeek.appleskin:appleskin-neoforge:${appleskin_neoforge_version}"
+    localRuntime "squeek.appleskin:appleskin-neoforge:${appleskin_neoforge_version}"
 
-    compileOnly "curse.maven:appleskin-248787:7854456"
-    localRuntime "curse.maven:appleskin-248787:7854456"
+    compileOnly "curse.maven:farmers-delight-398521:${farmersdelight_neoforge_file}"
+    localRuntime "curse.maven:farmers-delight-398521:${farmersdelight_neoforge_file}"
 
-    // FD has no NeoForge port for this MC version yet; compileOnly against the Fabric Refabricated
-    // jar lets common's FarmersDelightCompat references resolve. Runtime is gated by isModLoaded
-    // so the absent classes never get touched on NeoForge users.
-    compileOnly "curse.maven:farmers-delight-refabricated-993166:8016410"
+    compileOnly "curse.maven:paragliders-289240:${paragliders_neoforge_file}"
+    localRuntime "curse.maven:paragliders-289240:${paragliders_neoforge_file}"
 
-    compileOnly "curse.maven:paragliders-289240:7956659"
-    localRuntime "curse.maven:paragliders-289240:7956659"
+    compileOnly "curse.maven:rpgmana-1021902:${rpgmana_neoforge_file}"
+
+    compileOnly "maven.modrinth:spell-engine:${spell_engine_version}-neoforge"
+
+    // Compats (compile-only)
+    compileOnly("com.hollingsworth.ars_nouveau:ars_nouveau-${minecraft_version}:${ars_nouveau_version}") { transitive = false }
+    compileOnly("io.redspace:irons_spellbooks:${irons_spellbooks_version}") { transitive = false }
+    compileOnly("io.redspace:irons_lib:${irons_lib_version}") { transitive = false }
+
+    // Runtime-only testing & transitive deps
+    localRuntime "maven.modrinth:frostiful:${frostiful_neoforge_version}"
+    localRuntime "maven.modrinth:scorchful:${scorchful_neoforge_version}"
+    localRuntime "maven.modrinth:forgified-fabric-api:${forgified_fabric_api_version}"
+    localRuntime "maven.modrinth:velvet-api:${velvet_api_version}"
+    localRuntime "maven.modrinth:sparkweave:${sparkweave_version}"
+    localRuntime "maven.modrinth:cloth-config:${cloth_config_version}+neoforge"
 }
 
 neoForge {
     version = neoforge_version
+    parchment {
+        minecraftVersion = parchment_minecraft
+        mappingsVersion = parchment_version
+    }
     // Automatically enable neoforge AccessTransformers if the file exists
     def at = project(':common').file('src/main/resources/META-INF/accesstransformer.cfg')
     if (at.exists()) {
@@ -74,7 +96,7 @@ neoForge {
         }
 
         data {
-            clientData()
+            data()
             gameDirectory = this.mkdir(this.file("runs/data"))
             // DataGen can be run by - "./gradlew :neoforge:runData" in Terminal.
             // Specify the modid for data generation, where to output the resulting resource, and where to look for existing resources.
@@ -116,31 +138,39 @@ sourceSets.configureEach {
 }
 
 if (project.findProperty('neoforge_modpack_path')) {
-    def neoModpackDest = new File(project.neoforge_modpack_path).with { f ->
-        f.absolute ? f : new File(System.getProperty('user.home'), project.neoforge_modpack_path)
+    def neoModpackMods = new File(project.neoforge_modpack_path).with { f ->
+        (f.absolute ? f : new File(System.getProperty('user.home'), project.neoforge_modpack_path)).toPath()
     }
-    tasks.register('sendToModpackNeo', Copy) {
+    tasks.register('sendToModpack') {
         group = 'publishing'
-        description = "Copies the NeoForge dev jar into ${neoModpackDest}"
+        description = "Copies the NeoForge dev jar into ${neoModpackMods}"
         dependsOn tasks.named('jar')
-        from tasks.named('jar').flatMap { it.archiveFile }
-        into neoModpackDest
-        rename { String fileName ->
-            fileName.replace(project.version.toString(), 'dev')
-        }
-        // Loaders don't guarantee which duplicate mod jar wins, so remove this
-        // mod's versioned jars from the destination before sending the dev jar
-        doFirst {
-            def prefix = "${project.base.archivesName.get()}-"
-            neoModpackDest.listFiles()?.each { existing ->
-                if (existing.name.startsWith(prefix) && existing.name.endsWith('.jar') && existing.name != "${prefix}dev.jar") {
-                    println "Deleted versioned jar: ${existing.name}"
-                    existing.delete()
+        def builtJar = tasks.named('jar').flatMap { it.archiveFile }
+        def builtName = tasks.named('jar').flatMap { it.archiveFileName }
+        doLast {
+            def jarName = builtName.get()
+            def versionedPrefix = jarName.substring(0, jarName.indexOf(project.version.toString()))
+            def deployedJar = neoModpackMods.resolve(jarName.replace(project.version.toString(), 'dev'))
+            def staged = deployedJar.resolveSibling("${deployedJar.fileName}.staged".toString())
+            Files.copy(builtJar.get().asFile.toPath(), staged, StandardCopyOption.REPLACE_EXISTING)
+            try {
+                Files.deleteIfExists(deployedJar)
+            } catch (java.nio.file.FileSystemException e) {
+                Files.delete(staged)
+                throw new GradleException("${deployedJar.fileName} is held open by a running pack; close it and rerun", e)
+            }
+            Files.move(staged, deployedJar)
+            println "Mod JAR sent to modpack folder: ${deployedJar.fileName}"
+
+            // FML picks the published jar over the dev jar, so we disable the published one while testing.
+            Files.list(deployedJar.parent).withCloseable { files ->
+                files.toList().findAll {
+                    it.fileName.toString().startsWith(versionedPrefix) && it.fileName.toString().endsWith('.jar') && it != deployedJar
+                }.each { versioned ->
+                    Files.move(versioned, versioned.resolveSibling("${versioned.fileName}.disabled".toString()), StandardCopyOption.REPLACE_EXISTING)
+                    println "Disabled published jar: ${versioned.fileName}"
                 }
             }
-        }
-        doLast {
-            println "NeoForge dev jar sent to: ${neoModpackDest}"
         }
     }
 }

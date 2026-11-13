@@ -4,7 +4,7 @@ import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import com.mojang.blaze3d.platform.NativeImage;
 import dev.muon.dynamic_resource_bars.Constants;
-import net.minecraft.resources.Identifier;
+import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.packs.resources.Resource;
 import net.minecraft.server.packs.resources.ResourceManager;
 
@@ -176,12 +176,12 @@ public class AnimationMetadata {
      * @return AnimationData with either loaded or hardcoded default values
      */
     public static AnimationData loadAnimationData(ResourceManager resourceManager, 
-                                                   Identifier textureLocation) {
+                                                   ResourceLocation textureLocation) {
         Constants.LOG.info("ANIM_LOAD: Starting animation data load for: {}", textureLocation);
         
         // Create .mcmeta location
-        Identifier mcmetaLocation;
-        mcmetaLocation = Identifier.fromNamespaceAndPath(
+        ResourceLocation mcmetaLocation;
+        mcmetaLocation = ResourceLocation.fromNamespaceAndPath(
             textureLocation.getNamespace(),
             textureLocation.getPath() + ".mcmeta"
         );
@@ -289,7 +289,7 @@ public class AnimationMetadata {
      * Load actual texture dimensions from PNG file (public version for non-animated textures).
      * This allows resource packs to use any texture size!
      */
-    public static TextureDimensions loadTextureDimensions(ResourceManager resourceManager, Identifier textureLocation) {
+    public static TextureDimensions loadTextureDimensions(ResourceManager resourceManager, ResourceLocation textureLocation) {
         // Defaults if we can't load the texture
         final int DEFAULT_WIDTH = 256;
         final int DEFAULT_HEIGHT = 1024;
@@ -345,9 +345,9 @@ public class AnimationMetadata {
      * @param textureLocation The texture location
      * @return BarDimensions if specified in .mcmeta, null otherwise
      */
-    public static BarDimensions loadBarDimensions(ResourceManager resourceManager, Identifier textureLocation) {
-        Identifier mcmetaLocation;
-        mcmetaLocation = Identifier.fromNamespaceAndPath(
+    public static BarDimensions loadBarDimensions(ResourceManager resourceManager, ResourceLocation textureLocation) {
+        ResourceLocation mcmetaLocation;
+        mcmetaLocation = ResourceLocation.fromNamespaceAndPath(
             textureLocation.getNamespace(),
             textureLocation.getPath() + ".mcmeta"
         );
@@ -402,9 +402,9 @@ public class AnimationMetadata {
      * @param textureType The type of texture (for default selection)
      * @return ScalingInfo from .mcmeta or appropriate default
      */
-    public static ScalingInfo loadScalingInfo(ResourceManager resourceManager, Identifier textureLocation, TextureType textureType) {
-        Identifier mcmetaLocation;
-        mcmetaLocation = Identifier.fromNamespaceAndPath(
+    public static ScalingInfo loadScalingInfo(ResourceManager resourceManager, ResourceLocation textureLocation, TextureType textureType) {
+        ResourceLocation mcmetaLocation;
+        mcmetaLocation = ResourceLocation.fromNamespaceAndPath(
             textureLocation.getNamespace(),
             textureLocation.getPath() + ".mcmeta"
         );
@@ -560,7 +560,7 @@ public class AnimationMetadata {
     /**
      * Parse source region from JSON
      */
-    private static SourceRegion parseSourceRegion(JsonObject source, Identifier textureLocation) {
+    private static SourceRegion parseSourceRegion(JsonObject source, ResourceLocation textureLocation) {
         if (source.has("width") && source.has("height")) {
             int u = source.has("u") ? source.get("u").getAsInt() : 0;
             int v = source.has("v") ? source.get("v").getAsInt() : 0;

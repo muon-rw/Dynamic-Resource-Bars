@@ -1,8 +1,8 @@
 plugins {
     // see https://fabricmc.net/develop/ for new versions
-    id 'net.fabricmc.fabric-loom' version '1.16-SNAPSHOT' apply false
+    id 'fabric-loom' version '1.19-SNAPSHOT' apply false
     // see https://projects.neoforged.net/neoforged/moddevgradle for new versions
-    id 'net.neoforged.moddev' version '2.0.141' apply false
+    id 'net.neoforged.moddev' version '2.0.148' apply false
     id 'dev.mixinmcp.decompile' version '1.6.0' apply false
     id "me.modmuss50.mod-publish-plugin" version "2.2.0"
 }
@@ -44,7 +44,7 @@ publishMods {
 
         curseforge('curseforgeFabric') {
             from cfOptions
-            file = project(':fabric').tasks.named('jar', Jar).flatMap { it.archiveFile }
+            file = project(':fabric').tasks.named('remapJar').flatMap { it.archiveFile }
             modLoaders.add('fabric')
             displayName = fabricDisplayName
         }
@@ -69,7 +69,7 @@ publishMods {
 
         modrinth('modrinthFabric') {
             from mrOptions
-            file = project(':fabric').tasks.named('jar', Jar).flatMap { it.archiveFile }
+            file = project(':fabric').tasks.named('remapJar').flatMap { it.archiveFile }
             modLoaders.add('fabric')
             displayName = fabricDisplayName
         }

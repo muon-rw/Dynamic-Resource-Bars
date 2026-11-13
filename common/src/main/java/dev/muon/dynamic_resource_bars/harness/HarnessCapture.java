@@ -6,7 +6,7 @@ import com.mojang.blaze3d.platform.NativeImage;
 import dev.muon.dynamic_resource_bars.util.ScreenRect;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.Screenshot;
-import net.minecraft.util.Util;
+import net.minecraft.Util;
 
 import java.nio.file.Path;
 import java.util.List;
@@ -26,7 +26,8 @@ final class HarnessCapture {
                                                  int zoom, int padding, JsonObject entry) {
         CompletableFuture<JsonObject> result = new CompletableFuture<>();
         int guiWidth = mc.getWindow().getGuiScaledWidth();
-        Screenshot.takeScreenshot(mc.getMainRenderTarget(), image -> Util.ioPool().execute(() -> {
+        NativeImage image = Screenshot.takeScreenshot(mc.getMainRenderTarget());
+        Util.ioPool().execute(() -> {
             try (image) {
                 int scale = Math.max(1, Math.round(image.getWidth() / (float) guiWidth));
                 int cropZoom = zoom > 0 ? zoom : Math.max(1, Math.round(4f / scale));
@@ -49,7 +50,7 @@ final class HarnessCapture {
             } catch (Exception e) {
                 result.completeExceptionally(e);
             }
-        }));
+        });
         return result;
     }
 
@@ -77,7 +78,7 @@ final class HarnessCapture {
         try (NativeImage zoomed = new NativeImage(w * zoom, h * zoom, false)) {
             for (int y = 0; y < h * zoom; y++) {
                 for (int x = 0; x < w * zoom; x++) {
-                    zoomed.setPixel(x, y, frame.getPixel(x0 + x / zoom, y0 + y / zoom));
+                    zoomed.setPixelRGBA(x, y, frame.getPixelRGBA(x0 + x / zoom, y0 + y / zoom));
                 }
             }
             Path file = dir.resolve(baseName + "__" + crop.name() + ".png");
@@ -92,10 +93,10 @@ final class HarnessCapture {
     }
 
     private static boolean isUniform(NativeImage image, int x0, int y0, int w, int h) {
-        int first = image.getPixel(x0, y0);
+        int first = image.getPixelRGBA(x0, y0);
         for (int y = y0; y < y0 + h; y++) {
             for (int x = x0; x < x0 + w; x++) {
-                if (image.getPixel(x, y) != first) return false;
+                if (image.getPixelRGBA(x, y) != first) return false;
             }
         }
         return true;

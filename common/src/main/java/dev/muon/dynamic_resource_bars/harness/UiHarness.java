@@ -27,9 +27,6 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.screens.AccessibilityOnboardingScreen;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.client.gui.screens.TitleScreen;
-import net.minecraft.client.input.KeyEvent;
-import net.minecraft.client.input.MouseButtonEvent;
-import net.minecraft.client.input.MouseButtonInfo;
 import net.minecraft.client.player.LocalPlayer;
 import org.lwjgl.glfw.GLFW;
 
@@ -73,7 +70,7 @@ public final class UiHarness {
 
     private enum Phase { BOOT, LOADING_WORLD, WARMUP, IDLE, RUNNING, STOPPED }
 
-    private enum Stage { RELOADING, BEGIN, ACTIONS, SETTLE, CAPTURING }
+    private enum Stage { RELOADING, BEGIN, ACTIONS, SETTLE, RECORDING, CAPTURING }
 
     private record Step(HarnessRequest.Shot shot, HarnessRequest.Size size) {}
 
@@ -91,6 +88,8 @@ public final class UiHarness {
         HarnessPlayerState playerState;
         JsonObject entry;
         CompletableFuture<?> pending;
+        int recordTick;
+        final List<CompletableFuture<?>> recordedFrames = new ArrayList<>();
 
         Job(HarnessRequest request, Path outDir) {
             this.request = request;
@@ -257,6 +256,21 @@ public final class UiHarness {
 
         switch (j.stage) {
             case BEGIN -> {
+                String missing = step.shot().requiresMods().stream()
+                        .filter(modId -> !Services.PLATFORM.isModLoaded(modId))
+                        .findFirst()
+                        .orElse(null);
+                if (missing != null) {
+                    JsonObject skipped = new JsonObject();
+                    skipped.addProperty("name", step.shot().name());
+                    skipped.addProperty("size", step.size().label());
+                    skipped.addProperty("screen", step.shot().screen());
+                    skipped.addProperty("skipped", true);
+                    skipped.addProperty("reason", "Mod '" + missing + "' is not loaded");
+                    j.shotEntries.add(skipped);
+                    j.stepIndex++;
+                    return;
+                }
                 beginStep(mc, j, step);
                 j.stage = Stage.ACTIONS;
                 j.wait = ACTION_SPACING_TICKS;
@@ -277,8 +291,31 @@ public final class UiHarness {
                 j.entry.add("player", HarnessPlayerState.describe(player));
                 j.entry.add("elements", describeElements(player));
                 String baseName = shot.name() + "__" + step.size().label().replace('@', '_');
+                if (shot.recordTicks() > 0) {
+                    j.entry.add("frames", new JsonArray());
+                    j.recordTick = 0;
+                    j.recordedFrames.clear();
+                    j.stage = Stage.RECORDING;
+                    return;
+                }
                 j.pending = HarnessCapture.capture(mc, j.outDir, baseName, crops, shot.zoom(), shot.padding(), j.entry);
                 j.stage = Stage.CAPTURING;
+            }
+            case RECORDING -> {
+                HarnessRequest.Shot shot = step.shot();
+                for (JsonObject action : shot.timeline()) {
+                    if (action.get("at").getAsInt() == j.recordTick) performAction(mc, j, action);
+                }
+                String frameName = shot.name() + "__" + step.size().label().replace('@', '_')
+                        + String.format(Locale.ROOT, "__f%04d", j.recordTick);
+                JsonObject frame = new JsonObject();
+                frame.addProperty("tick", j.recordTick);
+                j.entry.getAsJsonArray("frames").add(frame);
+                j.recordedFrames.add(HarnessCapture.capture(mc, j.outDir, frameName, List.of(), shot.zoom(), shot.padding(), frame));
+                if (++j.recordTick >= shot.recordTicks()) {
+                    j.pending = CompletableFuture.allOf(j.recordedFrames.toArray(CompletableFuture[]::new));
+                    j.stage = Stage.CAPTURING;
+                }
             }
             case CAPTURING -> {
                 if (!j.pending.isDone()) return;
@@ -311,14 +348,14 @@ public final class UiHarness {
             window.setWindowed(size.width(), size.height());
         }
         mc.options.guiScale().set(size.guiScale());
-        mc.resizeGui();
+        mc.resizeDisplay();
 
         restoreConfig();
         applyConfig(shot.config());
 
         mc.setScreen(HarnessScreens.create(shot.screen()));
         mc.gui.getChat().clearMessages(false);
-        mc.getToastManager().clear();
+        mc.getToasts().clear();
         setMouse(mc, -1000, -1000);
 
         j.playerJson = shot.player().deepCopy();
@@ -344,26 +381,25 @@ public final class UiHarness {
             int button = action.has("button") ? action.get("button").getAsInt() : 0;
             setMouse(mc, x, y);
             if (requireScreen(j, screen, "click")) {
-                MouseButtonEvent event = new MouseButtonEvent(x, y, new MouseButtonInfo(button, 0));
-                screen.mouseClicked(event, false);
-                screen.mouseReleased(event);
+                screen.mouseClicked(x, y, button);
+                screen.mouseReleased(x, y, button);
             }
         } else if (action.has("drag")) {
             JsonArray p = action.getAsJsonArray("drag");
             double x0 = p.get(0).getAsDouble(), y0 = p.get(1).getAsDouble();
             double x1 = p.get(2).getAsDouble(), y1 = p.get(3).getAsDouble();
-            MouseButtonInfo info = new MouseButtonInfo(action.has("button") ? action.get("button").getAsInt() : 0, 0);
+            int button = action.has("button") ? action.get("button").getAsInt() : 0;
             if (requireScreen(j, screen, "drag")) {
-                screen.mouseClicked(new MouseButtonEvent(x0, y0, info), false);
-                screen.mouseDragged(new MouseButtonEvent(x1, y1, info), x1 - x0, y1 - y0);
-                screen.mouseReleased(new MouseButtonEvent(x1, y1, info));
+                screen.mouseClicked(x0, y0, button);
+                screen.mouseDragged(x1, y1, button, x1 - x0, y1 - y0);
+                screen.mouseReleased(x1, y1, button);
             }
             setMouse(mc, x1, y1);
         } else if (action.has("key")) {
-            KeyEvent event = parseKey(action.get("key").getAsString());
+            ParsedKey key = parseKey(action.get("key").getAsString());
             if (requireScreen(j, screen, "key")) {
-                screen.keyPressed(event);
-                screen.keyReleased(event);
+                screen.keyPressed(key.keyCode(), 0, key.modifiers());
+                screen.keyReleased(key.keyCode(), 0, key.modifiers());
             }
         } else if (action.has("player")) {
             action.getAsJsonObject("player").entrySet().forEach(e -> j.playerJson.add(e.getKey(), e.getValue()));
@@ -385,7 +421,9 @@ public final class UiHarness {
         return false;
     }
 
-    private static KeyEvent parseKey(String spec) {
+    private record ParsedKey(int keyCode, int modifiers) {}
+
+    private static ParsedKey parseKey(String spec) {
         int modifiers = 0;
         String key = spec.toLowerCase(Locale.ROOT);
         while (key.contains("+")) {
@@ -398,7 +436,7 @@ public final class UiHarness {
                 default -> throw new IllegalArgumentException("Unknown modifier '" + mod + "' in key '" + spec + "'");
             };
         }
-        return new KeyEvent(InputConstants.getKey("key.keyboard." + key).getValue(), 0, modifiers);
+        return new ParsedKey(InputConstants.getKey("key.keyboard." + key).getValue(), modifiers);
     }
 
     /** Coordinates are GUI pixels; vanilla reads the mouse in window pixels. */

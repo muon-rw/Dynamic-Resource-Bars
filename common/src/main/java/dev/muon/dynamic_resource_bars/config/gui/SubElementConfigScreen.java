@@ -4,7 +4,7 @@ import dev.muon.dynamic_resource_bars.config.ClientConfig;
 import dev.muon.dynamic_resource_bars.config.ModConfigManager;
 import dev.muon.dynamic_resource_bars.util.DraggableElement;
 import dev.muon.dynamic_resource_bars.util.SubElementType;
-import net.minecraft.client.gui.GuiGraphicsExtractor;
+import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.components.EditBox;
 import net.minecraft.client.gui.screens.Screen;
@@ -188,9 +188,9 @@ public class SubElementConfigScreen extends Screen {
     }
 
     @Override
-    public void extractRenderState(@NotNull GuiGraphicsExtractor graphics, int mouseX, int mouseY, float partialTicks) {
-        super.extractRenderState(graphics, mouseX, mouseY, partialTicks);
-        graphics.centeredText(this.font, this.title, this.width / 2, 12, 0xFFFFFFFF);
+    public void render(@NotNull GuiGraphics graphics, int mouseX, int mouseY, float partialTicks) {
+        super.render(graphics, mouseX, mouseY, partialTicks);
+        graphics.drawCenteredString(this.font, this.title, this.width / 2, 12, 0xFFFFFFFF);
 
         if (xBox == null) return;
         FieldEditorUtils.drawLabel(graphics, this.font, "gui.dynamic_resource_bars.manual.x_offset", 0, xBox);

@@ -16,11 +16,11 @@ import dev.muon.dynamic_resource_bars.util.ScreenRect;
 import dev.muon.dynamic_resource_bars.util.SubElementType;
 import dev.muon.dynamic_resource_bars.util.TextBehavior;
 import dev.muon.dynamic_resource_bars.util.TickHandler;
+import com.mojang.blaze3d.systems.RenderSystem;
 import net.minecraft.client.DeltaTracker;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.gui.GuiGraphicsExtractor;
-import net.minecraft.client.renderer.RenderPipelines;
-import net.minecraft.resources.Identifier;
+import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.entity.player.Player;
 
 import java.util.ArrayList;
@@ -92,11 +92,11 @@ public abstract class AbstractBarRenderer {
          *  SQUEEZE mode shifts the live denom from {@code max+abs} back to {@code max}). */
         final float denominatorAtCreation;
         final long creationTime;
-        final Identifier texture;
+        final ResourceLocation texture;
         final int animOffset;
 
         FadingChunk(float startValue, float endValue, float maxValue, float denominatorAtCreation,
-                    Identifier texture, int animOffset) {
+                    ResourceLocation texture, int animOffset) {
             this.startValue = startValue;
             this.endValue = endValue;
             this.maxValue = maxValue;
@@ -134,13 +134,13 @@ public abstract class AbstractBarRenderer {
     protected abstract BarConfig config();
 
     /** Path to the (animated) static background texture. */
-    protected abstract Identifier backgroundTexture();
+    protected abstract ResourceLocation backgroundTexture();
 
     /** Path to the (animated) foreground texture. */
-    protected abstract Identifier foregroundTexture();
+    protected abstract ResourceLocation foregroundTexture();
 
     /** Bar fill texture for the current player state (poison/wither/critical/etc). */
-    protected abstract Identifier barTexture(Player player, float current, float max);
+    protected abstract ResourceLocation barTexture(Player player, float current, float max);
 
     /** Animation metadata shared across all variants of this bar. */
     protected abstract AnimationMetadata.AnimationData barAnimation();
@@ -222,18 +222,18 @@ public abstract class AbstractBarRenderer {
     }
 
     /** Drawn after the bar fill but before foreground/text. Pulses, attribute glows, etc. */
-    protected void renderBarOverlays(GuiGraphicsExtractor graphics, Player player,
+    protected void renderBarOverlays(GuiGraphics graphics, Player player,
                                      float current, float max, ScreenRect barRect, float alpha) {}
 
     /** Drawn over the entire complex (after foreground). Hardcore border, wetness, etc. */
-    protected void renderBackgroundOverlays(GuiGraphicsExtractor graphics, Player player,
+    protected void renderBackgroundOverlays(GuiGraphics graphics, Player player,
                                             ScreenRect complexRect, float alpha) {}
 
     /** Drawn after the main text — e.g. health's "+8" absorption tag. */
-    protected void renderAuxiliaryText(GuiGraphicsExtractor graphics, Player player, float alpha) {}
+    protected void renderAuxiliaryText(GuiGraphics graphics, Player player, float alpha) {}
 
     /** Optional overlay drawn between bar fill and foreground (e.g. mana's reserved region). */
-    protected void renderBetweenBarAndForeground(GuiGraphicsExtractor graphics, Player player,
+    protected void renderBetweenBarAndForeground(GuiGraphics graphics, Player player,
                                                  float current, float max, ScreenRect barRect,
                                                  int animOffset, AnimationMetadata.AnimationData animData) {}
 
@@ -261,7 +261,7 @@ public abstract class AbstractBarRenderer {
         return combined - filled;
     }
 
-    protected final void renderRestorePreviewChunk(GuiGraphicsExtractor graphics, Player player,
+    protected final void renderRestorePreviewChunk(GuiGraphics graphics, Player player,
                                                    float current, float max, float restoreAmount,
                                                    ScreenRect barRect, int animOffset,
                                                    AnimationMetadata.AnimationData animData) {
@@ -272,7 +272,7 @@ public abstract class AbstractBarRenderer {
         int leadingOffset = leadingFillOffset(player, current, max, barRect);
         float pulse = 0.5f + (TickHandler.getOverlayFlashAlpha() * 0.5f);
         int tint = RenderUtil.whiteWithAlpha(pulse * currentAlpha());
-        Identifier texture = barTexture(player, current, max);
+        ResourceLocation texture = barTexture(player, current, max);
 
         if (cfg.fillDirection() == FillDirection.VERTICAL) {
             paintFillSpan(graphics, texture, barRect, true, false, animOffset,
@@ -291,7 +291,7 @@ public abstract class AbstractBarRenderer {
             x = barRect.x() + leadingOffset + filled;
             u = leadingOffset + filled;
         }
-        graphics.blit(RenderPipelines.GUI_TEXTURED, texture, x, barRect.y(), u, animOffset,
+        blitTinted(graphics, texture, x, barRect.y(), u, animOffset,
                 restoreSize, barRect.height(), animData.textureWidth, animData.textureHeight, tint);
     }
 
@@ -331,7 +331,7 @@ public abstract class AbstractBarRenderer {
 
     // ===== Template method =====
 
-    public final void render(GuiGraphicsExtractor graphics, Player player, DeltaTracker deltaTracker) {
+    public final void render(GuiGraphics graphics, Player player, DeltaTracker deltaTracker) {
         if (player == null) return;
         if (!shouldRender(player)) return;
 
@@ -358,7 +358,7 @@ public abstract class AbstractBarRenderer {
 
         if (cfg.enableBackground()) {
             ScreenRect bgRect = getSubElementRect(SubElementType.BACKGROUND, player, cfg);
-            Identifier bgTex = backgroundTexture();
+            ResourceLocation bgTex = backgroundTexture();
             AnimationMetadata.TextureDimensions bgDims = AnimationMetadataCache.getTextureDimensions(bgTex);
             NineSliceRenderer.renderWithScaling(graphics, bgTex, backgroundScaling(),
                     bgRect.x(), bgRect.y(), bgRect.width(), bgRect.height(),
@@ -380,7 +380,7 @@ public abstract class AbstractBarRenderer {
 
         if (cfg.enableForeground()) {
             ScreenRect fgRect = getSubElementRect(SubElementType.FOREGROUND, player, cfg);
-            Identifier fgTex = foregroundTexture();
+            ResourceLocation fgTex = foregroundTexture();
             AnimationMetadata.TextureDimensions fgDims = AnimationMetadataCache.getTextureDimensions(fgTex);
             NineSliceRenderer.renderWithScaling(graphics, fgTex, foregroundScaling(),
                     fgRect.x(), fgRect.y(), fgRect.width(), fgRect.height(),
@@ -395,7 +395,7 @@ public abstract class AbstractBarRenderer {
 
     }
 
-    public final void renderTextOverlay(GuiGraphicsExtractor graphics, Player player) {
+    public final void renderTextOverlay(GuiGraphics graphics, Player player) {
         if (player == null) return;
         if (!shouldRender(player)) return;
 
@@ -466,10 +466,10 @@ public abstract class AbstractBarRenderer {
 
     // ===== Bar fill =====
 
-    private void renderBaseBar(GuiGraphicsExtractor graphics, Player player, float current, float max,
+    private void renderBaseBar(GuiGraphics graphics, Player player, float current, float max,
                                ScreenRect barRect, int animOffset, boolean rightAnchored,
                                AnimationMetadata.AnimationData animData, BarConfig cfg, int tint) {
-        Identifier tex = barTexture(player, current, max);
+        ResourceLocation tex = barTexture(player, current, max);
         float denom = effectiveBarMax(player, current, max);
         float ratio = (denom <= 0f) ? 0f : Math.max(0f, Math.min(1f, current / denom));
         int leadingOffset = leadingFillOffset(player, current, max, barRect);
@@ -515,7 +515,7 @@ public abstract class AbstractBarRenderer {
      * offset per column; two strips sharing an edge position get identical offsets, so they meet
      * without seams.
      */
-    protected final void paintFillSpan(GuiGraphicsExtractor graphics, Identifier texture, ScreenRect barRect,
+    protected final void paintFillSpan(GuiGraphics graphics, ResourceLocation texture, ScreenRect barRect,
                                        boolean vertical, boolean rightAnchored, int animOffset,
                                        int textureWidth, int textureHeight, int fromPx, int toPx,
                                        boolean flowingFrom, boolean flowingTo, int tint) {
@@ -545,7 +545,7 @@ public abstract class AbstractBarRenderer {
         }
     }
 
-    private static void blitSpanRun(GuiGraphicsExtractor graphics, Identifier texture, ScreenRect barRect,
+    private static void blitSpanRun(GuiGraphics graphics, ResourceLocation texture, ScreenRect barRect,
                                     boolean vertical, boolean rightAnchored, int animOffset,
                                     int textureWidth, int textureHeight,
                                     int laneStart, int laneCount, int lo, int hi, int tint) {
@@ -553,13 +553,30 @@ public abstract class AbstractBarRenderer {
         if (length <= 0 || laneCount <= 0) return;
         if (vertical) {
             int fromTop = barRect.height() - hi;
-            graphics.blit(RenderPipelines.GUI_TEXTURED, texture, barRect.x() + laneStart, barRect.y() + fromTop,
+            blitTinted(graphics, texture, barRect.x() + laneStart, barRect.y() + fromTop,
                     laneStart, animOffset + fromTop, laneCount, length, textureWidth, textureHeight, tint);
             return;
         }
         int u = rightAnchored ? barRect.width() - hi : lo;
-        graphics.blit(RenderPipelines.GUI_TEXTURED, texture, barRect.x() + u, barRect.y() + laneStart,
+        blitTinted(graphics, texture, barRect.x() + u, barRect.y() + laneStart,
                 u, animOffset + laneStart, length, laneCount, textureWidth, textureHeight, tint);
+    }
+
+    protected static void blitTinted(GuiGraphics graphics, ResourceLocation texture, int x, int y,
+                                   int u, int v, int width, int height,
+                                   int textureWidth, int textureHeight, int tint) {
+        float a = ((tint >> 24) & 0xFF) / 255.0f;
+        float r = ((tint >> 16) & 0xFF) / 255.0f;
+        float g = ((tint >> 8) & 0xFF) / 255.0f;
+        float b = (tint & 0xFF) / 255.0f;
+        RenderSystem.enableBlend();
+        RenderSystem.setShaderColor(r, g, b, a);
+        try {
+            graphics.blit(texture, x, y, u, v, width, height, textureWidth, textureHeight);
+        } finally {
+            RenderSystem.setShaderColor(1.0f, 1.0f, 1.0f, 1.0f);
+            RenderSystem.disableBlend();
+        }
     }
 
     /**
@@ -589,7 +606,7 @@ public abstract class AbstractBarRenderer {
         if (previousValue > 0 && current < previousValue && previousMax == max) {
             float chunkStart = Math.max(0f, current);
             float denomAtCreation = effectiveBarMax(player, current, max);
-            Identifier texture = barTexture(player, current, max);
+            ResourceLocation texture = barTexture(player, current, max);
             FadingChunk newest = fadingChunks.isEmpty() ? null : fadingChunks.get(fadingChunks.size() - 1);
             // Extending the newest chunk keeps sustained damage as one draining column instead of a
             // stack of chunks whose drains would open gaps between each other.
@@ -607,7 +624,7 @@ public abstract class AbstractBarRenderer {
         previousMax = max;
     }
 
-    private void renderFadingChunks(GuiGraphicsExtractor graphics, Player player, ScreenRect barRect,
+    private void renderFadingChunks(GuiGraphics graphics, Player player, ScreenRect barRect,
                                     float current, float max, boolean rightAnchored, float parentAlpha,
                                     AnimationMetadata.AnimationData animData, BarConfig cfg) {
         // Base-pool chunks share the live fill's leading offset so they appear in the same zone
@@ -628,7 +645,7 @@ public abstract class AbstractBarRenderer {
      * with {@code zoneOffset = 0} to render in the reserve zone, while the built-in base-pool
      * pass uses {@link #leadingFillOffset} so chunks end up in the live region.
      */
-    protected final void paintFadingChunks(GuiGraphicsExtractor graphics, List<FadingChunk> chunks,
+    protected final void paintFadingChunks(GuiGraphics graphics, List<FadingChunk> chunks,
                                            ScreenRect barRect, boolean rightAnchored, int zoneOffset,
                                            float parentAlpha, AnimationMetadata.AnimationData animData,
                                            BarConfig cfg) {
@@ -636,7 +653,7 @@ public abstract class AbstractBarRenderer {
                 parentAlpha, animData, cfg);
     }
 
-    private void paintFadingChunks(GuiGraphicsExtractor graphics, List<FadingChunk> chunks,
+    private void paintFadingChunks(GuiGraphics graphics, List<FadingChunk> chunks,
                                    ScreenRect barRect, boolean rightAnchored, int zoneOffset,
                                    int floorPx, boolean flowingEdges, float parentAlpha,
                                    AnimationMetadata.AnimationData animData, BarConfig cfg) {
@@ -664,7 +681,7 @@ public abstract class AbstractBarRenderer {
 
     // ===== Text =====
 
-    private void renderText(GuiGraphicsExtractor graphics, Player player, float current, float max,
+    private void renderText(GuiGraphics graphics, Player player, float current, float max,
                             float barAlpha, BarConfig cfg) {
         ScreenRect textRect = getSubElementRect(SubElementType.TEXT, player, cfg);
         int textX = textRect.x() + (textRect.width() / 2);
@@ -695,15 +712,15 @@ public abstract class AbstractBarRenderer {
 
     // ===== Edit mode =====
 
-    private void renderEditModeOutlines(GuiGraphicsExtractor graphics, Player player,
+    private void renderEditModeOutlines(GuiGraphics graphics, Player player,
                                         ScreenRect complex, BarConfig cfg) {
         if (EditModeManager.getFocusedElement() == draggable()) {
             if (!EditModeManager.isFocusMode()) {
-                graphics.outline(complex.x() - 1, complex.y() - 1, complex.width() + 2, complex.height() + 2, 0xFFFFD84D);
-                graphics.outline(complex.x() - 2, complex.y() - 2, complex.width() + 4, complex.height() + 4, 0x60FFD84D);
+                graphics.renderOutline(complex.x() - 1, complex.y() - 1, complex.width() + 2, complex.height() + 2, 0xFFFFD84D);
+                graphics.renderOutline(complex.x() - 2, complex.y() - 2, complex.width() + 4, complex.height() + 4, 0x60FFD84D);
             }
         } else {
-            graphics.outline(complex.x() - 1, complex.y() - 1, complex.width() + 2, complex.height() + 2, 0x60FFFFFF);
+            graphics.renderOutline(complex.x() - 1, complex.y() - 1, complex.width() + 2, complex.height() + 2, 0x60FFFFFF);
         }
     }
 

@@ -2,7 +2,10 @@ package dev.muon.dynamic_resource_bars.provider;
 
 public enum ManaBarBehavior {
     OFF("gui.dynamic_resource_bars.mana_behavior.off"),
-    COMBAT_ATTRIBUTES("gui.dynamic_resource_bars.mana_behavior.combat_attributes");
+    IRONS_SPELLBOOKS("gui.dynamic_resource_bars.mana_behavior.irons_spellbooks"),
+    ARS_NOUVEAU("gui.dynamic_resource_bars.mana_behavior.ars_nouveau"),
+    RPG_MANA("gui.dynamic_resource_bars.mana_behavior.rpg_mana"),
+    MANA_ATTRIBUTES("gui.dynamic_resource_bars.mana_behavior.mana_attributes");
     
     private final String translationKey;
     

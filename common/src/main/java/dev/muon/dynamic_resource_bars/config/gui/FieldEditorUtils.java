@@ -1,7 +1,7 @@
 package dev.muon.dynamic_resource_bars.config.gui;
 
 import net.minecraft.client.gui.Font;
-import net.minecraft.client.gui.GuiGraphicsExtractor;
+import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.EditBox;
 import net.minecraft.network.chat.Component;
 
@@ -72,12 +72,12 @@ final class FieldEditorUtils {
         }
     }
 
-    static void drawLabel(GuiGraphicsExtractor graphics, Font font, String key, int ignoredX, EditBox box) {
+    static void drawLabel(GuiGraphics graphics, Font font, String key, int ignoredX, EditBox box) {
         if (box == null || !box.visible) return;
         Component label = Component.translatable(key);
         int textWidth = font.width(label);
         int rightAlignedX = Math.max(4, box.getX() - LABEL_GAP - textWidth);
         int y = box.getY() + (box.getHeight() - font.lineHeight) / 2;
-        graphics.text(font, label, rightAlignedX, y, LABEL_COLOR, true);
+        graphics.drawString(font, label, rightAlignedX, y, LABEL_COLOR, true);
     }
 }

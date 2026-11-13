@@ -1,6 +1,6 @@
 package dev.muon.dynamic_resource_bars.config.gui;
 
-import net.minecraft.client.gui.GuiGraphicsExtractor;
+import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.network.chat.Component;
@@ -48,13 +48,13 @@ public class MultiLineConfirmResetScreen extends Screen {
     }
 
     @Override
-    public void extractRenderState(@NotNull GuiGraphicsExtractor graphics, int mouseX, int mouseY, float partialTicks) {
-        super.extractRenderState(graphics, mouseX, mouseY, partialTicks);
+    public void render(@NotNull GuiGraphics graphics, int mouseX, int mouseY, float partialTicks) {
+        super.render(graphics, mouseX, mouseY, partialTicks);
         int titleY = (this.height / 2) - (lines.size() * LINE_SPACING / 2) - 24;
-        graphics.centeredText(this.font, this.title, this.width / 2, titleY, 0xFFFFFFFF);
+        graphics.drawCenteredString(this.font, this.title, this.width / 2, titleY, 0xFFFFFFFF);
         int y = titleY + 18;
         for (Component line : lines) {
-            graphics.centeredText(this.font, line, this.width / 2, y, 0xFFFFFFFF);
+            graphics.drawCenteredString(this.font, line, this.width / 2, y, 0xFFFFFFFF);
             y += LINE_SPACING;
         }
     }
