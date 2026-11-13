@@ -49,6 +49,10 @@
   "gui.dynamic_resource_bars.config.tooltip.hud_editor_disabled": "HUD Settings can only be modified in-game (join a world!)",
   "gui.dynamic_resource_bars.config.custom_hud.enabled": "Custom HUD: ON",
   "gui.dynamic_resource_bars.config.custom_hud.disabled": "Custom HUD: OFF",
+  "gui.dynamic_resource_bars.config.text_fade_mode": "Text Fade: %s",
+  "gui.dynamic_resource_bars.text_fade_mode.drain": "Drain",
+  "gui.dynamic_resource_bars.text_fade_mode.alpha": "Alpha",
+  "gui.dynamic_resource_bars.config.tooltip.text_fade_mode": "Controls how bar text disappears after Fade Hold (ms): row-by-row drain or alpha fadeout.",
 
   "gui.dynamic_resource_bars.hud_editor.tooltip.no_mana_provider": "No compatible mana-providing mods are currently installed",
   "gui.dynamic_resource_bars.hud_editor.tooltip.air_tied_to_stamina": "Air behavior is linked to Stamina on Fabric 1.20.1",

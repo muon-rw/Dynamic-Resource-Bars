@@ -22,6 +22,13 @@ public class RenderUtil {
      */
     public static void renderText(float current, float max, GuiGraphics graphics,
                                   int baseX, int baseY, float textScale, int color, HorizontalAlignment alignment) {
+        renderText(current, max, graphics, baseX, baseY, textScale, color, alignment, 1.0f);
+    }
+
+    public static void renderText(float current, float max, GuiGraphics graphics,
+                                  int baseX, int baseY, float textScale, int color, HorizontalAlignment alignment,
+                                  float visibleFraction) {
+        if (visibleFraction <= 0.0f) return;
         Minecraft minecraft = Minecraft.getInstance();
         PoseStack pose = graphics.pose();
         pose.pushPose();
@@ -42,7 +49,24 @@ public class RenderUtil {
             case LEFT -> scaledX;
         };
 
-        graphics.drawString(minecraft.font, fullTextComponent, actualX, scaledY, color, true);
+        if (visibleFraction < 1.0f) {
+            int leftX = (int) Math.floor(actualX * finalScale) - 1;
+            int rightX = (int) Math.ceil((actualX + totalTextWidth + 1) * finalScale) + 1;
+            int topY = (int) Math.floor(scaledY * finalScale);
+            int bottomY = (int) Math.ceil((scaledY + minecraft.font.lineHeight + 1) * finalScale);
+            int totalHeight = Math.max(1, bottomY - topY);
+            int visibleRows = Math.round(totalHeight * visibleFraction);
+            if (visibleRows > 0) {
+                graphics.enableScissor(leftX, bottomY - visibleRows, rightX, bottomY);
+                try {
+                    graphics.drawString(minecraft.font, fullTextComponent, actualX, scaledY, color, true);
+                } finally {
+                    graphics.disableScissor();
+                }
+            }
+        } else {
+            graphics.drawString(minecraft.font, fullTextComponent, actualX, scaledY, color, true);
+        }
 
         pose.popPose();
     }

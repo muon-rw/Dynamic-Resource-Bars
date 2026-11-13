@@ -15,6 +15,7 @@ import dev.muon.dynamic_resource_bars.util.RenderUtil;
 import dev.muon.dynamic_resource_bars.util.ScreenRect;
 import dev.muon.dynamic_resource_bars.util.SubElementType;
 import dev.muon.dynamic_resource_bars.util.TextBehavior;
+import dev.muon.dynamic_resource_bars.util.TextFadeMode;
 import dev.muon.dynamic_resource_bars.util.TickHandler;
 import com.mojang.blaze3d.systems.RenderSystem;
 import net.minecraft.client.DeltaTracker;
@@ -693,7 +694,20 @@ public abstract class AbstractBarRenderer {
             case RIGHT -> textRect.x() + textRect.width();
             case LEFT -> textRect.x();
         };
-        RenderUtil.renderText(current, max, graphics, baseX, textY, cfg.textScale(), color, alignment);
+        float visibleFraction = textVisibleFraction(current, max, cfg);
+        RenderUtil.renderText(current, max, graphics, baseX, textY, cfg.textScale(), color, alignment, visibleFraction);
+    }
+
+    protected float textVisibleFraction(float current, float max, BarConfig cfg) {
+        if (ModConfigManager.getClient().textFadeMode != TextFadeMode.DRAIN) {
+            return 1.0f;
+        }
+        long elapsed = textFadeElapsedMs(current, max, cfg);
+        if (elapsed < 0L) return 1.0f;
+        long hold = ModConfigManager.getClient().fadeHoldDuration;
+        if (elapsed <= hold) return 1.0f;
+        long fadeElapsed = elapsed - hold;
+        return Math.max(0.0f, 1.0f - (fadeElapsed / (float) RenderUtil.TEXT_FADEOUT_DURATION));
     }
 
     private int computeTextColor(float current, float max, float barAlpha, BarConfig cfg) {
@@ -706,13 +720,22 @@ public abstract class AbstractBarRenderer {
     }
 
     protected float textFadeMultiplier(float current, float max, BarConfig cfg) {
+        if (ModConfigManager.getClient().textFadeMode != TextFadeMode.ALPHA) {
+            return 1.0f;
+        }
+        long elapsed = textFadeElapsedMs(current, max, cfg);
+        if (elapsed < 0L) return 1.0f;
+        return RenderUtil.calculateTextAlpha(elapsed) / (float) RenderUtil.BASE_TEXT_ALPHA;
+    }
+
+    /** Returns milliseconds elapsed since text fadeout began, or -1 if the text is not fading out. */
+    protected long textFadeElapsedMs(float current, float max, BarConfig cfg) {
         if (!EditModeManager.isEditModeEnabled()
                 && cfg.textBehavior() == TextBehavior.WHEN_NOT_FULL
                 && current >= max) {
-            long timeSinceFull = System.currentTimeMillis() - fullValueStartTime;
-            return RenderUtil.calculateTextAlpha(timeSinceFull) / (float) RenderUtil.BASE_TEXT_ALPHA;
+            return System.currentTimeMillis() - fullValueStartTime;
         }
-        return 1.0f;
+        return -1L;
     }
 
     // ===== Edit mode =====

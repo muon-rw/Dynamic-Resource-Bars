@@ -3,6 +3,7 @@ package dev.muon.dynamic_resource_bars.config.gui;
 import dev.muon.dynamic_resource_bars.Constants;
 import dev.muon.dynamic_resource_bars.config.ClientConfig;
 import dev.muon.dynamic_resource_bars.config.ModConfigManager;
+import dev.muon.dynamic_resource_bars.util.TextFadeMode;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.Button;
@@ -38,15 +39,17 @@ public class ModConfigScreen extends Screen {
         super.init();
         ClientConfig config = ModConfigManager.getClient();
 
-        int buttonWidth = 200;
+        int buttonWidth = 280;
+        int halfButtonWidth = 138;
+        int buttonGap = 4;
         int buttonHeight = 20;
         int rowHeight = 18;
-        int rowGap = 4;
+        int rowGap = 3;
         int centerX = this.width / 2;
 
-        int totalContentHeight = buttonHeight + 4 + buttonHeight + 10 + 6 * (rowHeight + rowGap);
-        int topLimit = 32;
-        int bottomLimit = this.height - 36;
+        int totalContentHeight = buttonHeight + 4 + buttonHeight + 8 + 6 * (rowHeight + rowGap) - rowGap;
+        int topLimit = 28;
+        int bottomLimit = this.height - 34;
         int currentY = Math.max(topLimit, topLimit + (bottomLimit - topLimit - totalContentHeight) / 2);
 
         Minecraft mc = Minecraft.getInstance();
@@ -73,11 +76,24 @@ public class ModConfigScreen extends Screen {
                             config.save();
                             b.setMessage(customHudLabel(config.enableCustomHud));
                         })
-                .bounds(centerX - buttonWidth / 2, currentY, buttonWidth, buttonHeight)
+                .bounds(centerX - buttonWidth / 2, currentY, halfButtonWidth, buttonHeight)
                 .build();
         this.addRenderableWidget(customHudBtn);
 
-        currentY += buttonHeight + 10;
+        Button textFadeModeBtn = Button.builder(
+                        textFadeModeLabel(config.textFadeMode),
+                        b -> {
+                            TextFadeMode[] values = TextFadeMode.values();
+                            config.textFadeMode = values[(config.textFadeMode.ordinal() + 1) % values.length];
+                            config.save();
+                            b.setMessage(textFadeModeLabel(config.textFadeMode));
+                        })
+                .bounds(centerX - buttonWidth / 2 + halfButtonWidth + buttonGap, currentY, halfButtonWidth, buttonHeight)
+                .tooltip(Tooltip.create(Component.translatable("gui.dynamic_resource_bars.config.tooltip.text_fade_mode")))
+                .build();
+        this.addRenderableWidget(textFadeModeBtn);
+
+        currentY += buttonHeight + 8;
 
         int editBoxWidth = 64;
         int editX = centerX + 12;
@@ -161,7 +177,7 @@ public class ModConfigScreen extends Screen {
         this.addRenderableWidget(Button.builder(
                         Component.translatable("gui.done"),
                         b -> onClose())
-                .bounds(centerX - buttonWidth / 2, this.height - buttonHeight - 10, buttonWidth, buttonHeight)
+                .bounds(centerX - 100, this.height - buttonHeight - 10, 200, buttonHeight)
                 .build());
     }
 
@@ -232,6 +248,11 @@ public class ModConfigScreen extends Screen {
         return Component.translatable(enabled
                 ? "gui.dynamic_resource_bars.config.custom_hud.enabled"
                 : "gui.dynamic_resource_bars.config.custom_hud.disabled");
+    }
+
+    private static Component textFadeModeLabel(TextFadeMode mode) {
+        return Component.translatable("gui.dynamic_resource_bars.config.text_fade_mode",
+                Component.translatable(mode.getTranslationKey()));
     }
 
     @Override

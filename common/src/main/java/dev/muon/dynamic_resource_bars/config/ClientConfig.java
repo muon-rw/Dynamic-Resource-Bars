@@ -13,6 +13,7 @@ import dev.muon.dynamic_resource_bars.util.FillDirection;
 import dev.muon.dynamic_resource_bars.util.BarRenderBehavior;
 import dev.muon.dynamic_resource_bars.util.BarVisibility;
 import dev.muon.dynamic_resource_bars.util.ManaEventTrigger;
+import dev.muon.dynamic_resource_bars.util.TextFadeMode;
 import dev.muon.dynamic_resource_bars.provider.ManaBarBehavior;
 import dev.muon.dynamic_resource_bars.provider.StaminaBarBehavior;
 
@@ -55,11 +56,13 @@ public class ClientConfig {
     public static final float DEFAULT_TEXT_SCALE = 0.5f;
     public static final int DEFAULT_BAR_TEXT_WIDTH = 40;
     public static final int DEFAULT_BAR_TEXT_HEIGHT = 4;
+    public static final TextFadeMode DEFAULT_TEXT_FADE_MODE = TextFadeMode.DRAIN;
 
     // Global text fields
     public int globalTextColor = DEFAULT_TEXT_COLOR;
     public int globalTextOpacity = DEFAULT_TEXT_OPACITY;
     public float globalTextSize = DEFAULT_GLOBAL_TEXT_SIZE;
+    public TextFadeMode textFadeMode = DEFAULT_TEXT_FADE_MODE;
 
     // Health Defaults & Fields
     public static final BarRenderBehavior DEFAULT_HEALTH_BAR_BEHAVIOR = BarRenderBehavior.CUSTOM;
@@ -551,6 +554,7 @@ public class ClientConfig {
         this.globalTextColor = DEFAULT_TEXT_COLOR;
         this.globalTextOpacity = DEFAULT_TEXT_OPACITY;
         this.globalTextSize = DEFAULT_GLOBAL_TEXT_SIZE;
+        this.textFadeMode = DEFAULT_TEXT_FADE_MODE;
 
         this.healthBarBehavior = DEFAULT_HEALTH_BAR_BEHAVIOR;
         this.healthBarAnchor = DEFAULT_HEALTH_BAR_ANCHOR;
@@ -796,6 +800,7 @@ public class ClientConfig {
 
         // Negative values would invert the fade math; clamp before render reads it.
         if (cfg.fadeHoldDuration < 0) { cfg.fadeHoldDuration = DEFAULT_FADE_HOLD_DURATION; modified = true; }
+        if (cfg.textFadeMode == null) { cfg.textFadeMode = DEFAULT_TEXT_FADE_MODE; modified = true; }
 
         // Health
         if (cfg.healthBarAnchor == null) { cfg.healthBarAnchor = DEFAULT_HEALTH_BAR_ANCHOR; modified = true; }

@@ -143,12 +143,11 @@ public class ManaBarRenderer extends AbstractBarRenderer {
     }
 
     @Override
-    protected float textFadeMultiplier(float current, float max, BarConfig cfg) {
+    protected long textFadeElapsedMs(float current, float max, BarConfig cfg) {
         if (!textShownByBaseRule && isTextEventActive()) {
-            long timeSinceEvent = System.currentTimeMillis() - lastTextEventTime;
-            return RenderUtil.calculateTextAlpha(timeSinceEvent) / (float) RenderUtil.BASE_TEXT_ALPHA;
+            return System.currentTimeMillis() - lastTextEventTime;
         }
-        return super.textFadeMultiplier(current, max, cfg);
+        return super.textFadeElapsedMs(current, max, cfg);
     }
 
     @Override

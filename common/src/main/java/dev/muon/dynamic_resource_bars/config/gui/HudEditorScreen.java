@@ -1078,6 +1078,9 @@ public class HudEditorScreen extends Screen {
         items.add(new ContextMenuItem(
                 Component.translatable("gui.dynamic_resource_bars.context.set_size_position"),
                 it -> Minecraft.getInstance().setScreen(new ManualSizePositionScreen(this, bar.element))));
+        items.add(anchorPointItem(bar));
+        items.add(fillDirectionItem(bar));
+        items.add(ContextMenuItem.separator());
         ContextMenuItem behaviorItem = behaviorCycleItem(bar);
         if (behaviorItem != null) {
             items.add(behaviorItem);
@@ -1088,8 +1091,6 @@ public class HudEditorScreen extends Screen {
             items.add(manaBarEventItem(bar));
             items.add(manaTextEventItem(bar));
         }
-        items.add(anchorPointItem(bar));
-        items.add(fillDirectionItem(bar));
         if (bar.element == DraggableElement.HEALTH_BAR) {
             items.add(absorptionDisplayModeItem(bar));
         }
@@ -1100,6 +1101,7 @@ public class HudEditorScreen extends Screen {
                         this.minecraft.setScreen(new ToggleLayersScreen(this, bar.element));
                     }
                 }));
+        items.add(ContextMenuItem.separator());
         items.add(new ContextMenuItem(
                 Component.translatable("gui.dynamic_resource_bars.context.reset_element"),
                 it -> openResetConfirm(bar),
@@ -1119,6 +1121,13 @@ public class HudEditorScreen extends Screen {
             BarHandle bar, String labelKey, String selectTitleKey, T[] values,
             Function<T, String> translationKey,
             Function<ClientConfig, T> getter, BiConsumer<ClientConfig, T> setter) {
+        return enumItem(bar, labelKey, selectTitleKey, values, translationKey, getter, setter, true);
+    }
+
+    private <T extends Enum<T>> ContextMenuItem enumItem(
+            BarHandle bar, String labelKey, String selectTitleKey, T[] values,
+            Function<T, String> translationKey,
+            Function<ClientConfig, T> getter, BiConsumer<ClientConfig, T> setter, boolean enabled) {
         ClientConfig c = ModConfigManager.getClient();
         return new ContextMenuItem(
                 Component.translatable(labelKey, Component.translatable(translationKey.apply(getter.apply(c)))),
@@ -1131,7 +1140,8 @@ public class HudEditorScreen extends Screen {
                             ClientConfig cfg = ModConfigManager.getClient();
                             setter.accept(cfg, v);
                             cfg.save();
-                        }));
+                        }),
+                enabled);
     }
 
     /** "Anchor Point: %s" — opens an enum-select for {@link HUDPositioning.BarPlacement}. */
@@ -1205,21 +1215,23 @@ public class HudEditorScreen extends Screen {
     }
 
     private ContextMenuItem manaBarEventItem(BarHandle bar) {
+        boolean enabled = ModConfigManager.getClient().manaBarVisibility != BarVisibility.ALWAYS;
         return enumItem(bar,
                 "gui.dynamic_resource_bars.context.mana_bar_event",
                 "gui.dynamic_resource_bars.enum_select.mana_bar_event",
                 ManaEventTrigger.values(),
                 ManaEventTrigger::getTranslationKey,
-                c -> c.manaBarEventTrigger, (c, v) -> c.manaBarEventTrigger = v);
+                c -> c.manaBarEventTrigger, (c, v) -> c.manaBarEventTrigger = v, enabled);
     }
 
     private ContextMenuItem manaTextEventItem(BarHandle bar) {
+        boolean enabled = ModConfigManager.getClient().showManaText != TextBehavior.ALWAYS;
         return enumItem(bar,
                 "gui.dynamic_resource_bars.context.mana_text_event",
                 "gui.dynamic_resource_bars.enum_select.mana_text_event",
                 ManaEventTrigger.values(),
                 ManaEventTrigger::getTranslationKey,
-                c -> c.manaTextEventTrigger, (c, v) -> c.manaTextEventTrigger = v);
+                c -> c.manaTextEventTrigger, (c, v) -> c.manaTextEventTrigger = v, enabled);
     }
 
     /** Toggle for the active sub-element's visibility — only added when {@link SubElementType#isToggleable()}. */
