@@ -1,5 +1,6 @@
 package dev.muon.dynamic_resource_bars.client;
 
+import dev.muon.dynamic_resource_bars.compat.WitcherySoulFormCompat;
 import dev.muon.dynamic_resource_bars.config.ClientConfig;
 import dev.muon.dynamic_resource_bars.config.ModConfigManager;
 import dev.muon.dynamic_resource_bars.provider.StaminaBarBehavior;
@@ -38,6 +39,7 @@ public final class HudBarOrchestrator {
         if (behavior == BarRenderBehavior.VANILLA) return false;
         Player player = clientPlayer();
         if (player == null) return behavior == BarRenderBehavior.HIDDEN;
+        if (WitcherySoulFormCompat.isSoulFormActive(player)) return true;
         if (behavior == BarRenderBehavior.CUSTOM) HealthBarRenderer.INSTANCE.render(graphics, player, deltaTracker);
         return true;
     }
@@ -47,6 +49,7 @@ public final class HudBarOrchestrator {
         if (!StaminaBarBehavior.FOOD.equals(config.staminaBarBehavior)) return false;
         Player player = clientPlayer();
         if (player == null) return false;
+        if (WitcherySoulFormCompat.shouldHideFood(player)) return true;
         StaminaBarRenderer.INSTANCE.render(graphics, player, deltaTracker);
         return true;
     }
@@ -60,6 +63,7 @@ public final class HudBarOrchestrator {
         if (behavior == BarRenderBehavior.VANILLA) return false;
         Player player = clientPlayer();
         if (player == null) return behavior == BarRenderBehavior.HIDDEN; // suppress vanilla even with no player
+        if (WitcherySoulFormCompat.isSoulFormActive(player)) return true;
         if (behavior == BarRenderBehavior.CUSTOM) ArmorBarRenderer.INSTANCE.render(graphics, player, deltaTracker);
         return true;
     }
@@ -147,14 +151,16 @@ public final class HudBarOrchestrator {
         graphics.pose().pushPose();
         graphics.pose().translate(0.0F, 0.0F, 250.0F);
         try {
-            if (config.healthBarBehavior == BarRenderBehavior.CUSTOM) {
+            boolean soulForm = WitcherySoulFormCompat.isSoulFormActive(player);
+            if (!soulForm && config.healthBarBehavior == BarRenderBehavior.CUSTOM) {
                 HealthBarRenderer.INSTANCE.renderTextOverlay(graphics, player);
             }
             ManaBarRenderer.INSTANCE.renderTextOverlay(graphics, player);
-            if (config.staminaBarBehavior != StaminaBarBehavior.OFF) {
+            if (config.staminaBarBehavior != StaminaBarBehavior.OFF
+                    && !(config.staminaBarBehavior == StaminaBarBehavior.FOOD && WitcherySoulFormCompat.shouldHideFood(player))) {
                 StaminaBarRenderer.INSTANCE.renderTextOverlay(graphics, player);
             }
-            if (config.armorBarBehavior == BarRenderBehavior.CUSTOM) {
+            if (!soulForm && config.armorBarBehavior == BarRenderBehavior.CUSTOM) {
                 ArmorBarRenderer.INSTANCE.renderTextOverlay(graphics, player);
             }
             if (config.airBarBehavior == BarRenderBehavior.CUSTOM) {

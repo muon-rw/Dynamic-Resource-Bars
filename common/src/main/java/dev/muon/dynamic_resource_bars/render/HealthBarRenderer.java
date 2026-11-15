@@ -19,11 +19,13 @@ import dev.muon.dynamic_resource_bars.util.ScreenRect;
 import dev.muon.dynamic_resource_bars.util.SubElementType;
 import dev.muon.dynamic_resource_bars.util.TickHandler;
 import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.effect.MobEffects;
 import net.minecraft.world.entity.player.Player;
 
 import dev.muon.dynamic_resource_bars.compat.AppleSkinCompat;
+import dev.muon.dynamic_resource_bars.compat.DungeonsDelightCompat;
 import dev.muon.dynamic_resource_bars.compat.FarmersDelightCompat;
 import dev.muon.dynamic_resource_bars.compat.LsoCompat;
 import dev.muon.dynamic_resource_bars.compat.ThermooCompat;
@@ -33,12 +35,17 @@ public class HealthBarRenderer extends AbstractBarRenderer {
 
     public static final HealthBarRenderer INSTANCE = new HealthBarRenderer();
 
+    private static final ResourceLocation FATAL_POISON_EFFECT = ResourceLocation.fromNamespaceAndPath("more_rpg_classes", "fatal_poison");
+    private static final ResourceLocation TIPSY_EFFECT = ResourceLocation.fromNamespaceAndPath("brewinandchewin", "tipsy");
+    private static final ResourceLocation EXUDATION_EFFECT = ResourceLocation.fromNamespaceAndPath("dungeonsdelight", "exudation");
+
     private enum BarType {
         NORMAL("health_bar"),
         POISON("health_bar_poisoned"),
         WITHER("health_bar_withered"),
         FROZEN("health_bar_frozen"),
-        SCORCHED("health_bar_scorched");
+        SCORCHED("health_bar_scorched"),
+        TIPSY("health_bar_tipsy");
 
         private final ResourceLocation id;
 
@@ -47,12 +54,19 @@ public class HealthBarRenderer extends AbstractBarRenderer {
         public ResourceLocation loc() { return id; }
 
         public static BarType fromPlayerState(Player player) {
-            if (player.hasEffect(MobEffects.POISON)) return POISON;
+            if (player.hasEffect(MobEffects.POISON) || hasEffectById(player, FATAL_POISON_EFFECT)) return POISON;
             if (player.hasEffect(MobEffects.WITHER)) return WITHER;
             if (isFrozen(player)) return FROZEN;
             if (isScorched(player)) return SCORCHED;
+            if (hasEffectById(player, TIPSY_EFFECT)) return TIPSY;
             return NORMAL;
         }
+    }
+
+    private static boolean hasEffectById(Player player, ResourceLocation id) {
+        return BuiltInRegistries.MOB_EFFECT.getHolder(id)
+                .map(player::hasEffect)
+                .orElse(false);
     }
 
     // Cached identifiers — these used to be allocated every frame inside render hooks.
@@ -61,7 +75,10 @@ public class HealthBarRenderer extends AbstractBarRenderer {
     private static final ResourceLocation HEAT_OVERLAY = Constants.loc("textures/gui/heat_overlay.png");
     private static final ResourceLocation COLD_OVERLAY = Constants.loc("textures/gui/cold_overlay.png");
     private static final ResourceLocation ABSORPTION_OVERLAY = Constants.loc("textures/gui/absorption_overlay.png");
+    private static final ResourceLocation ABSORPTION_OVERLAY_EXUDATION = Constants.loc("textures/gui/absorption_overlay_exudation.png");
     private static final ResourceLocation ABSORPTION_BAR = Constants.loc("textures/gui/absorption_bar.png");
+    private static final ResourceLocation ABSORPTION_BAR_EXUDATION = Constants.loc("textures/gui/absorption_bar_exudation.png");
+    private static final ResourceLocation HEALTH_BAR_ROTTEN = Constants.loc("textures/gui/health_bar_rotten.png");
     private static final ResourceLocation REGENERATION_OVERLAY = Constants.loc("textures/gui/regeneration_overlay.png");
     private static final ResourceLocation HARDCORE_OVERLAY = Constants.loc("textures/gui/hardcore_overlay.png");
     private static final ResourceLocation WETNESS_OVERLAY = Constants.loc("textures/gui/wetness_overlay.png");
@@ -157,8 +174,9 @@ public class HealthBarRenderer extends AbstractBarRenderer {
         if (absorption > 0
                 && ModConfigManager.getClient().healthAbsorptionDisplayMode == AbsorptionDisplayMode.OVERLAY) {
             float pulseAlpha = 0.5f + (TickHandler.getOverlayFlashAlpha() * 0.5f);
-            AnimationMetadata.TextureDimensions dims = AnimationMetadataCache.getTextureDimensions(ABSORPTION_OVERLAY);
-            NineSliceRenderer.renderWithScaling(graphics, ABSORPTION_OVERLAY,
+            ResourceLocation overlayTex = hasEffectById(player, EXUDATION_EFFECT) ? ABSORPTION_OVERLAY_EXUDATION : ABSORPTION_OVERLAY;
+            AnimationMetadata.TextureDimensions dims = AnimationMetadataCache.getTextureDimensions(overlayTex);
+            NineSliceRenderer.renderWithScaling(graphics, overlayTex,
                     AnimationMetadataCache.getAbsorptionOverlayScaling(),
                     barRect.x(), barRect.y(), barRect.width(), barRect.height(),
                     dims.width, dims.height,
@@ -197,9 +215,8 @@ public class HealthBarRenderer extends AbstractBarRenderer {
     protected void renderBetweenBarAndForeground(GuiGraphics graphics, Player player,
                                                  float current, float max, ScreenRect barRect,
                                                  int animOffset, AnimationMetadata.AnimationData animData) {
-        // Resolve the food preview width up-front so SQUEEZE absorption can slide right by exactly
-        // that much, leaving a clean gap for the preview chunk between the live health fill and
-        // where absorption would sit post-consumption.
+        // Resolve the food preview and rotten-heart widths up-front so SQUEEZE absorption can
+        // slide right past both, leaving missing-health space between live health and absorption.
         int previewShift = 0;
         ItemStack heldFood = ItemStack.EMPTY;
         float restoreAmount = 0f;
@@ -211,11 +228,39 @@ public class HealthBarRenderer extends AbstractBarRenderer {
             }
         }
 
-        renderSqueezeAbsorption(graphics, player, current, max, barRect, previewShift);
+        int rottenShift = renderRottenHearts(graphics, player, current, max, barRect, animOffset, animData);
+
+        renderSqueezeAbsorption(graphics, player, current, max, barRect, Math.max(previewShift, rottenShift));
 
         if (!heldFood.isEmpty()) {
             renderRestorePreviewChunk(graphics, player, current, max, restoreAmount, barRect, animOffset, animData);
         }
+    }
+
+    private int renderRottenHearts(GuiGraphics graphics, Player player,
+                                   float current, float max, ScreenRect barRect,
+                                   int animOffset, AnimationMetadata.AnimationData animData) {
+        int rotten = DungeonsDelightCompat.getRottenHearts(player);
+        if (rotten <= 0 || max <= 0f) return 0;
+        float clamped = Math.max(0f, Math.min((float) rotten, max - current));
+        if (clamped <= 0f) return 0;
+        float denom = effectiveBarMax(player, current, max);
+        if (denom <= 0f) return 0;
+
+        BarConfig cfg = config();
+        boolean vertical = cfg.fillDirection() == FillDirection.VERTICAL;
+        boolean rightAnchored = cfg.anchor().getSide() == HUDPositioning.AnchorSide.RIGHT;
+        int span = vertical ? barRect.height() : barRect.width();
+        int healthFilled = (int) (span * Math.max(0f, Math.min(1f, current / denom)));
+        int combinedFilled = (int) (span * Math.max(0f, Math.min(1f, (current + clamped) / denom)));
+        int rottenSpan = combinedFilled - healthFilled;
+        if (rottenSpan <= 0) return 0;
+
+        int tint = RenderUtil.whiteWithAlpha(currentAlpha());
+        paintFillSpan(graphics, HEALTH_BAR_ROTTEN, barRect, vertical, rightAnchored, animOffset,
+                animData.textureWidth, animData.textureHeight,
+                healthFilled, combinedFilled, true, true, tint);
+        return rottenSpan;
     }
 
     /**
@@ -237,6 +282,7 @@ public class HealthBarRenderer extends AbstractBarRenderer {
         if (denom <= 0f) return;
 
         BarConfig cfg = config();
+        ResourceLocation absorptionBarTex = hasEffectById(player, EXUDATION_EFFECT) ? ABSORPTION_BAR_EXUDATION : ABSORPTION_BAR;
         AnimationMetadata.AnimationData animData = AnimationMetadataCache.getAbsorptionBarAnimation();
         int absAnimOffset = AnimationMetadata.calculateAnimationOffset(animData, currentTicks());
         int tint = RenderUtil.whiteWithAlpha(currentAlpha());
@@ -248,7 +294,7 @@ public class HealthBarRenderer extends AbstractBarRenderer {
             int combinedFilled = (int) (barRect.height() * ((current + absorption) / denom));
             int absFilled = combinedFilled - healthFilled;
             if (absFilled <= 0) return;
-            paintFillSpan(graphics, ABSORPTION_BAR, barRect, true, false, absAnimOffset,
+            paintFillSpan(graphics, absorptionBarTex, barRect, true, false, absAnimOffset,
                     animData.textureWidth, animData.textureHeight,
                     healthFilled + previewShift, combinedFilled + previewShift, true, true, tint);
             return;
@@ -262,7 +308,7 @@ public class HealthBarRenderer extends AbstractBarRenderer {
         int x = rightAnchored
                 ? barRect.x() + barRect.width() - healthFilled - previewShift - absFilled
                 : barRect.x() + healthFilled + previewShift;
-        blitTinted(graphics, ABSORPTION_BAR, x, barRect.y(), 0, absAnimOffset,
+        blitTinted(graphics, absorptionBarTex, x, barRect.y(), 0, absAnimOffset,
                 absFilled, barRect.height(), animData.textureWidth, animData.textureHeight, tint);
     }
 

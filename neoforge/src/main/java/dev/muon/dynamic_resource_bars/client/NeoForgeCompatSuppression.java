@@ -23,6 +23,7 @@ public final class NeoForgeCompatSuppression {
     private static final ResourceLocation LSO_THIRST = ResourceLocation.fromNamespaceAndPath("legendarysurvivaloverhaul", "thirst");
     private static final ResourceLocation LSO_COLD_HUNGER = ResourceLocation.fromNamespaceAndPath("legendarysurvivaloverhaul", "cold_hunger");
     private static final ResourceLocation LSO_HEALTH_OVERHAUL = ResourceLocation.fromNamespaceAndPath("legendarysurvivaloverhaul", "health_overhaul");
+    private static final ResourceLocation AETHER_SILVER_HEARTS = ResourceLocation.fromNamespaceAndPath("aether", "silver_life_shard_hearts");
 
     private NeoForgeCompatSuppression() {}
 
@@ -57,7 +58,8 @@ public final class NeoForgeCompatSuppression {
             event.setCanceled(true);
         } else if ((LSO_TEMPERATURE.equals(name) || LSO_WETNESS.equals(name)) && config.healthBarBehavior == BarRenderBehavior.CUSTOM) {
             event.setCanceled(true);
-        } else if (LSO_HEALTH_OVERHAUL.equals(name) && config.healthBarBehavior != BarRenderBehavior.VANILLA) {
+        } else if ((LSO_HEALTH_OVERHAUL.equals(name) || AETHER_SILVER_HEARTS.equals(name))
+                && config.healthBarBehavior != BarRenderBehavior.VANILLA) {
             event.setCanceled(true);
         } else if (LSO_THIRST.equals(name) && config.airBarBehavior != BarRenderBehavior.VANILLA) {
             event.setCanceled(true);

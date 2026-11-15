@@ -8,6 +8,8 @@ import dev.muon.dynamic_resource_bars.compat.AppleSkinCompat;
 import dev.muon.dynamic_resource_bars.compat.AppleSkinCompatNeoForge;
 import dev.muon.dynamic_resource_bars.compat.ArsNouveauManaProvider;
 import dev.muon.dynamic_resource_bars.compat.IronsSpellbooksManaProvider;
+import dev.muon.dynamic_resource_bars.compat.DungeonsDelightCompat;
+import dev.muon.dynamic_resource_bars.compat.DungeonsDelightCompatNeoForge;
 import dev.muon.dynamic_resource_bars.compat.LsoCompat;
 import dev.muon.dynamic_resource_bars.compat.LsoCompatNeoForge;
 import dev.muon.dynamic_resource_bars.compat.ManaProviderManager;
@@ -16,6 +18,8 @@ import dev.muon.dynamic_resource_bars.compat.StaminaProviderManager;
 import dev.muon.dynamic_resource_bars.compat.VampireBloodCompat;
 import dev.muon.dynamic_resource_bars.compat.WitcheryAbilityCompat;
 import dev.muon.dynamic_resource_bars.compat.WitcheryCompatNeoForge;
+import dev.muon.dynamic_resource_bars.compat.WitcherySoulFormCompat;
+import dev.muon.dynamic_resource_bars.compat.WitcherySoulFormCompatNeoForge;
 import dev.muon.dynamic_resource_bars.config.gui.ModConfigScreen;
 import dev.muon.dynamic_resource_bars.harness.UiHarness;
 import dev.muon.dynamic_resource_bars.platform.Services;
@@ -68,6 +72,12 @@ public class DynamicResourceBars {
             WitcheryCompatNeoForge witcheryCompat = new WitcheryCompatNeoForge();
             VampireBloodCompat.setProvider(witcheryCompat);
             WitcheryAbilityCompat.setProvider(witcheryCompat);
+        }
+        if (Services.PLATFORM.isModLoaded(WitcherySoulFormCompat.MOD_ID)) {
+            WitcherySoulFormCompat.setProvider(new WitcherySoulFormCompatNeoForge());
+        }
+        if (Services.PLATFORM.isModLoaded(DungeonsDelightCompat.MOD_ID)) {
+            DungeonsDelightCompat.setProvider(new DungeonsDelightCompatNeoForge());
         }
         NeoForgeCompatSuppression.install();
     }
