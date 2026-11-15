@@ -99,10 +99,14 @@ public class HealthBarRenderer extends AbstractBarRenderer {
     @Override protected float currentValue(Player player) { return player.getHealth(); }
     @Override protected float maxValue(Player player) { return player.getMaxHealth(); }
 
+    private static float totalAbsorption(Player player) {
+        return player.getAbsorptionAmount() + LsoCompat.getShieldHealth(player);
+    }
+
     /** Smart fade keeps the bar visible while absorption is present even when health is full. */
     @Override
     protected boolean smartFadeTrigger(Player player, float current, float max) {
-        return current >= max && player.getAbsorptionAmount() == 0f;
+        return current >= max && totalAbsorption(player) == 0f;
     }
 
     /**
@@ -114,7 +118,7 @@ public class HealthBarRenderer extends AbstractBarRenderer {
     @Override
     protected float effectiveBarMax(Player player, float current, float max) {
         if (ModConfigManager.getClient().healthAbsorptionDisplayMode == AbsorptionDisplayMode.SQUEEZE) {
-            float abs = player.getAbsorptionAmount();
+            float abs = totalAbsorption(player);
             if (abs > 0) return max + abs;
         }
         return max;
@@ -149,7 +153,7 @@ public class HealthBarRenderer extends AbstractBarRenderer {
 
         // Pulse overlay is OVERLAY-mode only — in SQUEEZE the bar's absorption slice carries
         // the visual signal, so doubling it with the pulse adds noise.
-        float absorption = player.getAbsorptionAmount();
+        float absorption = totalAbsorption(player);
         if (absorption > 0
                 && ModConfigManager.getClient().healthAbsorptionDisplayMode == AbsorptionDisplayMode.OVERLAY) {
             float pulseAlpha = 0.5f + (TickHandler.getOverlayFlashAlpha() * 0.5f);
@@ -227,7 +231,7 @@ public class HealthBarRenderer extends AbstractBarRenderer {
     private void renderSqueezeAbsorption(GuiGraphics graphics, Player player,
                                          float current, float max, ScreenRect barRect, int previewShift) {
         if (ModConfigManager.getClient().healthAbsorptionDisplayMode != AbsorptionDisplayMode.SQUEEZE) return;
-        float absorption = player.getAbsorptionAmount();
+        float absorption = totalAbsorption(player);
         if (absorption <= 0f) return;
         float denom = max + absorption;
         if (denom <= 0f) return;
@@ -313,7 +317,7 @@ public class HealthBarRenderer extends AbstractBarRenderer {
                 && EditModeManager.getFocusedElement() == draggable()
                 && EditModeManager.getFocusedSubElement() == SubElementType.ABSORPTION_TEXT;
         if (!focusedHere && !shouldRenderText(currentValue(player), maxValue(player))) return;
-        float absorption = player.getAbsorptionAmount();
+        float absorption = totalAbsorption(player);
         if (absorption <= 0 && !EditModeManager.isEditModeEnabled()) return;
         String text = "+" + (EditModeManager.isEditModeEnabled() && absorption == 0 ? "8" : (int) absorption);
         ScreenRect rect = getSubElementRect(SubElementType.ABSORPTION_TEXT, player);

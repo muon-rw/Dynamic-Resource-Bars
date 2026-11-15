@@ -74,4 +74,10 @@ public final class LsoCompatNeoForge implements LsoCompat.Provider {
     public boolean hasHeatThirstEffect(Player player) {
         return isThirstActive(player) && player.hasEffect(MobEffectRegistry.HEAT_THIRST);
     }
+
+    @Override
+    public float getShieldHealth(Player player) {
+        if (!Config.Baked.healthOverhaulEnabled) return 0f;
+        return Math.max(0f, AttachmentUtil.getHealthAttachment(player).getShieldHealth());
+    }
 }

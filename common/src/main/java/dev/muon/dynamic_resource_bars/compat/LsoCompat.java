@@ -25,6 +25,7 @@ public final class LsoCompat {
         float getMaxThirst(Player player);
         boolean hasThirstEffect(Player player);
         boolean hasHeatThirstEffect(Player player);
+        float getShieldHealth(Player player);
     }
 
     public static void setProvider(Provider p) {
@@ -73,5 +74,9 @@ public final class LsoCompat {
 
     public static boolean hasHeatThirstEffect(Player player) {
         return isLoaded() && provider.hasHeatThirstEffect(player);
+    }
+
+    public static float getShieldHealth(Player player) {
+        return isLoaded() ? provider.getShieldHealth(player) : 0f;
     }
 }
