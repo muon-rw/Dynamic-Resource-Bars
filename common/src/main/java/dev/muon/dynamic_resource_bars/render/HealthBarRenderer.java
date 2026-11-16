@@ -343,6 +343,7 @@ public class HealthBarRenderer extends AbstractBarRenderer {
                                     int x, int y, int width, int height, float alpha) {
         float clampedAlpha = Math.max(0f, Math.min(1f, alpha));
         RenderSystem.enableBlend();
+        RenderSystem.defaultBlendFunc();
         RenderSystem.setShaderColor(1.0f, 1.0f, 1.0f, clampedAlpha);
         try {
             graphics.blit(texture, x, y, width, height,

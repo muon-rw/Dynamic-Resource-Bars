@@ -114,6 +114,7 @@ public final class CustomHudRenderer {
         int guiHeight = graphics.guiHeight();
 
         RenderSystem.enableBlend();
+        RenderSystem.defaultBlendFunc();
         graphics.blit(HUD_HOTBAR,
                 screenCenter - 97, guiHeight - 25, 0, 0,
                 HOTBAR_TEX_WIDTH, HOTBAR_TEX_HEIGHT, HOTBAR_TEX_WIDTH, HOTBAR_TEX_HEIGHT);
@@ -136,6 +137,7 @@ public final class CustomHudRenderer {
             float strength = mc.player.getAttackStrengthScale(0.0F);
             if (strength < 1.0F) {
                 RenderSystem.enableBlend();
+                RenderSystem.defaultBlendFunc();
                 int indY = guiHeight - 20;
                 int indX = offhandArm == HumanoidArm.RIGHT ? screenCenter - 91 - 22 : screenCenter + 91 + 6;
                 int progress = (int) (strength * 19.0F);
@@ -158,6 +160,7 @@ public final class CustomHudRenderer {
         int guiHeight = graphics.guiHeight();
 
         RenderSystem.enableBlend();
+        RenderSystem.defaultBlendFunc();
         if (offhandArm == HumanoidArm.LEFT) {
             graphics.blit(HUD_OFFHAND_LEFT,
                     screenCenter - 123, guiHeight - 25, 0, 0,
@@ -189,6 +192,7 @@ public final class CustomHudRenderer {
         PlayerRideableJumping vehicle = player.jumpableVehicle();
         if (vehicle != null) {
             RenderSystem.enableBlend();
+            RenderSystem.defaultBlendFunc();
             graphics.blit(HUD_XP_BACKGROUND,
                     bgLeft, bgTop, 0, 0,
                     XP_BG_WIDTH, XP_BG_HEIGHT, XP_BG_WIDTH, XP_BG_HEIGHT);
@@ -210,6 +214,7 @@ public final class CustomHudRenderer {
 
         if (mc.gameMode.hasExperience()) {
             RenderSystem.enableBlend();
+            RenderSystem.defaultBlendFunc();
             graphics.blit(HUD_XP_BACKGROUND,
                     bgLeft, bgTop, 0, 0,
                     XP_BG_WIDTH, XP_BG_HEIGHT, XP_BG_WIDTH, XP_BG_HEIGHT);
@@ -237,6 +242,7 @@ public final class CustomHudRenderer {
         int guiHeight = graphics.guiHeight();
 
         RenderSystem.enableBlend();
+        RenderSystem.defaultBlendFunc();
         graphics.blit(HUD_LEVEL_BADGE,
                 screenCenter - LEVEL_BADGE_WIDTH / 2, guiHeight - 45, 0, 0,
                 LEVEL_BADGE_WIDTH, LEVEL_BADGE_HEIGHT, LEVEL_BADGE_WIDTH, LEVEL_BADGE_HEIGHT);

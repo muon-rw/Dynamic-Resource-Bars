@@ -571,6 +571,7 @@ public abstract class AbstractBarRenderer {
         float g = ((tint >> 8) & 0xFF) / 255.0f;
         float b = (tint & 0xFF) / 255.0f;
         RenderSystem.enableBlend();
+        RenderSystem.defaultBlendFunc();
         RenderSystem.setShaderColor(r, g, b, a);
         try {
             graphics.blit(texture, x, y, u, v, width, height, textureWidth, textureHeight);

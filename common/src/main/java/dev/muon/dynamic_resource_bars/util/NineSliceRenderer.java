@@ -45,6 +45,7 @@ public class NineSliceRenderer {
         float b = (color & 0xFF) / 255.0f;
 
         RenderSystem.enableBlend();
+        RenderSystem.defaultBlendFunc();
         RenderSystem.setShaderColor(r, g, b, a);
         try {
             if (scalingInfo.mode == AnimationMetadata.ScalingMode.NONE) {
