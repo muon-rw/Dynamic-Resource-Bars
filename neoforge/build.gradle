@@ -41,10 +41,13 @@ dependencies {
 
     compileOnly "maven.modrinth:spell-engine:${spell_engine_version}-neoforge"
 
+    compileOnly("io.redspace:irons_spellbooks:${irons_spellbooks_version}") { transitive = false }
+    localRuntime("io.redspace:irons_spellbooks:${irons_spellbooks_version}") { transitive = false }
+    compileOnly("io.redspace:irons_lib:${irons_lib_version}") { transitive = false }
+    localRuntime("io.redspace:irons_lib:${irons_lib_version}") { transitive = false }
+
     // Compats (compile-only)
     compileOnly("com.hollingsworth.ars_nouveau:ars_nouveau-${minecraft_version}:${ars_nouveau_version}") { transitive = false }
-    compileOnly("io.redspace:irons_spellbooks:${irons_spellbooks_version}") { transitive = false }
-    compileOnly("io.redspace:irons_lib:${irons_lib_version}") { transitive = false }
     compileOnly("maven.modrinth:legendary-survival-overhaul:${lso_neoforge_version}") { transitive = false }
     compileOnly("maven.modrinth:just-another-witchery-remake:${witchery_neoforge_version}") { transitive = false }
     compileOnly("maven.modrinth:jawr-forbidden-magic:${witchery_forbidden_magic_neoforge_version}") { transitive = false }
@@ -57,6 +60,10 @@ dependencies {
     localRuntime "maven.modrinth:velvet-api:${velvet_api_version}"
     localRuntime "maven.modrinth:sparkweave:${sparkweave_version}"
     localRuntime "maven.modrinth:cloth-config:${cloth_config_version}+neoforge"
+    // Required by Iron's Spells 'n Spellbooks
+    localRuntime("software.bernie.geckolib:geckolib-neoforge-${minecraft_version}:${geckolib_version}")
+    localRuntime("dev.kosmx.player-anim:player-animation-lib-forge:${playeranimator_version}")
+    localRuntime("top.theillusivec4.curios:curios-neoforge:${curios_version}")
 }
 
 neoForge {

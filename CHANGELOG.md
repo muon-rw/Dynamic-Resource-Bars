@@ -5,6 +5,7 @@
 - Editor tweaks
 - New animation features: flow on vertical fill bars, and gradual painting
 - New compats: Legendary Survival Overhaul, Just Another Witchery Remake, JAWR: Forbidden Magic, Dungeons Delight, Aether, Brewin n Chewin
+- Move Iron's Spells 'n Spellbooks' spell bar when it would overlap a resource bar (config toggleable)
 
 ## 0.9.6
 - Sprite revamp!

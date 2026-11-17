@@ -74,6 +74,19 @@ repositories {
         content { includeGroupAndSubgroups 'dev.muon' }
     }
 
+    maven {
+        url = 'https://maven.theillusivec4.top' // Curios
+        content { includeGroupByRegex 'top\\.theillusivec4.*' }
+    }
+    maven {
+        url = 'https://maven.kosmx.dev/' // Player Animator
+        content { includeGroupByRegex 'dev\\.kosmx.*' }
+    }
+    maven {
+        url = 'https://dl.cloudsmith.io/public/geckolib3/geckolib/maven/'
+        content { includeGroupByRegex 'software\\.bernie.*' }
+    }
+
     // MixinSquared
     maven { url = "https://maven.bawnorton.com/releases" }
     // MixinSquared backup

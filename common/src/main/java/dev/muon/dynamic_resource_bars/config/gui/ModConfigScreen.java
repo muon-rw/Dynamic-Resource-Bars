@@ -1,8 +1,10 @@
 package dev.muon.dynamic_resource_bars.config.gui;
 
 import dev.muon.dynamic_resource_bars.Constants;
+import dev.muon.dynamic_resource_bars.compat.IronsSpellBarPlacement;
 import dev.muon.dynamic_resource_bars.config.ClientConfig;
 import dev.muon.dynamic_resource_bars.config.ModConfigManager;
+import dev.muon.dynamic_resource_bars.platform.Services;
 import dev.muon.dynamic_resource_bars.util.TextFadeMode;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
@@ -10,6 +12,7 @@ import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.components.EditBox;
 import net.minecraft.client.gui.components.Tooltip;
 import net.minecraft.client.gui.screens.Screen;
+import net.minecraft.network.chat.CommonComponents;
 import net.minecraft.network.chat.Component;
 import org.jetbrains.annotations.NotNull;
 
@@ -47,7 +50,9 @@ public class ModConfigScreen extends Screen {
         int rowGap = 3;
         int centerX = this.width / 2;
 
-        int totalContentHeight = buttonHeight + 4 + buttonHeight + 8 + 6 * (rowHeight + rowGap) - rowGap;
+        boolean hasIronsSpellBar = Services.PLATFORM.isModLoaded(IronsSpellBarPlacement.MOD_ID);
+        int totalContentHeight = buttonHeight + 4 + buttonHeight + 8 + 6 * (rowHeight + rowGap) - rowGap
+                + (hasIronsSpellBar ? buttonHeight + 4 : 0);
         int topLimit = 28;
         int bottomLimit = this.height - 34;
         int currentY = Math.max(topLimit, topLimit + (bottomLimit - topLimit - totalContentHeight) / 2);
@@ -92,6 +97,20 @@ public class ModConfigScreen extends Screen {
                 .tooltip(Tooltip.create(Component.translatable("gui.dynamic_resource_bars.config.tooltip.text_fade_mode")))
                 .build();
         this.addRenderableWidget(textFadeModeBtn);
+
+        if (hasIronsSpellBar) {
+            currentY += buttonHeight + 4;
+            this.addRenderableWidget(Button.builder(
+                            ironsSpellBarLabel(config.keepIronsSpellBarClearOfBars),
+                            b -> {
+                                config.keepIronsSpellBarClearOfBars = !config.keepIronsSpellBarClearOfBars;
+                                config.save();
+                                b.setMessage(ironsSpellBarLabel(config.keepIronsSpellBarClearOfBars));
+                            })
+                    .bounds(centerX - buttonWidth / 2, currentY, buttonWidth, buttonHeight)
+                    .tooltip(Tooltip.create(Component.translatable("gui.dynamic_resource_bars.config.tooltip.irons_spell_bar")))
+                    .build());
+        }
 
         currentY += buttonHeight + 8;
 
@@ -248,6 +267,11 @@ public class ModConfigScreen extends Screen {
         return Component.translatable(enabled
                 ? "gui.dynamic_resource_bars.config.custom_hud.enabled"
                 : "gui.dynamic_resource_bars.config.custom_hud.disabled");
+    }
+
+    private static Component ironsSpellBarLabel(boolean enabled) {
+        return Component.translatable("gui.dynamic_resource_bars.config.irons_spell_bar",
+                enabled ? CommonComponents.OPTION_ON : CommonComponents.OPTION_OFF);
     }
 
     private static Component textFadeModeLabel(TextFadeMode mode) {

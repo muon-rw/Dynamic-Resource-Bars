@@ -1,6 +1,10 @@
 package dev.muon.dynamic_resource_bars.harness;
 
 import net.minecraft.client.Minecraft;
+import net.minecraft.client.gui.components.Button;
+import net.minecraft.client.gui.components.events.GuiEventListener;
+import net.minecraft.client.gui.screens.Screen;
+import net.minecraft.network.chat.contents.TranslatableContents;
 import net.minecraft.client.server.IntegratedServer;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.Difficulty;
@@ -44,6 +48,17 @@ final class HarnessWorld {
                 false, Difficulty.PEACEFUL, true, new net.minecraft.world.level.GameRules(), WorldDataConfiguration.DEFAULT);
         mc.createWorldOpenFlows().createFreshLevel(levelId, settings, new WorldOptions(0L, false, false),
                 WorldPresets::createNormalWorldDimensions, null);
+    }
+
+    static void joinWithoutBackup(Screen backupConfirmScreen) {
+        for (GuiEventListener child : backupConfirmScreen.children()) {
+            if (child instanceof Button button
+                    && button.getMessage().getContents() instanceof TranslatableContents contents
+                    && "selectWorld.backupJoinSkipButton".equals(contents.getKey())) {
+                button.onPress();
+                return;
+            }
+        }
     }
 
     static void runSetupCommands(Minecraft mc) {

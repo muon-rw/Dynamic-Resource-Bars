@@ -49,6 +49,9 @@ public class ClientConfig {
     public static final int DEFAULT_RIGHT_HUD_LAYER_OFFSET = 0;
     public int rightHudLayerOffset = DEFAULT_RIGHT_HUD_LAYER_OFFSET;
 
+    public static final boolean DEFAULT_KEEP_IRONS_SPELL_BAR_CLEAR_OF_BARS = true;
+    public boolean keepIronsSpellBarClearOfBars = DEFAULT_KEEP_IRONS_SPELL_BAR_CLEAR_OF_BARS;
+
     // Global text defaults
     public static final int DEFAULT_TEXT_COLOR = 0xFFFFFF; // White
     public static final int DEFAULT_TEXT_OPACITY = 200; // Out of 255
@@ -551,6 +554,7 @@ public class ClientConfig {
         this.fadeHoldDuration = DEFAULT_FADE_HOLD_DURATION;
         this.leftHudLayerOffset = DEFAULT_LEFT_HUD_LAYER_OFFSET;
         this.rightHudLayerOffset = DEFAULT_RIGHT_HUD_LAYER_OFFSET;
+        this.keepIronsSpellBarClearOfBars = DEFAULT_KEEP_IRONS_SPELL_BAR_CLEAR_OF_BARS;
         this.globalTextColor = DEFAULT_TEXT_COLOR;
         this.globalTextOpacity = DEFAULT_TEXT_OPACITY;
         this.globalTextSize = DEFAULT_GLOBAL_TEXT_SIZE;

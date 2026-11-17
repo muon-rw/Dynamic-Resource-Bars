@@ -8,6 +8,7 @@ import com.google.gson.JsonObject;
 import com.mojang.blaze3d.platform.InputConstants;
 import com.mojang.blaze3d.platform.Window;
 import dev.muon.dynamic_resource_bars.Constants;
+import dev.muon.dynamic_resource_bars.compat.IronsSpellBarPlacement;
 import dev.muon.dynamic_resource_bars.config.ClientConfig;
 import dev.muon.dynamic_resource_bars.config.ModConfigManager;
 import dev.muon.dynamic_resource_bars.mixin.MouseHandlerAccessor;
@@ -25,6 +26,7 @@ import dev.muon.dynamic_resource_bars.util.TickHandler;
 import net.minecraft.client.CloudStatus;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.screens.AccessibilityOnboardingScreen;
+import net.minecraft.client.gui.screens.BackupConfirmScreen;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.client.gui.screens.TitleScreen;
 import net.minecraft.client.player.LocalPlayer;
@@ -152,6 +154,8 @@ public final class UiHarness {
                 }
             }
             case LOADING_WORLD -> {
+                // Vanilla asks for a backup before opening a world whose mods add dimensions.
+                if (mc.screen instanceof BackupConfirmScreen) HarnessWorld.joinWithoutBackup(mc.screen);
                 if (mc.player != null && mc.level != null && mc.screen == null) {
                     HarnessWorld.runSetupCommands(mc);
                     enter(Phase.WARMUP, "loading_world");
@@ -290,6 +294,7 @@ public final class UiHarness {
                 List<HarnessCapture.ResolvedCrop> crops = resolveCrops(mc, shot);
                 j.entry.add("player", HarnessPlayerState.describe(player));
                 j.entry.add("elements", describeElements(player));
+                describeIronsSpellBar(j.entry, player);
                 String baseName = shot.name() + "__" + step.size().label().replace('@', '_');
                 if (shot.recordTicks() > 0) {
                     j.entry.add("frames", new JsonArray());
@@ -506,6 +511,17 @@ public final class UiHarness {
             elements.add(e.getKey().name(), el);
         }
         return elements;
+    }
+
+    private static void describeIronsSpellBar(JsonObject entry, LocalPlayer player) {
+        ScreenRect slots = IronsSpellBarPlacement.lastSlotsRect();
+        if (slots == null) return;
+        entry.add("ironsSpellBar", HarnessCapture.rectJson(slots));
+        for (ScreenRect bar : IronsSpellBarPlacement.drawnBarRects(player)) {
+            if (IronsSpellBarPlacement.overlaps(slots, bar)) {
+                HarnessCapture.warn(entry, "Iron's spell bar " + slots + " overlaps a resource bar " + bar);
+            }
+        }
     }
 
     private static void finishJob(Minecraft mc, String status) throws IOException {

@@ -113,6 +113,8 @@
   "gui.dynamic_resource_bars.config.tooltip.left_hud_offset": "Vertical pixel offset added to the left HUD layer stack (NeoForge).",
   "gui.dynamic_resource_bars.config.label.right_hud_offset": "Right HUD Offset:",
   "gui.dynamic_resource_bars.config.tooltip.right_hud_offset": "Vertical pixel offset added to the right HUD layer stack (NeoForge).",
+  "gui.dynamic_resource_bars.config.irons_spell_bar": "Keep Iron's Spell Bar Off Resource Bars: %s",
+  "gui.dynamic_resource_bars.config.tooltip.irons_spell_bar": "Moves the Iron's Spells 'n Spellbooks spell bar to the left of your resource bars, or above them, whenever it would overlap one. Turn this off to use Iron's own spell bar position.",
 
   "gui.dynamic_resource_bars.mana_behavior.off": "Off",
   "gui.dynamic_resource_bars.mana_behavior.combat_attributes": "Combat Attributes",
