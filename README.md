@@ -1,4 +1,4 @@
-# Dynamic RPG Resource Bars
+# Raven's RPG Resource Orbs
 
 Animated, adjustable resource bars for Minecraft.
 

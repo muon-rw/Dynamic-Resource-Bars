@@ -9,7 +9,7 @@ import dev.muon.dynamic_resource_bars.platform.Services;
 public class CommonClass {
 
     public static void initClient() {
-        Constants.LOG.info("Initializing Dynamic Resource Bars on {}", Services.PLATFORM.getPlatformName());
+        Constants.LOG.info("Initializing Raven's Resource Orbs on {}", Services.PLATFORM.getPlatformName());
         ModConfigManager.initializeConfig();
         ManaProviderManager.initialize();
         StaminaProviderManager.initialize();

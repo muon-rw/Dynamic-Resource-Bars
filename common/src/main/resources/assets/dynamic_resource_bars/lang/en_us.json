@@ -1,7 +1,7 @@
 {
   "dynamic_resource_bars.configuration.textScalingFactor": "Text Scaling Factor",
   "dynamic_resource_bars.configuration.textScalingFactor.tooltip": "The amount to scale the text size rendered on the resource bars.",
-  "dynamic_resource_bars.configuration.title": "Dynamic Resource Bars Configuration",
+  "dynamic_resource_bars.configuration.title": "Raven's Resource Orbs Configuration",
   "dynamic_resource_bars.configuration.client.tooltip": "Client-specific settings for resource bars.",
   "dynamic_resource_bars.configuration.section.dynamic.resource.bars.client.toml": "Client Configuration",
   "dynamic_resource_bars.configuration.section.dynamic.resource.bars.client.toml.title": "Client Configuration",

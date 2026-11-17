@@ -4,7 +4,7 @@ plugins {
 }
 
 base {
-    archivesName = "${mod_id}-${project.name}"
+    archivesName = "ravens_resource_orbs-${project.name}"
 }
 
 version = "${project.version}+${minecraft_version}"
