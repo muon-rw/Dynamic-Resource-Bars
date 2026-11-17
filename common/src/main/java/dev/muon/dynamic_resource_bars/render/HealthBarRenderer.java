@@ -38,6 +38,7 @@ public class HealthBarRenderer extends AbstractBarRenderer {
     private static final ResourceLocation FATAL_POISON_EFFECT = ResourceLocation.fromNamespaceAndPath("more_rpg_classes", "fatal_poison");
     private static final ResourceLocation TIPSY_EFFECT = ResourceLocation.fromNamespaceAndPath("brewinandchewin", "tipsy");
     private static final ResourceLocation EXUDATION_EFFECT = ResourceLocation.fromNamespaceAndPath("dungeonsdelight", "exudation");
+    private static final ResourceLocation DEFENSIVE_FIELD_EFFECT = ResourceLocation.fromNamespaceAndPath("raven_dnd_origins", "defensive_field");
 
     private enum BarType {
         NORMAL("health_bar"),
@@ -76,8 +77,10 @@ public class HealthBarRenderer extends AbstractBarRenderer {
     private static final ResourceLocation COLD_OVERLAY = Constants.loc("textures/gui/cold_overlay.png");
     private static final ResourceLocation ABSORPTION_OVERLAY = Constants.loc("textures/gui/absorption_overlay.png");
     private static final ResourceLocation ABSORPTION_OVERLAY_EXUDATION = Constants.loc("textures/gui/absorption_overlay_exudation.png");
+    private static final ResourceLocation ABSORPTION_OVERLAY_DEFENSIVE_FIELD = Constants.loc("textures/gui/absorption_overlay_defensive_field.png");
     private static final ResourceLocation ABSORPTION_BAR = Constants.loc("textures/gui/absorption_bar.png");
     private static final ResourceLocation ABSORPTION_BAR_EXUDATION = Constants.loc("textures/gui/absorption_bar_exudation.png");
+    private static final ResourceLocation ABSORPTION_BAR_DEFENSIVE_FIELD = Constants.loc("textures/gui/absorption_bar_defensive_field.png");
     private static final ResourceLocation HEALTH_BAR_ROTTEN = Constants.loc("textures/gui/health_bar_rotten.png");
     private static final ResourceLocation REGENERATION_OVERLAY = Constants.loc("textures/gui/regeneration_overlay.png");
     private static final ResourceLocation HARDCORE_OVERLAY = Constants.loc("textures/gui/hardcore_overlay.png");
@@ -174,7 +177,11 @@ public class HealthBarRenderer extends AbstractBarRenderer {
         if (absorption > 0
                 && ModConfigManager.getClient().healthAbsorptionDisplayMode == AbsorptionDisplayMode.OVERLAY) {
             float pulseAlpha = 0.5f + (TickHandler.getOverlayFlashAlpha() * 0.5f);
-            ResourceLocation overlayTex = hasEffectById(player, EXUDATION_EFFECT) ? ABSORPTION_OVERLAY_EXUDATION : ABSORPTION_OVERLAY;
+            ResourceLocation overlayTex = hasEffectById(player, EXUDATION_EFFECT)
+                    ? ABSORPTION_OVERLAY_EXUDATION
+                    : hasEffectById(player, DEFENSIVE_FIELD_EFFECT)
+                            ? ABSORPTION_OVERLAY_DEFENSIVE_FIELD
+                            : ABSORPTION_OVERLAY;
             AnimationMetadata.TextureDimensions dims = AnimationMetadataCache.getTextureDimensions(overlayTex);
             NineSliceRenderer.renderWithScaling(graphics, overlayTex,
                     AnimationMetadataCache.getAbsorptionOverlayScaling(),
@@ -282,7 +289,11 @@ public class HealthBarRenderer extends AbstractBarRenderer {
         if (denom <= 0f) return;
 
         BarConfig cfg = config();
-        ResourceLocation absorptionBarTex = hasEffectById(player, EXUDATION_EFFECT) ? ABSORPTION_BAR_EXUDATION : ABSORPTION_BAR;
+        ResourceLocation absorptionBarTex = hasEffectById(player, EXUDATION_EFFECT)
+                ? ABSORPTION_BAR_EXUDATION
+                : hasEffectById(player, DEFENSIVE_FIELD_EFFECT)
+                        ? ABSORPTION_BAR_DEFENSIVE_FIELD
+                        : ABSORPTION_BAR;
         AnimationMetadata.AnimationData animData = AnimationMetadataCache.getAbsorptionBarAnimation();
         int absAnimOffset = AnimationMetadata.calculateAnimationOffset(animData, currentTicks());
         int tint = RenderUtil.whiteWithAlpha(currentAlpha());

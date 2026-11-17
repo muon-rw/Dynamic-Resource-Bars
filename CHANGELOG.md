@@ -1,3 +1,6 @@
+## 1.0.1
+- Move defensive field rendering from raven dnd origins into here
+
 ## 1.0.0
 - Backported to 1.21.1
 - Renamed to Raven's RPG Resource Orbs 
