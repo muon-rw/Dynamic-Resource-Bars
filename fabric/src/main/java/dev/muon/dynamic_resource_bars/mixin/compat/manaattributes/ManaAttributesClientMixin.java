@@ -16,7 +16,8 @@ public class ManaAttributesClientMixin {
 
     @Inject(method = "lambda$initializeClientEvents$0", at = @At("HEAD"), cancellable = true, remap = false)
     private static void cancelManaAttributesHud(GuiGraphics guiGraphics, DeltaTracker deltaTracker, CallbackInfo ci) {
-        if (ModConfigManager.getClient().manaBarBehavior == ManaBarBehavior.MANA_ATTRIBUTES) {
+        var config = ModConfigManager.getClient();
+        if (config.enableMod && config.manaBarBehavior == ManaBarBehavior.MANA_ATTRIBUTES) {
             ci.cancel();
         }
     }

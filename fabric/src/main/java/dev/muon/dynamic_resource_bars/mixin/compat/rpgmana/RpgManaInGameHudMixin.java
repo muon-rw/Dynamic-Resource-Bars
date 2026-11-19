@@ -16,7 +16,8 @@ public class RpgManaInGameHudMixin {
 
     @Inject(method = "render", at = @At("HEAD"), cancellable = true, remap = false)
     private void cancelRpgManaHud(GuiGraphics drawContext, DeltaTracker tickCounter, CallbackInfo ci) {
-        if (ModConfigManager.getClient().manaBarBehavior == ManaBarBehavior.RPG_MANA) {
+        var config = ModConfigManager.getClient();
+        if (config.enableMod && config.manaBarBehavior == ManaBarBehavior.RPG_MANA) {
             ci.cancel();
         }
     }

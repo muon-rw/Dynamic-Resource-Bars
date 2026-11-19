@@ -63,6 +63,7 @@ public final class NeoForgeHudWiring {
 
         event.registerAbove(VanillaGuiLayers.EXPERIENCE_BAR, HUD_LAYER_OFFSETS, (graphics, deltaTracker) -> {
             ClientConfig config = ModConfigManager.getClient();
+            if (!config.enableMod) return;
             Gui gui = Minecraft.getInstance().gui;
             gui.leftHeight += config.leftHudLayerOffset;
             gui.rightHeight += config.rightHudLayerOffset;
@@ -76,10 +77,8 @@ public final class NeoForgeHudWiring {
         // Mana is free-standing (no vanilla equivalent); register above HEALTH_BAR so it draws on top of health.
         event.registerAbove(HEALTH_BAR, MANA_BAR, HudBarOrchestrator::renderMana);
 
-        // Paragliders source: free-standing trigger above HEALTH_BAR (mirrors mana). Paragliders'
-        // own stamina wheel is suppressed via DynamicResourceBarsParagliderPlugin (StaminaPlugin
-        // API), not via wrapLayer — wrapping their layer hit ordering issues that left the bar
-        // invisible AND the wheel still showing.
+        // Paragliders' own stamina wheel is suppressed per-frame in NeoForgeCompatSuppression when
+        // DRB is enabled and Paragliders is the active stamina source.
         if (Services.PLATFORM.isModLoaded(StaminaProviderManager.PARAGLIDERS_MOD_ID)) {
             event.registerAbove(HEALTH_BAR, STAMINA_PARAGLIDERS, HudBarOrchestrator::renderStaminaForParagliders);
         }
@@ -87,7 +86,11 @@ public final class NeoForgeHudWiring {
         event.registerAbove(VanillaGuiLayers.EXPERIENCE_LEVEL, BAR_TEXT, HudBarOrchestrator::renderAllText);
 
         if (Services.PLATFORM.isModLoaded(VampireBloodCompat.WITCHERY_MOD_ID)) {
-            event.registerAbove(BAR_TEXT, WITCHERY_ABILITY_HUD, WitcheryCompatNeoForge::renderAbilityHud);
+            event.registerAbove(BAR_TEXT, WITCHERY_ABILITY_HUD, (graphics, deltaTracker) -> {
+                if (ModConfigManager.getClient().enableMod) {
+                    WitcheryCompatNeoForge.renderAbilityHud(graphics, deltaTracker);
+                }
+            });
         }
     }
 

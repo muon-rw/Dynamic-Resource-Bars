@@ -39,7 +39,8 @@ public final class IronsSpellBarPlacement {
     }
 
     public static Position offsetClearOfBars(ScreenRect slots, Player player, int screenWidth, int screenHeight) {
-        Position offset = ModConfigManager.getClient().keepIronsSpellBarClearOfBars
+        ClientConfig config = ModConfigManager.getClient();
+        Position offset = config.enableMod && config.keepIronsSpellBarClearOfBars
                 ? offsetClearOf(slots, drawnBarRects(player), screenWidth, screenHeight)
                 : new Position(0, 0);
         lastSlotsRect = new ScreenRect(slots.x() + offset.x(), slots.y() + offset.y(), slots.width(), slots.height());

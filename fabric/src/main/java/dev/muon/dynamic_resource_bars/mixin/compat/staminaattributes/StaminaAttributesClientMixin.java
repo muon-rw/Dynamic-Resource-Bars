@@ -16,7 +16,8 @@ public class StaminaAttributesClientMixin {
 
     @Inject(method = "lambda$initializeClientEvents$0", at = @At("HEAD"), cancellable = true, remap = false)
     private static void cancelStaminaAttributesHud(GuiGraphics guiGraphics, DeltaTracker deltaTracker, CallbackInfo ci) {
-        if (ModConfigManager.getClient().staminaBarBehavior == StaminaBarBehavior.STAMINA_ATTRIBUTES) {
+        var config = ModConfigManager.getClient();
+        if (config.enableMod && config.staminaBarBehavior == StaminaBarBehavior.STAMINA_ATTRIBUTES) {
             ci.cancel();
         }
     }

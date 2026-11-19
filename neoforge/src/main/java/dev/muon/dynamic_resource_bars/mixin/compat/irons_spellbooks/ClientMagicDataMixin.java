@@ -15,7 +15,8 @@ public class ClientMagicDataMixin {
 
     @Inject(method = "setMana", at = @At("HEAD"))
     private static void notifyManaDrain(int playerMana, CallbackInfo ci) {
-        if (ModConfigManager.getClient().manaBarBehavior == ManaBarBehavior.IRONS_SPELLBOOKS
+        var config = ModConfigManager.getClient();
+        if (config.enableMod && config.manaBarBehavior == ManaBarBehavior.IRONS_SPELLBOOKS
                 && playerMana < ClientMagicData.getPlayerMana()) {
             ManaBarRenderer.INSTANCE.onManaDrain();
         }
@@ -24,7 +25,8 @@ public class ClientMagicDataMixin {
     @Inject(method = "setClientCastState", at = @At("HEAD"))
     private static void notifyCastAttempt(String spellId, int spellLevel, int castDuration,
                                           CastSource castSource, String castingEquipmentSlot, CallbackInfo ci) {
-        if (ModConfigManager.getClient().manaBarBehavior == ManaBarBehavior.IRONS_SPELLBOOKS) {
+        var config = ModConfigManager.getClient();
+        if (config.enableMod && config.manaBarBehavior == ManaBarBehavior.IRONS_SPELLBOOKS) {
             ManaBarRenderer.INSTANCE.onManaDrainAttempt();
         }
     }

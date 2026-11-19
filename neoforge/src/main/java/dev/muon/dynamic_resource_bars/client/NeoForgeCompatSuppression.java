@@ -24,6 +24,7 @@ public final class NeoForgeCompatSuppression {
     private static final ResourceLocation LSO_COLD_HUNGER = ResourceLocation.fromNamespaceAndPath("legendarysurvivaloverhaul", "cold_hunger");
     private static final ResourceLocation LSO_HEALTH_OVERHAUL = ResourceLocation.fromNamespaceAndPath("legendarysurvivaloverhaul", "health_overhaul");
     private static final ResourceLocation AETHER_SILVER_HEARTS = ResourceLocation.fromNamespaceAndPath("aether", "silver_life_shard_hearts");
+    private static final ResourceLocation PARAGLIDERS_STAMINA_WHEEL = ResourceLocation.fromNamespaceAndPath("paraglider", "stamina_wheel");
 
     private NeoForgeCompatSuppression() {}
 
@@ -32,8 +33,9 @@ public final class NeoForgeCompatSuppression {
     }
 
     private static void onPreRenderGuiLayer(RenderGuiLayerEvent.Pre event) {
-        ResourceLocation name = event.getName();
         ClientConfig config = ModConfigManager.getClient();
+        if (!config.enableMod) return;
+        ResourceLocation name = event.getName();
 
         // Cancel before NORMAL-priority layer replacers (e.g. OverflowingBars) run and swallow the wrapped layer.
         if (VanillaGuiLayers.PLAYER_HEALTH.equals(name) && config.healthBarBehavior != BarRenderBehavior.VANILLA) {
@@ -64,6 +66,8 @@ public final class NeoForgeCompatSuppression {
         } else if (LSO_THIRST.equals(name) && config.airBarBehavior != BarRenderBehavior.VANILLA) {
             event.setCanceled(true);
         } else if (LSO_COLD_HUNGER.equals(name) && config.staminaBarBehavior == StaminaBarBehavior.FOOD) {
+            event.setCanceled(true);
+        } else if (PARAGLIDERS_STAMINA_WHEEL.equals(name) && config.staminaBarBehavior == StaminaBarBehavior.PARAGLIDERS) {
             event.setCanceled(true);
         }
     }

@@ -43,15 +43,13 @@ public class ModConfigScreen extends Screen {
         ClientConfig config = ModConfigManager.getClient();
 
         int buttonWidth = 280;
-        int halfButtonWidth = 138;
-        int buttonGap = 4;
         int buttonHeight = 20;
         int rowHeight = 18;
         int rowGap = 3;
         int centerX = this.width / 2;
 
         boolean hasIronsSpellBar = Services.PLATFORM.isModLoaded(IronsSpellBarPlacement.MOD_ID);
-        int totalContentHeight = buttonHeight + 4 + buttonHeight + 8 + 6 * (rowHeight + rowGap) - rowGap
+        int totalContentHeight = buttonHeight + 4 + buttonHeight + 4 + buttonHeight + 8 + 6 * (rowHeight + rowGap) - rowGap
                 + (hasIronsSpellBar ? buttonHeight + 4 : 0);
         int topLimit = 28;
         int bottomLimit = this.height - 34;
@@ -63,27 +61,27 @@ public class ModConfigScreen extends Screen {
         Button editHud = Button.builder(
                         Component.translatable("gui.dynamic_resource_bars.config.button.open_hud_editor"),
                         b -> { if (b.active) Minecraft.getInstance().setScreen(new HudEditorScreen(this)); })
-                .bounds(centerX - buttonWidth / 2, currentY, buttonWidth, buttonHeight)
+                .bounds(centerX - buttonWidth / 2, currentY + buttonHeight + 4, buttonWidth, buttonHeight)
                 .build();
-        editHud.active = canEditHUD;
-        if (!canEditHUD) {
-            editHud.setTooltip(Tooltip.create(
-                    Component.translatable("gui.dynamic_resource_bars.config.tooltip.hud_editor_disabled")));
-        }
+        updateEditHudState(editHud, canEditHUD, config.enableMod);
+
+        Button enableModBtn = Button.builder(
+                        modEnabledLabel(config.enableMod),
+                        b -> {
+                            config.enableMod = !config.enableMod;
+                            config.save();
+                            b.setMessage(modEnabledLabel(config.enableMod));
+                            updateEditHudState(editHud, canEditHUD, config.enableMod);
+                        })
+                .bounds(centerX - buttonWidth / 2, currentY, buttonWidth, buttonHeight)
+                .tooltip(Tooltip.create(Component.translatable("gui.dynamic_resource_bars.config.tooltip.mod_enabled")))
+                .build();
+        this.addRenderableWidget(enableModBtn);
+
+        currentY += buttonHeight + 4;
         this.addRenderableWidget(editHud);
 
         currentY += buttonHeight + 4;
-
-        Button customHudBtn = Button.builder(
-                        customHudLabel(config.enableCustomHud),
-                        b -> {
-                            config.enableCustomHud = !config.enableCustomHud;
-                            config.save();
-                            b.setMessage(customHudLabel(config.enableCustomHud));
-                        })
-                .bounds(centerX - buttonWidth / 2, currentY, halfButtonWidth, buttonHeight)
-                .build();
-        this.addRenderableWidget(customHudBtn);
 
         Button textFadeModeBtn = Button.builder(
                         textFadeModeLabel(config.textFadeMode),
@@ -93,7 +91,7 @@ public class ModConfigScreen extends Screen {
                             config.save();
                             b.setMessage(textFadeModeLabel(config.textFadeMode));
                         })
-                .bounds(centerX - buttonWidth / 2 + halfButtonWidth + buttonGap, currentY, halfButtonWidth, buttonHeight)
+                .bounds(centerX - buttonWidth / 2, currentY, buttonWidth, buttonHeight)
                 .tooltip(Tooltip.create(Component.translatable("gui.dynamic_resource_bars.config.tooltip.text_fade_mode")))
                 .build();
         this.addRenderableWidget(textFadeModeBtn);
@@ -263,10 +261,22 @@ public class ModConfigScreen extends Screen {
         graphics.fill(swatchX, swatchY, swatchX + swatchSize, swatchY + swatchSize, previewColor);
     }
 
-    private static Component customHudLabel(boolean enabled) {
-        return Component.translatable(enabled
-                ? "gui.dynamic_resource_bars.config.custom_hud.enabled"
-                : "gui.dynamic_resource_bars.config.custom_hud.disabled");
+    private static void updateEditHudState(Button editHud, boolean canEditHud, boolean modEnabled) {
+        editHud.active = canEditHud && modEnabled;
+        if (!modEnabled) {
+            editHud.setTooltip(Tooltip.create(
+                    Component.translatable("gui.dynamic_resource_bars.config.tooltip.hud_editor_mod_disabled")));
+        } else if (!canEditHud) {
+            editHud.setTooltip(Tooltip.create(
+                    Component.translatable("gui.dynamic_resource_bars.config.tooltip.hud_editor_disabled")));
+        } else {
+            editHud.setTooltip(null);
+        }
+    }
+
+    private static Component modEnabledLabel(boolean enabled) {
+        return Component.translatable("gui.dynamic_resource_bars.config.mod_enabled",
+                enabled ? CommonComponents.OPTION_ON : CommonComponents.OPTION_OFF);
     }
 
     private static Component ironsSpellBarLabel(boolean enabled) {

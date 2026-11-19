@@ -20,6 +20,7 @@ public class FarmersDelightOverlayMixin {
     @Inject(method = "render(Lnet/minecraft/client/gui/GuiGraphics;Lnet/minecraft/client/DeltaTracker;)V", at = @At("HEAD"), cancellable = true, remap = false)
     private void cancelFarmersDelightOverlays(GuiGraphics guiGraphics, DeltaTracker deltaTracker, CallbackInfo ci) {
         ClientConfig config = ModConfigManager.getClient();
+        if (!config.enableMod) return;
         Object self = this;
         if (self instanceof HUDOverlays.ComfortOverlay && config.healthBarBehavior == BarRenderBehavior.CUSTOM) {
             ci.cancel();

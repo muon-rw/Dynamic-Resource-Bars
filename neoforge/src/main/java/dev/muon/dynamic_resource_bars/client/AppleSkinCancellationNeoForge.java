@@ -34,10 +34,11 @@ public final class AppleSkinCancellationNeoForge {
 
     private static boolean suppressFoodOverlays() {
         ClientConfig c = ModConfigManager.getClient();
-        return c.staminaBarBehavior == StaminaBarBehavior.FOOD;
+        return c.enableMod && c.staminaBarBehavior == StaminaBarBehavior.FOOD;
     }
 
     private static boolean suppressHealthOverlays() {
-        return ModConfigManager.getClient().healthBarBehavior == dev.muon.dynamic_resource_bars.util.BarRenderBehavior.CUSTOM;
+        ClientConfig c = ModConfigManager.getClient();
+        return c.enableMod && c.healthBarBehavior == dev.muon.dynamic_resource_bars.util.BarRenderBehavior.CUSTOM;
     }
 }

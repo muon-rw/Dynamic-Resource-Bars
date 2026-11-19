@@ -35,7 +35,9 @@ public final class HudBarOrchestrator {
     }
 
     public static boolean renderHealth(GuiGraphics graphics, DeltaTracker deltaTracker) {
-        BarRenderBehavior behavior = ModConfigManager.getClient().healthBarBehavior;
+        ClientConfig config = ModConfigManager.getClient();
+        if (!config.enableMod) return false;
+        BarRenderBehavior behavior = config.healthBarBehavior;
         if (behavior == BarRenderBehavior.VANILLA) return false;
         Player player = clientPlayer();
         if (player == null) return behavior == BarRenderBehavior.HIDDEN;
@@ -46,7 +48,7 @@ public final class HudBarOrchestrator {
 
     public static boolean renderFood(GuiGraphics graphics, DeltaTracker deltaTracker) {
         ClientConfig config = ModConfigManager.getClient();
-        if (!StaminaBarBehavior.FOOD.equals(config.staminaBarBehavior)) return false;
+        if (!config.enableMod || !StaminaBarBehavior.FOOD.equals(config.staminaBarBehavior)) return false;
         Player player = clientPlayer();
         if (player == null) return false;
         if (WitcherySoulFormCompat.shouldHideFood(player)) return true;
@@ -59,7 +61,9 @@ public final class HudBarOrchestrator {
      * the vanilla layer and render nothing.
      */
     public static boolean renderArmor(GuiGraphics graphics, DeltaTracker deltaTracker) {
-        BarRenderBehavior behavior = ModConfigManager.getClient().armorBarBehavior;
+        ClientConfig config = ModConfigManager.getClient();
+        if (!config.enableMod) return false;
+        BarRenderBehavior behavior = config.armorBarBehavior;
         if (behavior == BarRenderBehavior.VANILLA) return false;
         Player player = clientPlayer();
         if (player == null) return behavior == BarRenderBehavior.HIDDEN; // suppress vanilla even with no player
@@ -69,7 +73,9 @@ public final class HudBarOrchestrator {
     }
 
     public static boolean renderAir(GuiGraphics graphics, DeltaTracker deltaTracker) {
-        BarRenderBehavior behavior = ModConfigManager.getClient().airBarBehavior;
+        ClientConfig config = ModConfigManager.getClient();
+        if (!config.enableMod) return false;
+        BarRenderBehavior behavior = config.airBarBehavior;
         if (behavior == BarRenderBehavior.VANILLA) return false;
         Player player = clientPlayer();
         if (player == null) return behavior == BarRenderBehavior.HIDDEN;
@@ -79,6 +85,7 @@ public final class HudBarOrchestrator {
 
     /** Free-standing mana render — no vanilla equivalent. Loader wirings register this above PLAYER_HEALTH. */
     public static void renderMana(GuiGraphics graphics, DeltaTracker deltaTracker) {
+        if (!ModConfigManager.getClient().enableMod) return;
         Player player = clientPlayer();
         if (player == null) return;
         ManaBarRenderer.INSTANCE.render(graphics, player, deltaTracker);
@@ -87,7 +94,7 @@ public final class HudBarOrchestrator {
     /** Vehicle/mount health is suppressed when our stamina bar takes over the right side. */
     public static boolean suppressVehicleHealth() {
         ClientConfig config = ModConfigManager.getClient();
-        return config.mergeMountHealth && config.enableMountHealth;
+        return config.enableMod && config.mergeMountHealth && config.enableMountHealth;
     }
 
     /**
@@ -103,7 +110,8 @@ public final class HudBarOrchestrator {
     }
 
     public static boolean renderStaminaForStaminaAttributes(GuiGraphics graphics, DeltaTracker deltaTracker) {
-        if (ModConfigManager.getClient().staminaBarBehavior != StaminaBarBehavior.STAMINA_ATTRIBUTES) return false;
+        ClientConfig config = ModConfigManager.getClient();
+        if (!config.enableMod || config.staminaBarBehavior != StaminaBarBehavior.STAMINA_ATTRIBUTES) return false;
         Player player = clientPlayer();
         if (player == null) return false;
         StaminaBarRenderer.INSTANCE.render(graphics, player, deltaTracker);
@@ -114,7 +122,8 @@ public final class HudBarOrchestrator {
      * Free-standing trigger for the Paragliders-sourced stamina bar (NeoForge-only).
      */
     public static void renderStaminaForParagliders(GuiGraphics graphics, DeltaTracker deltaTracker) {
-        if (ModConfigManager.getClient().staminaBarBehavior != StaminaBarBehavior.PARAGLIDERS) return;
+        ClientConfig config = ModConfigManager.getClient();
+        if (!config.enableMod || config.staminaBarBehavior != StaminaBarBehavior.PARAGLIDERS) return;
         Player player = clientPlayer();
         if (player == null) return;
         StaminaBarRenderer.INSTANCE.render(graphics, player, deltaTracker);
@@ -139,6 +148,11 @@ public final class HudBarOrchestrator {
     }
 
     public static void renderAllText(GuiGraphics graphics, DeltaTracker deltaTracker) {
+        ClientConfig config = ModConfigManager.getClient();
+        if (!config.enableMod) {
+            CustomHudRenderer.flushDeferredOffhandTasks();
+            return;
+        }
         if (CustomHudRenderer.shouldReplaceHotbar()) {
             CustomHudRenderer.renderOffhand(graphics, deltaTracker);
         } else {
@@ -146,7 +160,6 @@ public final class HudBarOrchestrator {
         }
         Player player = clientPlayer();
         if (player == null) return;
-        ClientConfig config = ModConfigManager.getClient();
         // Items render around Z=150..200 in 1.21.1, so elevate bar text above them.
         graphics.pose().pushPose();
         graphics.pose().translate(0.0F, 0.0F, 250.0F);

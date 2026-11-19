@@ -89,7 +89,8 @@ public final class CustomHudRenderer {
     private CustomHudRenderer() {}
 
     public static boolean shouldReplaceHotbar() {
-        if (!ModConfigManager.getClient().enableCustomHud) return false;
+        var config = ModConfigManager.getClient();
+        if (!config.enableMod || !config.enableCustomHud) return false;
         Minecraft mc = Minecraft.getInstance();
         if (mc.options.hideGui || mc.gameMode == null) return false;
         if (mc.gameMode.getPlayerMode() == GameType.SPECTATOR) return false;
@@ -97,14 +98,16 @@ public final class CustomHudRenderer {
     }
 
     public static boolean shouldReplaceInfoBar() {
-        if (!ModConfigManager.getClient().enableCustomHud) return false;
+        var config = ModConfigManager.getClient();
+        if (!config.enableMod || !config.enableCustomHud) return false;
         Minecraft mc = Minecraft.getInstance();
         if (mc.options.hideGui || mc.player == null || mc.gameMode == null) return false;
         return mc.player.jumpableVehicle() != null || mc.gameMode.hasExperience();
     }
 
     public static boolean shouldReplaceExperienceLevel() {
-        if (!ModConfigManager.getClient().enableCustomHud) return false;
+        var config = ModConfigManager.getClient();
+        if (!config.enableMod || !config.enableCustomHud) return false;
         Minecraft mc = Minecraft.getInstance();
         if (mc.options.hideGui || mc.player == null || mc.gameMode == null) return false;
         return mc.gameMode.hasExperience() && mc.player.experienceLevel > 0;

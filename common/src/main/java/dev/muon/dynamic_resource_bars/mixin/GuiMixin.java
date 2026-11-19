@@ -5,6 +5,7 @@ import com.llamalad7.mixinextras.expression.Expression;
 import com.llamalad7.mixinextras.injector.v2.WrapWithCondition;
 import com.llamalad7.mixinextras.sugar.Local;
 import com.mojang.blaze3d.systems.RenderSystem;
+import dev.muon.dynamic_resource_bars.config.ModConfigManager;
 import dev.muon.dynamic_resource_bars.render.CustomHudRenderer;
 import net.minecraft.client.DeltaTracker;
 import net.minecraft.client.gui.Gui;
@@ -38,6 +39,7 @@ public abstract class GuiMixin {
     @WrapWithCondition(method = "renderItemHotbar", at = @At("MIXINEXTRAS:EXPRESSION"))
     private boolean deferOffhandLeftSprite(GuiGraphics instance, ResourceLocation sprite,
                                            int x, int y, int width, int height) {
+        if (!ModConfigManager.getClient().enableMod) return true;
         CustomHudRenderer.deferOffhandTask(instance, () -> {
             RenderSystem.enableBlend();
             instance.blitSprite(sprite, x, y, width, height);
@@ -52,6 +54,7 @@ public abstract class GuiMixin {
     @WrapWithCondition(method = "renderItemHotbar", at = @At("MIXINEXTRAS:EXPRESSION"))
     private boolean deferOffhandRightSprite(GuiGraphics instance, ResourceLocation sprite,
                                             int x, int y, int width, int height) {
+        if (!ModConfigManager.getClient().enableMod) return true;
         CustomHudRenderer.deferOffhandTask(instance, () -> {
             RenderSystem.enableBlend();
             instance.blitSprite(sprite, x, y, width, height);
@@ -66,6 +69,7 @@ public abstract class GuiMixin {
     @WrapWithCondition(method = "renderItemHotbar", at = @At("MIXINEXTRAS:EXPRESSION"))
     private boolean deferOffhandItemSlot(Gui instance, GuiGraphics graphics, int x, int y,
                                          DeltaTracker deltaTracker, Player player, ItemStack stack, int seed) {
+        if (!ModConfigManager.getClient().enableMod) return true;
         CustomHudRenderer.deferOffhandTask(graphics, () -> this.renderSlot(graphics, x, y, deltaTracker, player, stack, seed));
         return false;
     }

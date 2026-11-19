@@ -1,3 +1,6 @@
+## 1.0.3
+- Add a simple global mod toggle, to revert everything to vanilla hud easily
+
 ## 1.0.2
 - fix a crash with amendments if you disabled this mod's custom HUD
 

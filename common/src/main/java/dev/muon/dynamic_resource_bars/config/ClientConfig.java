@@ -35,6 +35,9 @@ public class ClientConfig {
 
     public boolean vesselLayoutMigrated = false;
 
+    public static final boolean DEFAULT_ENABLE_MOD = true;
+    public boolean enableMod = DEFAULT_ENABLE_MOD;
+
     public static final boolean DEFAULT_ENABLE_CUSTOM_HUD = true;
     public boolean enableCustomHud = DEFAULT_ENABLE_CUSTOM_HUD;
 
@@ -550,6 +553,7 @@ public class ClientConfig {
     // Private constructor to enforce singleton via getInstance and initialize defaults
     private ClientConfig() {
         this.vesselLayoutMigrated = false;
+        this.enableMod = DEFAULT_ENABLE_MOD;
         this.enableCustomHud = DEFAULT_ENABLE_CUSTOM_HUD;
         this.fadeHoldDuration = DEFAULT_FADE_HOLD_DURATION;
         this.leftHudLayerOffset = DEFAULT_LEFT_HUD_LAYER_OFFSET;

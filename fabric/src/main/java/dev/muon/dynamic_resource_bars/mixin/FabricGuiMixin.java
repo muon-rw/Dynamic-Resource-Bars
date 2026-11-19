@@ -122,6 +122,7 @@ public abstract class FabricGuiMixin {
             at = @At(value = "INVOKE", target = "Lnet/minecraft/client/gui/GuiGraphics;blitSprite(Lnet/minecraft/resources/ResourceLocation;IIII)V")
     )
     private boolean shouldRenderVanillaAirBubble(GuiGraphics instance, ResourceLocation sprite, int x, int y, int width, int height) {
-        return ModConfigManager.getClient().airBarBehavior == BarRenderBehavior.VANILLA;
+        var config = ModConfigManager.getClient();
+        return !config.enableMod || config.airBarBehavior == BarRenderBehavior.VANILLA;
     }
 }

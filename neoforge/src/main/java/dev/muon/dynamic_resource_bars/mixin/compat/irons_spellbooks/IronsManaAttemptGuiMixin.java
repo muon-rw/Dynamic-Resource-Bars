@@ -16,7 +16,8 @@ public class IronsManaAttemptGuiMixin {
 
     @Inject(method = "setOverlayMessage", at = @At("HEAD"))
     private void notifyInsufficientManaAttempt(Component component, boolean animateColor, CallbackInfo ci) {
-        if (ModConfigManager.getClient().manaBarBehavior != ManaBarBehavior.IRONS_SPELLBOOKS) {
+        var config = ModConfigManager.getClient();
+        if (!config.enableMod || config.manaBarBehavior != ManaBarBehavior.IRONS_SPELLBOOKS) {
             return;
         }
         if (component != null && component.getContents() instanceof TranslatableContents tc

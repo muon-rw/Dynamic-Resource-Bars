@@ -183,6 +183,19 @@ public class HudEditorScreen extends Screen {
                 }, elementName(bar.element)));
                 x += w + 3;
             }
+
+            Component hotbarLabel = Component.translatable(c.enableCustomHud
+                    ? "gui.dynamic_resource_bars.config.custom_hud.enabled"
+                    : "gui.dynamic_resource_bars.config.custom_hud.disabled");
+            int hotbarW = this.font.width(hotbarLabel) + 10;
+            int hotbarX = panelX + panelW - 6 - hotbarW;
+            if (hotbarX >= x + 4) {
+                chipButtons.add(new ChipButton(hotbarX, row1Y, hotbarW, chipH, hotbarLabel, c.enableCustomHud, false, () -> {
+                    closeActiveContextMenu();
+                    c.enableCustomHud = !c.enableCustomHud;
+                    c.save();
+                }, Component.translatable("gui.dynamic_resource_bars.config.tooltip.custom_hud")));
+            }
         } else {
             int x = panelX + 6;
             Component backLabel = Component.translatable("gui.dynamic_resource_bars.hud_editor.chip.back_bars");
