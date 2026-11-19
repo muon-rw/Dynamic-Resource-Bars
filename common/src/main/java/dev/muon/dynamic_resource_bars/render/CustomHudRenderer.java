@@ -35,8 +35,14 @@ public final class CustomHudRenderer {
     public static void deferOffhandTask(GuiGraphics graphics, Runnable task) {
         Matrix4f snapshot = new Matrix4f(graphics.pose().last().pose());
         DEFERRED_OFFHAND_TASKS.add(() -> {
+            // Keep the flush layer's Z translation so the deferred offhand draws above
+            // the resource bars (NeoForge's GuiLayerManager separates layers along Z, and
+            // vanilla renderItemHotbar shifts sprites by -90 Z).
+            float flushZ = graphics.pose().last().pose().m32();
             graphics.pose().pushPose();
-            graphics.pose().last().pose().set(snapshot);
+            Matrix4f pose = graphics.pose().last().pose();
+            pose.set(snapshot);
+            pose.m32(flushZ);
             try {
                 task.run();
             } finally {
