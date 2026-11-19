@@ -1,6 +1,5 @@
 ## 1.0.2
 - fix a crash with amendments if you disabled this mod's custom HUD
-- fix offhand rendering below resource orbs if you disabled this mod's custom HUD 
 
 ## 1.0.1
 - Move defensive field rendering from raven dnd origins into here
