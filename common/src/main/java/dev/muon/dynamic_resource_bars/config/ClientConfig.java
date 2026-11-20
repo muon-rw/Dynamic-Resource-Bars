@@ -4,6 +4,7 @@ import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import dev.muon.dynamic_resource_bars.Constants; // For logging
 import dev.muon.dynamic_resource_bars.compat.LsoCompat;
+import dev.muon.dynamic_resource_bars.compat.ManaProviderManager;
 import dev.muon.dynamic_resource_bars.platform.Services;
 import dev.muon.dynamic_resource_bars.util.AbsorptionDisplayMode;
 import dev.muon.dynamic_resource_bars.util.HUDPositioning;
@@ -33,6 +34,9 @@ public class ClientConfig {
             // .registerTypeAdapter(Path.class, new PathTypeAdapter()) // Example if complex types need adapters
             .create();
 
+    // Flips to true the first time we load with a supported mana mod present, so OFF
+    // upgrades once without overriding a player who deliberately switches back to OFF.
+    public boolean manaProviderSeen = false;
     public boolean vesselLayoutMigrated = false;
 
     public static final boolean DEFAULT_ENABLE_MOD = true;
@@ -433,6 +437,7 @@ public class ClientConfig {
     public static ClientConfig createDefaults() {
         ClientConfig cfg = new ClientConfig();
         cfg.vesselLayoutMigrated = true;
+        applyManaProviderDefaults(cfg);
         return cfg;
     }
 
@@ -550,8 +555,19 @@ public class ClientConfig {
         return true;
     }
 
+    private static boolean applyManaProviderDefaults(ClientConfig cfg) {
+        ManaBarBehavior detected = ManaProviderManager.getDefaultBehavior();
+        if (detected == ManaBarBehavior.OFF || cfg.manaProviderSeen) return false;
+        if (cfg.manaBarBehavior == ManaBarBehavior.OFF) {
+            cfg.manaBarBehavior = detected;
+        }
+        cfg.manaProviderSeen = true;
+        return true;
+    }
+
     // Private constructor to enforce singleton via getInstance and initialize defaults
     private ClientConfig() {
+        this.manaProviderSeen = false;
         this.vesselLayoutMigrated = false;
         this.enableMod = DEFAULT_ENABLE_MOD;
         this.enableCustomHud = DEFAULT_ENABLE_CUSTOM_HUD;
@@ -787,8 +803,9 @@ public class ClientConfig {
         // A more sophisticated approach might involve version numbers and explicit migration
         boolean modifiedByDefaults = ensureDefaults(loadedConfig);
         boolean migratedVesselLayout = applyVesselLayoutDefaults(loadedConfig);
+        boolean migratedManaProvider = applyManaProviderDefaults(loadedConfig);
 
-        if (newConfigCreated || modifiedByDefaults || migratedVesselLayout) {
+        if (newConfigCreated || modifiedByDefaults || migratedVesselLayout || migratedManaProvider) {
             Constants.LOG.info("Saving new or updated default config to {}.", CONFIG_FILE_PATH);
             loadedConfig.save(); // Save if it's new or if defaults were applied
         }

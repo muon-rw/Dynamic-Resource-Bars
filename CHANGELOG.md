@@ -1,3 +1,6 @@
+## 1.0.4
+- Fix the mana bar defaulting to None, even if you already had a compatible mana mod installed 
+
 ## 1.0.3
 - Add a simple global mod toggle, to revert everything to vanilla hud easily
 

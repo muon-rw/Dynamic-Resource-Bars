@@ -89,6 +89,14 @@ public class ManaProviderManager {
                 || manaAttributesProvider != null;
     }
 
+    public static ManaBarBehavior getDefaultBehavior() {
+        if (ironsProvider != null) return ManaBarBehavior.IRONS_SPELLBOOKS;
+        if (arsProvider != null) return ManaBarBehavior.ARS_NOUVEAU;
+        if (rpgManaProvider != null || Services.PLATFORM.isModLoaded(RPG_MANA_MOD_ID)) return ManaBarBehavior.RPG_MANA;
+        if (manaAttributesProvider != null) return ManaBarBehavior.MANA_ATTRIBUTES;
+        return ManaBarBehavior.OFF;
+    }
+
     public static void initialize() {
         if (Services.PLATFORM.isModLoaded(RPG_MANA_MOD_ID)) {
             rpgManaProvider = new RPGManaManaProvider();

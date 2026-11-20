@@ -1545,6 +1545,8 @@ public class HudEditorScreen extends Screen {
         bar.access.setTotalX(c, bar.access.totalX(defaults));
         bar.access.setTotalY(c, bar.access.totalY(defaults));
         bar.access.resetBehaviorFields(c, defaults);
+        if (bar.element == DraggableElement.MANA_BAR) ManaProviderManager.updateActiveProvider();
+        if (bar.element == DraggableElement.STAMINA_BAR) StaminaProviderManager.updateActiveProvider();
         c.save();
     }
 

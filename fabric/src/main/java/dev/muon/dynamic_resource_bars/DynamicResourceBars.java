@@ -23,6 +23,13 @@ public class DynamicResourceBars implements ClientModInitializer, ModMenuApi {
 
     @Override
     public void onInitializeClient() {
+        if (Services.PLATFORM.isModLoaded(ManaProviderManager.MANA_ATTRIBUTES_MOD_ID)) {
+            ManaProviderManager.setManaAttributesProvider(new ManaAttributesManaProvider());
+        }
+        if (Services.PLATFORM.isModLoaded(StaminaProviderManager.STAMINA_ATTRIBUTES_MOD_ID)) {
+            StaminaProviderManager.setStaminaAttributesProvider(new StaminaAttributesProvider());
+        }
+
         CommonClass.initClient();
 
         ClientTickEvents.END_CLIENT_TICK.register(client -> TickHandler.onClientTick());
@@ -36,13 +43,6 @@ public class DynamicResourceBars implements ClientModInitializer, ModMenuApi {
         if (Services.PLATFORM.isModLoaded(AppleSkinCompat.MOD_ID)) {
             AppleSkinCompat.setProvider(new AppleSkinCompatFabric());
             AppleSkinCancellationFabric.install();
-        }
-
-        if (Services.PLATFORM.isModLoaded(ManaProviderManager.MANA_ATTRIBUTES_MOD_ID)) {
-            ManaProviderManager.setManaAttributesProvider(new ManaAttributesManaProvider());
-        }
-        if (Services.PLATFORM.isModLoaded(StaminaProviderManager.STAMINA_ATTRIBUTES_MOD_ID)) {
-            StaminaProviderManager.setStaminaAttributesProvider(new StaminaAttributesProvider());
         }
     }
 
