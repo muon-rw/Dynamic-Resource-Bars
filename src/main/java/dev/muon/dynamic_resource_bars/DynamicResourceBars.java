@@ -72,7 +72,7 @@ public class DynamicResourceBars #if FABRIC implements ClientModInitializer, Mod
     public DynamicResourceBars(#if NEO IEventBus modEventBus, ModContainer modContainer #elif FORGE FMLJavaModLoadingContext fmlContext #endif) {
         #if FORGE
             fmlContext.getModEventBus().addListener(this::clientSetup);
-            fmlContext.registerExtensionPoint(ConfigScreenHandler.ConfigScreenFactory.class,
+            net.minecraftforge.fml.ModLoadingContext.get().registerExtensionPoint(ConfigScreenHandler.ConfigScreenFactory.class,
                 () -> new ConfigScreenHandler.ConfigScreenFactory((mc, screen) -> new ModConfigScreen(screen)));
         #elif NEO
             modEventBus.addListener(this::clientSetup);

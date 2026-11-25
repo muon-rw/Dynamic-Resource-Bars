@@ -3,25 +3,16 @@ package dev.muon.dynamic_resource_bars.render;
 import com.mojang.blaze3d.systems.RenderSystem;
 import dev.muon.dynamic_resource_bars.DynamicResourceBars;
 import dev.muon.dynamic_resource_bars.config.ModConfigManager;
-import dev.muon.dynamic_resource_bars.util.HUDPositioning;
-import dev.muon.dynamic_resource_bars.util.ManaProvider;
-import dev.muon.dynamic_resource_bars.util.Position;
-import dev.muon.dynamic_resource_bars.util.RenderUtil;
+import dev.muon.dynamic_resource_bars.util.*;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.entity.player.Player;
 
 #if NEWER_THAN_20_1
     import net.minecraft.client.DeltaTracker;
 #endif
 
-import dev.muon.dynamic_resource_bars.util.EditModeManager;
-import dev.muon.dynamic_resource_bars.util.ScreenRect;
-import dev.muon.dynamic_resource_bars.util.TextBehavior;
-import dev.muon.dynamic_resource_bars.util.SubElementType;
-import dev.muon.dynamic_resource_bars.util.DraggableElement;
-import dev.muon.dynamic_resource_bars.util.HorizontalAlignment;
-import dev.muon.dynamic_resource_bars.util.FillDirection;
 import dev.muon.dynamic_resource_bars.config.ClientConfig;
 
 import java.util.ArrayList;
@@ -36,85 +27,68 @@ public class ManaBarRenderer {
     private static boolean barSetVisible = false;
 
     private static final int RESERVED_MANA_COLOR = 0x232323;
-    
-    // Fadeout chunking system
-    private static final long CHUNK_FADEOUT_DURATION = RenderUtil.BAR_FADEOUT_DURATION / 3;
-    private static final List<FadingChunk> fadingChunks = new ArrayList<>();
+    private static final ResourceLocation MANA_BAR_TEX = DynamicResourceBars.loc("textures/gui/mana_bar.png");
+
+    private static final List<OrbRenderHelper.DrainingChunk> fadingChunks = new ArrayList<>();
+    private static final OrbRenderHelper.FillSmoother fillSmoother = new OrbRenderHelper.FillSmoother();
     private static double previousMana = -1;
     private static float previousMaxMana = -1;
-    
-    private static class FadingChunk {
-        final double startValue;    // Where the chunk starts (in mana units)
-        final double endValue;      // Where it ends
-        final float maxValue;       // Max value at time of creation
-        final long creationTime;    // When this chunk started fading
-        final int animOffset;       // Animation frame at creation
-        
-        FadingChunk(double startValue, double endValue, float maxValue, int animOffset) {
-            this.startValue = startValue;
-            this.endValue = endValue;
-            this.maxValue = maxValue;
-            this.creationTime = System.currentTimeMillis();
-            this.animOffset = animOffset;
-        }
-        
-        float getAlpha() {
-            long elapsed = System.currentTimeMillis() - creationTime;
-            if (elapsed >= CHUNK_FADEOUT_DURATION) return 0f;
-            return 1f - (elapsed / (float) CHUNK_FADEOUT_DURATION);
-        }
-        
-        boolean isExpired() {
-            return getAlpha() <= 0f;
-        }
-    }
+    private static ManaProvider cachedProvider = null;
 
     public static ScreenRect getScreenRect(Player player) {
-        if (player == null && Minecraft.getInstance().player == null) return new ScreenRect(0,0,0,0);
+        if (player == null && Minecraft.getInstance().player == null) return new ScreenRect(0, 0, 0, 0);
 
         Position manaPosBase = HUDPositioning.getPositionFromAnchor(ModConfigManager.getClient().manaBarAnchor);
         Position manaPos = manaPosBase.offset(ModConfigManager.getClient().manaTotalXOffset, ModConfigManager.getClient().manaTotalYOffset);
         int backgroundWidth = ModConfigManager.getClient().manaBackgroundWidth;
         int backgroundHeight = ModConfigManager.getClient().manaBackgroundHeight;
-        
         return new ScreenRect(manaPos.x(), manaPos.y(), backgroundWidth, backgroundHeight);
     }
 
     public static ScreenRect getSubElementRect(SubElementType type, Player player) {
-        ScreenRect complexRect = getScreenRect(player); 
-        if (complexRect == null || complexRect.width() == 0 && complexRect.height() == 0) return new ScreenRect(0,0,0,0);
+        ScreenRect complexRect = getScreenRect(player);
+        if (complexRect == null || complexRect.width() == 0 && complexRect.height() == 0) return new ScreenRect(0, 0, 0, 0);
 
         int x = complexRect.x();
         int y = complexRect.y();
 
         switch (type) {
             case BACKGROUND:
-                return new ScreenRect(x + ModConfigManager.getClient().manaBackgroundXOffset, 
-                                      y + ModConfigManager.getClient().manaBackgroundYOffset, 
-                                      ModConfigManager.getClient().manaBackgroundWidth, 
-                                      ModConfigManager.getClient().manaBackgroundHeight);
+                return new ScreenRect(x + ModConfigManager.getClient().manaBackgroundXOffset,
+                        y + ModConfigManager.getClient().manaBackgroundYOffset,
+                        ModConfigManager.getClient().manaBackgroundWidth,
+                        ModConfigManager.getClient().manaBackgroundHeight);
             case BAR_MAIN:
-                return new ScreenRect(x + ModConfigManager.getClient().manaBarXOffset, 
-                                      y + ModConfigManager.getClient().manaBarYOffset, 
-                                      ModConfigManager.getClient().manaBarWidth, 
-                                      ModConfigManager.getClient().manaBarHeight);
+                return new ScreenRect(x + ModConfigManager.getClient().manaBarXOffset,
+                        y + ModConfigManager.getClient().manaBarYOffset,
+                        ModConfigManager.getClient().manaBarWidth,
+                        ModConfigManager.getClient().manaBarHeight);
             case FOREGROUND_DETAIL:
-                return new ScreenRect(x + ModConfigManager.getClient().manaOverlayXOffset, 
-                                      y + ModConfigManager.getClient().manaOverlayYOffset, 
-                                      ModConfigManager.getClient().manaOverlayWidth,
-                                      ModConfigManager.getClient().manaOverlayHeight);
+                return new ScreenRect(x + ModConfigManager.getClient().manaOverlayXOffset,
+                        y + ModConfigManager.getClient().manaOverlayYOffset,
+                        ModConfigManager.getClient().manaOverlayWidth,
+                        ModConfigManager.getClient().manaOverlayHeight);
             case TEXT:
-                // Text area now positioned relative to complexRect, using manaBarWidth/Height for its dimensions
-                return new ScreenRect(x + ModConfigManager.getClient().manaTextXOffset, 
-                                      y + ModConfigManager.getClient().manaTextYOffset, 
-                                      ModConfigManager.getClient().manaBarWidth, 
-                                      ModConfigManager.getClient().manaBarHeight);
+                return new ScreenRect(x + ModConfigManager.getClient().manaTextXOffset,
+                        y + ModConfigManager.getClient().manaTextYOffset,
+                        ModConfigManager.getClient().manaBarWidth,
+                        ModConfigManager.getClient().manaBarHeight);
             default:
-                return new ScreenRect(0,0,0,0); 
+                return new ScreenRect(0, 0, 0, 0);
         }
     }
 
     public static void render(GuiGraphics graphics, #if NEWER_THAN_20_1 DeltaTracker deltaTracker #else float partialTicks #endif, ManaProvider manaProvider, Player player) {
+    cachedProvider = manaProvider;
+}
+
+public static void renderFromOverlay(GuiGraphics graphics, float partialTicks, Player player) {
+    if (cachedProvider == null) return;
+    if (ModConfigManager.getClient().manaBarBehavior == ManaBarBehavior.OFF) return;
+    renderInternal(graphics, partialTicks, cachedProvider, player);
+}
+
+private static void renderInternal(GuiGraphics graphics, float partialTicks, ManaProvider manaProvider, Player player) {
         if (!Minecraft.getInstance().gameMode.canHurtPlayer() && !EditModeManager.isEditModeEnabled()) {
             return;
         }
@@ -123,26 +97,21 @@ public class ManaBarRenderer {
         ClientConfig clientConfig = ModConfigManager.getClient();
 
         if (!clientConfig.fadeManaWhenFull) {
-            // Rule 1: fadeManaWhenFull is OFF - always show.
             visibilityDecision = true;
         } else {
-            // Rule 2: fadeManaWhenFull is ON.
             if (manaProvider.hasSpecificVisibilityLogic()) {
-                // Provider has a comprehensive method that dictates visibility (e.g., Ars Nouveau).
-                // This method is expected to handle all its own conditions, including mana levels if relevant to its logic.
                 visibilityDecision = manaProvider.shouldDisplayBarOverride(player);
             } else {
-                // Generic provider or provider that wants to add conditions (e.g., RPGMana, ManaAttributes).
-                // Show if (provider forces show via forceShowBarConditions) OR (mana is not full).
                 boolean providerForcesShow = manaProvider.forceShowBarConditions(player);
                 boolean manaIsNotFull = manaProvider.getCurrentMana() < manaProvider.getMaxMana();
                 visibilityDecision = providerForcesShow || manaIsNotFull;
             }
         }
         setBarVisibility(visibilityDecision);
-        
-        // Track value changes for chunk creation
-        updateChunkTracking(player, manaProvider, #if NEWER_THAN_20_1 deltaTracker.getGameTimeDeltaTicks() #else partialTicks #endif);
+
+        float ticks = player.tickCount + partialTicks;
+
+        updateChunkTracking(player, manaProvider, ticks);
 
         if (!isVisible() && !EditModeManager.isEditModeEnabled()) {
             return;
@@ -154,42 +123,41 @@ public class ManaBarRenderer {
         }
 
         RenderSystem.enableBlend();
+        RenderSystem.defaultBlendFunc();
         RenderSystem.setShaderColor(1.0f, 1.0f, 1.0f, currentAlphaForRender);
 
         ScreenRect complexRect = getScreenRect(player);
-
-        int animationCycles = ModConfigManager.getClient().manaBarAnimationCycles;
-        int frameHeight = ModConfigManager.getClient().manaBarFrameHeight;
-        int animOffset = (int) (((player.tickCount + #if NEWER_THAN_20_1 deltaTracker.getGameTimeDeltaTicks() #else partialTicks #endif) / 3) % animationCycles) * frameHeight;
+        OrbRenderHelper.AnimationData animData = OrbRenderHelper.getAnimationData(MANA_BAR_TEX);
+        int animOffset = OrbRenderHelper.calculateAnimationOffset(animData, ticks);
         boolean isRightAnchored = ModConfigManager.getClient().manaBarAnchor.getSide() == HUDPositioning.AnchorSide.RIGHT;
 
         if (ModConfigManager.getClient().enableManaBackground) {
-             ScreenRect bgRect = getSubElementRect(SubElementType.BACKGROUND, player); 
-             graphics.blit(DynamicResourceBars.loc("textures/gui/mana_background.png"),
-                     bgRect.x(), bgRect.y(), 0, 0, bgRect.width(), bgRect.height(), 256, 256);
+            ScreenRect bgRect = getSubElementRect(SubElementType.BACKGROUND, player);
+            OrbRenderHelper.blitFullTexture(graphics,
+                    DynamicResourceBars.loc("textures/gui/mana_background.png"),
+                    bgRect.x(), bgRect.y(), bgRect.width(), bgRect.height());
         }
 
         ScreenRect barRect = getSubElementRect(SubElementType.BAR_MAIN, player);
-        renderManaBar(graphics, manaProvider, animOffset, barRect, isRightAnchored);
-        
-        // Render fading chunks after the main bar
-        renderFadingChunks(graphics, barRect, manaProvider, isRightAnchored, currentAlphaForRender);
-
-        renderReservedOverlay(graphics, manaProvider, animOffset, barRect);
+        renderManaBar(graphics, manaProvider, animOffset, animData, barRect, isRightAnchored, ticks);
+        renderFadingChunks(graphics, barRect, manaProvider, animData, isRightAnchored, currentAlphaForRender, ticks);
+        renderReservedOverlay(graphics, manaProvider, animOffset, animData, barRect, currentAlphaForRender, ticks);
 
         if (ModConfigManager.getClient().enableManaForeground) {
+            RenderSystem.enableBlend();
+            RenderSystem.defaultBlendFunc();
+            RenderSystem.setShaderColor(1.0f, 1.0f, 1.0f, currentAlphaForRender);
             ScreenRect fgRect = getSubElementRect(SubElementType.FOREGROUND_DETAIL, player);
-            graphics.blit(DynamicResourceBars.loc("textures/gui/mana_foreground.png"),
-                    fgRect.x(), fgRect.y(),
-                    0, 0, fgRect.width(), fgRect.height(), 256, 256);
+            OrbRenderHelper.blitFullTexture(graphics,
+                    DynamicResourceBars.loc("textures/gui/mana_foreground.png"),
+                    fgRect.x(), fgRect.y(), fgRect.width(), fgRect.height());
         }
 
-        // Text Rendering
         if (shouldRenderManaText(manaProvider.getCurrentMana(), manaProvider.getMaxMana())) {
             ScreenRect textRect = getSubElementRect(SubElementType.TEXT, player);
             int textX = textRect.x() + (textRect.width() / 2);
             int textY = textRect.y() + (textRect.height() / 2);
-            
+
             int color = getManaTextColor(manaProvider.getCurrentMana(), manaProvider.getMaxMana(), currentAlphaForRender);
             HorizontalAlignment alignment = ModConfigManager.getClient().manaTextAlign;
 
@@ -201,7 +169,7 @@ public class ManaBarRenderer {
             }
 
             RenderUtil.renderText((float) manaProvider.getCurrentMana(), manaProvider.getMaxMana(), graphics,
-                                baseX, textY, color, alignment);
+                    baseX, textY, color, alignment);
         }
 
         RenderSystem.setShaderColor(1.0f, 1.0f, 1.0f, 1.0f);
@@ -213,20 +181,19 @@ public class ManaBarRenderer {
                 int focusedBorderColor = 0xA0FFFF00;
                 ScreenRect bgRect = getSubElementRect(SubElementType.BACKGROUND, player);
                 if (ModConfigManager.getClient().enableManaBackground) {
-                     graphics.renderOutline(bgRect.x()-1, bgRect.y()-1, bgRect.width()+2, bgRect.height()+2, focusedBorderColor);
+                    graphics.renderOutline(bgRect.x() - 1, bgRect.y() - 1, bgRect.width() + 2, bgRect.height() + 2, focusedBorderColor);
                 }
-                
+
                 ScreenRect barRectOutline = getSubElementRect(SubElementType.BAR_MAIN, player);
-                graphics.renderOutline(barRectOutline.x()-1, barRectOutline.y()-1, barRectOutline.width()+2, barRectOutline.height()+2, 0xA000FFFF);
-                
+                graphics.renderOutline(barRectOutline.x() - 1, barRectOutline.y() - 1, barRectOutline.width() + 2, barRectOutline.height() + 2, 0xA000FFFF);
+
                 if (ModConfigManager.getClient().enableManaForeground) {
                     ScreenRect fgRect = getSubElementRect(SubElementType.FOREGROUND_DETAIL, player);
-                    graphics.renderOutline(fgRect.x()-1, fgRect.y()-1, fgRect.width()+2, fgRect.height()+2, 0xA0FF00FF);
+                    graphics.renderOutline(fgRect.x() - 1, fgRect.y() - 1, fgRect.width() + 2, fgRect.height() + 2, 0xA0FF00FF);
                 }
-                graphics.renderOutline(complexRect.x()-2, complexRect.y()-2, complexRect.width()+4, complexRect.height()+4, 0x80FFFFFF);
+                graphics.renderOutline(complexRect.x() - 2, complexRect.y() - 2, complexRect.width() + 4, complexRect.height() + 4, 0x80FFFFFF);
             } else {
-                int borderColor = 0x80FFFFFF; 
-                graphics.renderOutline(complexRect.x()-1, complexRect.y()-1, complexRect.width()+2, complexRect.height()+2, borderColor);
+                graphics.renderOutline(complexRect.x() - 1, complexRect.y() - 1, complexRect.width() + 2, complexRect.height() + 2, 0x80FFFFFF);
             }
         }
     }
@@ -249,92 +216,54 @@ public class ManaBarRenderer {
     }
 
     private static void renderManaBar(GuiGraphics graphics, ManaProvider manaProvider,
-                                      int animOffset, ScreenRect barAreaRect, boolean isRightAnchored) {
+                                      int animOffset, OrbRenderHelper.AnimationData animData,
+                                      ScreenRect barAreaRect, boolean isRightAnchored, float ticks) {
         float maxManaTotal = manaProvider.getMaxMana() * (1.0f + manaProvider.getReservedMana());
         if (maxManaTotal <= 0) maxManaTotal = 1;
         double currentMana = manaProvider.getCurrentMana();
-        int totalBarWidth = barAreaRect.width();
-        int barHeight = barAreaRect.height();
+        float ratio = (float) Math.max(0.0, Math.min(1.0, currentMana / maxManaTotal));
 
-        FillDirection fillDirection = ModConfigManager.getClient().manaFillDirection;
+        boolean vertical = ModConfigManager.getClient().manaFillDirection == FillDirection.VERTICAL;
+        int span = vertical ? barAreaRect.height() : barAreaRect.width();
 
-        if (fillDirection == FillDirection.VERTICAL) {
-            int filledHeight = (int) (barHeight * (currentMana / maxManaTotal));
-            if (filledHeight <= 0 && currentMana > 0) filledHeight = 1;
-            if (filledHeight > barHeight) filledHeight = barHeight;
+        int filled = (int) (span * ratio);
+        if (filled <= 0 && currentMana > 0) filled = 1;
+        int liveEdge = fillSmoother.step(filled);
+        if (liveEdge <= 0) return;
 
-            int barX = barAreaRect.x();
-            // Fill from bottom up, so Y is adjusted by the unfilled portion
-            int barY = barAreaRect.y() + (barHeight - filledHeight);
-            // Texture V offset needs to match the visible portion of the bar
-            int textureVOffset = animOffset + (barHeight - filledHeight);
-
-            if (filledHeight > 0) {
-                graphics.blit(DynamicResourceBars.loc("textures/gui/mana_bar.png"),
-                        barX, barY,
-                        0, textureVOffset, // Use 0 for U, adjusted V for vertical fill
-                        totalBarWidth, filledHeight, // Use full width, partial height
-                        256, 1024);
-            }
-        } else { // HORIZONTAL
-            int filledWidth = (int) (totalBarWidth * (currentMana / maxManaTotal));
-            if (filledWidth <= 0 && currentMana > 0) filledWidth = 1;
-            if (filledWidth > totalBarWidth) filledWidth = totalBarWidth;
-
-            int barX = barAreaRect.x();
-            int barY = barAreaRect.y();
-            int uTexOffset = 0; // Default for left-anchored
-
-            if (isRightAnchored) {
-                barX = barAreaRect.x() + totalBarWidth - filledWidth;
-                uTexOffset = totalBarWidth - filledWidth; // Sample the right part of the texture
-            }
-            if (uTexOffset < 0) uTexOffset = 0; // Prevent negative texture offset
-
-            if (filledWidth > 0) {
-                graphics.blit(DynamicResourceBars.loc("textures/gui/mana_bar.png"),
-                        barX, barY,
-                        uTexOffset, animOffset, // Use calculated uTexOffset
-                        filledWidth, barHeight,
-                        256, 1024); // Standard animated texture sheet size
-            }
-        }
+        OrbRenderHelper.paintFillSpan(graphics, MANA_BAR_TEX, barAreaRect, vertical, isRightAnchored,
+                animOffset, animData, 0, liveEdge, false, true, ticks);
     }
 
     private static void renderReservedOverlay(GuiGraphics graphics, ManaProvider manaProvider,
-                                              int animOffset, ScreenRect barAreaRect) {
+                                              int animOffset, OrbRenderHelper.AnimationData animData,
+                                              ScreenRect barAreaRect, float parentAlpha, float ticks) {
         float reservedManaFraction = manaProvider.getReservedMana();
         if (reservedManaFraction <= 0) return;
 
-        float maxManaWithoutReserved = manaProvider.getMaxMana();
-        if (maxManaWithoutReserved <= 0) maxManaWithoutReserved = 1;
-        float maxManaTotal = maxManaWithoutReserved * (1.0f + reservedManaFraction);
-
-        int totalBarWidth = barAreaRect.width();
-        int barHeight = barAreaRect.height();
-
-        int reserveManaPixelWidth = (int) (totalBarWidth * (reservedManaFraction / (1.0f + reservedManaFraction)));
-        if (reserveManaPixelWidth <= 0) return;
-
-        int reserveStartX = barAreaRect.x() + totalBarWidth - reserveManaPixelWidth;
+        boolean vertical = ModConfigManager.getClient().manaFillDirection == FillDirection.VERTICAL;
+        int span = vertical ? barAreaRect.height() : barAreaRect.width();
+        int reserveSize = (int) (span * (reservedManaFraction / (1.0f + reservedManaFraction)));
+        if (reserveSize <= 0) return;
 
         RenderSystem.enableBlend();
         RenderSystem.defaultBlendFunc();
         RenderSystem.setShaderColor(((RESERVED_MANA_COLOR >> 16) & 0xFF) / 255f,
                 ((RESERVED_MANA_COLOR >> 8) & 0xFF) / 255f,
                 (RESERVED_MANA_COLOR & 0xFF) / 255f,
-                1.0f);
+                parentAlpha);
 
-        graphics.blit(
-                DynamicResourceBars.loc("textures/gui/mana_bar.png"),
-                reserveStartX, barAreaRect.y(),
-                0, animOffset,
-                reserveManaPixelWidth, barHeight,
-                256, 256
-        );
+        if (vertical) {
+            OrbRenderHelper.paintFillSpan(graphics, MANA_BAR_TEX, barAreaRect, true, false,
+                    animOffset, animData, span - reserveSize, span, false, false, ticks);
+        } else {
+            int reserveStartX = barAreaRect.x() + barAreaRect.width() - reserveSize;
+            graphics.blit(MANA_BAR_TEX, reserveStartX, barAreaRect.y(),
+                    0.0f, (float) animOffset, reserveSize, barAreaRect.height(),
+                    animData.textureWidth, animData.textureHeight);
+        }
 
-        RenderSystem.setShaderColor(1.0f, 1.0f, 1.0f, 1.0f);
-        RenderSystem.disableBlend();
+        RenderSystem.setShaderColor(1.0f, 1.0f, 1.0f, parentAlpha);
     }
 
     public static boolean isVisible() {
@@ -348,157 +277,101 @@ public class ManaBarRenderer {
         TextBehavior textBehavior = ModConfigManager.getClient().showManaText;
         ClientConfig config = ModConfigManager.getClient();
         int baseColor = config.manaTextColor & 0xFFFFFF;
-        int alpha = config.manaTextOpacity; // Start with base configured opacity
+        int alpha = config.manaTextOpacity;
 
         if (textBehavior == TextBehavior.WHEN_NOT_FULL && currentMana >= maxMana) {
             long timeSinceFull = Minecraft.getInstance().level.getGameTime() - fullManaStartTime;
-            // Calculate the fade factor for the text itself (0.0 to 1.0)
-            float textOwnFadeMultiplier = RenderUtil.calculateTextAlpha(timeSinceFull) / (float)RenderUtil.BASE_TEXT_ALPHA;
-            alpha = (int)(alpha * textOwnFadeMultiplier); // Apply text's own fade
+            float textOwnFadeMultiplier = RenderUtil.calculateTextAlpha(timeSinceFull) / (float) RenderUtil.BASE_TEXT_ALPHA;
+            alpha = (int) (alpha * textOwnFadeMultiplier);
         }
 
-        // Now apply the bar's overall render alpha to the (potentially already faded) text alpha
         alpha = (int) (alpha * barRenderAlpha);
-
-        alpha = Math.min(255, Math.max(0, alpha)); // Clamp alpha
+        alpha = Math.min(255, Math.max(0, alpha));
         return (alpha << 24) | baseColor;
-    }
-
-    private static int getManaTextColor(double currentMana, float maxMana) {
-        return getManaTextColor(currentMana, maxMana, getCurrentAlpha());
     }
 
     private static boolean shouldRenderManaText(double currentMana, float maxMana) {
         TextBehavior behavior = ModConfigManager.getClient().showManaText;
         if (EditModeManager.isEditModeEnabled()) {
-            if (behavior == TextBehavior.ALWAYS || behavior == TextBehavior.WHEN_NOT_FULL) {
-                return true;
-            }
+            if (behavior == TextBehavior.ALWAYS || behavior == TextBehavior.WHEN_NOT_FULL) return true;
         }
-        if (behavior == TextBehavior.NEVER) {
-            return false;
-        }
-        if (behavior == TextBehavior.ALWAYS) {
-            return true;
-        }
-        // WHEN_NOT_FULL logic
+        if (behavior == TextBehavior.NEVER) return false;
+        if (behavior == TextBehavior.ALWAYS) return true;
+
         boolean isFull = currentMana >= maxMana;
         if (isFull) {
-            if (lastMana < maxMana || lastMana == -1) { // Just became full or first check
+            if (lastMana < maxMana || lastMana == -1) {
                 fullManaStartTime = Minecraft.getInstance().level.getGameTime();
             }
-            lastMana = (float)currentMana;
-            // Show for a short duration after becoming full
+            lastMana = (float) currentMana;
             return (Minecraft.getInstance().level.getGameTime() - fullManaStartTime) < RenderUtil.TEXT_DISPLAY_DURATION;
         } else {
-            lastMana = (float)currentMana;
-            return true; // Not full, so show
+            lastMana = (float) currentMana;
+            return true;
         }
     }
-    
-    private static void updateChunkTracking(Player player, ManaProvider manaProvider, float partialTicks) {
+
+    private static void updateChunkTracking(Player player, ManaProvider manaProvider, float ticks) {
         double currentMana = manaProvider.getCurrentMana();
         float maxMana = manaProvider.getMaxMana();
-        
-        // Clean up expired chunks and those covered by current fill
-        Iterator<FadingChunk> it = fadingChunks.iterator();
+
+        Iterator<OrbRenderHelper.DrainingChunk> it = fadingChunks.iterator();
         while (it.hasNext()) {
-            FadingChunk chunk = it.next();
-            // Remove if expired or if current mana covers this chunk
+            OrbRenderHelper.DrainingChunk chunk = it.next();
             if (chunk.isExpired() || currentMana >= chunk.endValue) {
                 it.remove();
             }
         }
-        
-        // Check if we need to create a new chunk
+
         if (previousMana > 0 && currentMana < previousMana && previousMaxMana == maxMana) {
-            int animationCycles = ModConfigManager.getClient().manaBarAnimationCycles;
-            int frameHeight = ModConfigManager.getClient().manaBarFrameHeight;
-            int animOffset = (int) (((player.tickCount + partialTicks) / 3) % animationCycles) * frameHeight;
-            
-            // Create chunk for the lost portion, clamping to 0 minimum
-            double chunkStart = Math.max(0, currentMana);
-            fadingChunks.add(new FadingChunk(chunkStart, previousMana, maxMana, animOffset));
+            float chunkStart = (float) Math.max(0.0, currentMana);
+            OrbRenderHelper.DrainingChunk newest = fadingChunks.isEmpty() ? null : fadingChunks.get(fadingChunks.size() - 1);
+            if (newest != null && newest.maxValue == maxMana) {
+                newest.startValue = Math.min(newest.startValue, chunkStart);
+            } else {
+                if (fadingChunks.size() >= OrbRenderHelper.MAX_FADING_CHUNKS) fadingChunks.remove(0);
+                OrbRenderHelper.AnimationData animData = OrbRenderHelper.getAnimationData(MANA_BAR_TEX);
+                int animOffset = OrbRenderHelper.calculateAnimationOffset(animData, ticks);
+                fadingChunks.add(new OrbRenderHelper.DrainingChunk(chunkStart, (float) previousMana, maxMana, "mana_bar", animOffset));
+            }
         }
-        
-        // Update tracking values
+
         previousMana = currentMana;
         previousMaxMana = maxMana;
     }
-    
+
     private static void renderFadingChunks(GuiGraphics graphics, ScreenRect barRect, ManaProvider manaProvider,
-                                          boolean isRightAnchored, float parentAlpha) {
+                                           OrbRenderHelper.AnimationData animData,
+                                           boolean isRightAnchored, float parentAlpha, float ticks) {
         if (fadingChunks.isEmpty()) return;
-        
+
         RenderSystem.enableBlend();
         RenderSystem.defaultBlendFunc();
-        
-        FillDirection fillDirection = ModConfigManager.getClient().manaFillDirection;
-        
-        // Account for reserved mana in calculations
-        float maxManaTotal = manaProvider.getMaxMana() * (1.0f + manaProvider.getReservedMana());
-        
-        for (FadingChunk chunk : fadingChunks) {
-            float alpha = chunk.getAlpha() * parentAlpha;
-            if (alpha <= 0) continue;
-            
-            RenderSystem.setShaderColor(1.0f, 1.0f, 1.0f, alpha);
-            
-            // Use the total max mana including reserved for proper scaling
+
+        boolean vertical = ModConfigManager.getClient().manaFillDirection == FillDirection.VERTICAL;
+        int span = vertical ? barRect.height() : barRect.width();
+        int floorPx = fillSmoother.getLiveEdgePx();
+
+        for (OrbRenderHelper.DrainingChunk chunk : fadingChunks) {
             float effectiveMaxForChunk = chunk.maxValue * (1.0f + manaProvider.getReservedMana());
-            
-            if (fillDirection == FillDirection.VERTICAL) {
-                // Calculate heights for the chunk
-                float startRatio = (float)(chunk.startValue / effectiveMaxForChunk);
-                float endRatio = (float)(chunk.endValue / effectiveMaxForChunk);
-                int startHeight = (int) (barRect.height() * startRatio);
-                int endHeight = (int) (barRect.height() * endRatio);
-                int chunkHeight = endHeight - startHeight;
-                
-                if (chunkHeight > 0) {
-                    int yPos = barRect.y() + (barRect.height() - endHeight);
-                    int textureVOffset = chunk.animOffset + (barRect.height() - endHeight);
-                    
-                    graphics.blit(
-                        DynamicResourceBars.loc("textures/gui/mana_bar.png"),
-                        barRect.x(), yPos,
-                        0, textureVOffset,
-                        barRect.width(), chunkHeight,
-                        256, 1024
-                    );
-                }
-            } else { // HORIZONTAL
-                // Calculate widths for the chunk
-                float startRatio = (float)(chunk.startValue / effectiveMaxForChunk);
-                float endRatio = (float)(chunk.endValue / effectiveMaxForChunk);
-                int startWidth = (int) (barRect.width() * startRatio);
-                int endWidth = (int) (barRect.width() * endRatio);
-                int chunkWidth = endWidth - startWidth;
-                
-                if (chunkWidth > 0) {
-                    int xPos, uOffset;
-                    if (isRightAnchored) {
-                        // Chunk position from right
-                        xPos = barRect.x() + barRect.width() - endWidth;
-                        uOffset = barRect.width() - endWidth;
-                    } else {
-                        // Chunk position from left
-                        xPos = barRect.x() + startWidth;
-                        uOffset = startWidth;
-                    }
-                    
-                    graphics.blit(
-                        DynamicResourceBars.loc("textures/gui/mana_bar.png"),
-                        xPos, barRect.y(),
-                        uOffset, chunk.animOffset,
-                        chunkWidth, barRect.height(),
-                        256, 1024
-                    );
-                }
+            if (effectiveMaxForChunk <= 0f) continue;
+
+            float startRatio = Math.max(0f, Math.min(1f, chunk.startValue / effectiveMaxForChunk));
+            float endRatio = Math.max(0f, Math.min(1f, chunk.endValue / effectiveMaxForChunk));
+            int bottom = Math.max(floorPx, (int) (span * startRatio));
+            int top = (int) (span * endRatio) - chunk.drainedRows();
+            if (top <= bottom) {
+                chunk.drained = true;
+                continue;
             }
+            float alpha = chunk.getAlpha() * parentAlpha;
+            if (alpha <= 0f) continue;
+
+            RenderSystem.setShaderColor(1.0f, 1.0f, 1.0f, alpha);
+            OrbRenderHelper.paintFillSpan(graphics, MANA_BAR_TEX, barRect, vertical, isRightAnchored,
+                    chunk.animOffset, animData, bottom, top, true, true, ticks);
         }
-        
-        RenderSystem.setShaderColor(1.0f, 1.0f, 1.0f, 1.0f);
-        RenderSystem.disableBlend();
+
+        RenderSystem.setShaderColor(1.0f, 1.0f, 1.0f, parentAlpha);
     }
 }

@@ -1,53 +1,81 @@
 package dev.muon.dynamic_resource_bars.event;
 
+import dev.muon.dynamic_resource_bars.config.ClientConfig;
 import dev.muon.dynamic_resource_bars.config.ModConfigManager;
+import dev.muon.dynamic_resource_bars.render.AirBarRenderer;
 import dev.muon.dynamic_resource_bars.render.ArmorBarRenderer;
 import dev.muon.dynamic_resource_bars.render.HealthBarRenderer;
-import dev.muon.dynamic_resource_bars.render.StaminaBarRenderer;
 import dev.muon.dynamic_resource_bars.render.ManaBarRenderer;
-import dev.muon.dynamic_resource_bars.render.AirBarRenderer;
+import dev.muon.dynamic_resource_bars.render.StaminaBarRenderer;
 import dev.muon.dynamic_resource_bars.util.BarRenderBehavior;
-import dev.muon.dynamic_resource_bars.compat.ManaProviderManager;
+import dev.muon.dynamic_resource_bars.util.EditModeManager;
 import dev.muon.dynamic_resource_bars.util.ManaBarBehavior;
-import dev.muon.dynamic_resource_bars.util.ManaProvider;
 import dev.muon.dynamic_resource_bars.util.StaminaBarBehavior;
-#if FORGE
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.player.LocalPlayer;
 import net.minecraftforge.client.gui.overlay.ForgeGui;
 import net.minecraftforge.client.gui.overlay.IGuiOverlay;
 
-// 1.20.1 Forge Only. See CommonEvents for 1.21.1, GuiMixin for 1.20.1 Fabric
 public class GuiOverlays {
-    public static final IGuiOverlay RESOURCE_BARS = (ForgeGui gui, GuiGraphics graphics, float partialTick, int screenWidth, int screenHeight) -> {
+
+    public static final IGuiOverlay RESOURCE_BARS = (gui, graphics, partialTick, screenWidth, screenHeight) -> {
+        renderBars(gui, graphics, partialTick, false);
+    };
+
+    public static final IGuiOverlay RESOURCE_BARS_ABOVE_XP = (gui, graphics, partialTick, screenWidth, screenHeight) -> {
+        renderBars(gui, graphics, partialTick, true);
+    };
+
+    private static void renderBars(ForgeGui gui, GuiGraphics graphics, float partialTick, boolean aboveXpPass) {
         Minecraft minecraft = gui.getMinecraft();
         if (minecraft.options.hideGui) return;
-        if (!gui.shouldDrawSurvivalElements()) return;
+        if (!gui.shouldDrawSurvivalElements() && !EditModeManager.isEditModeEnabled()) return;
 
-        var player = minecraft.player;
+        LocalPlayer player = minecraft.player;
         if (player == null) return;
 
-        var config = ModConfigManager.getClient();
+        ClientConfig config = ModConfigManager.getClient();
 
         if (config.enableHealthBar) {
-            HealthBarRenderer.render(graphics, player, player.getMaxHealth(), player.getHealth(), (int) player.getAbsorptionAmount(), partialTick);
-            gui.leftHeight += config.healthBackgroundHeight + 1;
+            if (config.healthAboveXpBar == aboveXpPass) {
+                HealthBarRenderer.render(graphics, player, player.getMaxHealth(), player.getHealth(),
+                        (int) player.getAbsorptionAmount(), partialTick);
+            }
+            if (!aboveXpPass) {
+                gui.leftHeight += config.healthBackgroundHeight;
+            }
         }
+
         if (config.staminaBarBehavior != StaminaBarBehavior.OFF) {
-            StaminaBarRenderer.render(graphics, player, partialTick);
-            gui.rightHeight += config.staminaBackgroundHeight + 1;
+            if (config.staminaAboveXpBar == aboveXpPass) {
+                StaminaBarRenderer.render(graphics, player, partialTick);
+            }
+            if (!aboveXpPass) {
+                gui.rightHeight += config.staminaBackgroundHeight;
+            }
         }
 
         if (config.armorBarBehavior == BarRenderBehavior.CUSTOM) {
-            ArmorBarRenderer.render(graphics, player);
-            gui.leftHeight += config.armorBackgroundHeight + 1;
+            if (config.armorAboveXpBar == aboveXpPass) {
+                ArmorBarRenderer.render(graphics, player);
+            }
+            if (!aboveXpPass) {
+                gui.leftHeight += config.armorBackgroundHeight;
+            }
         }
 
         if (config.airBarBehavior == BarRenderBehavior.CUSTOM) {
-            AirBarRenderer.render(graphics, player, partialTick);
-            gui.rightHeight += config.airBackgroundHeight + 1;
+            if (config.airAboveXpBar == aboveXpPass) {
+                AirBarRenderer.render(graphics, player, partialTick);
+            }
+            if (!aboveXpPass) {
+                gui.rightHeight += config.airBackgroundHeight;
+            }
         }
 
-    };
+        if (config.manaBarBehavior != ManaBarBehavior.OFF && config.manaAboveXpBar == aboveXpPass) {
+            ManaBarRenderer.renderFromOverlay(graphics, partialTick, player);
+        }
+    }
 }
-#endif
